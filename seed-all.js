@@ -1,3 +1,4 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -15,7 +16,8 @@ const Event = require('./models/event');
 
 const connectDB = async () => {
   try {
-    await mongoose.connect('mongodb://127.0.0.1:27017/sps_school');
+    const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/sps_school';
+    await mongoose.connect(dbUrl);
     console.log('MongoDB Connected...');
   } catch (err) {
     console.error(err.message);

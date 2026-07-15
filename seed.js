@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
+require('dotenv').config();
 
-mongoose.connect('mongodb://127.0.0.1:27017/sps_school').then(async () => {
+const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/sps_school';
+mongoose.connect(dbUrl).then(async () => {
   try {
     // Delete existing admins to avoid duplication
     await User.deleteMany({ email: { $in: ['admin@sps.edu', 'finance@sps.edu', 'teacheradmin@sps.edu'] } });
