@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/school-logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="Official School Enterprise Resource Planning (ERP) portal for SPS School."/> 
+   
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/school-logo.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      (function() {
+        window.alert = function(message) {
+          var container = document.getElementById('custom-alert-container');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'custom-alert-container';
+            Object.assign(container.style, {
+              position: 'fixed',
+              top: '24px',
+              right: '24px',
+              zIndex: '999999',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              pointerEvents: 'none',
+              maxWidth: '400px',
+              width: 'calc(100% - 48px)'
+            });
+            document.body.appendChild(container);
+          }
+
+          var toast = document.createElement('div');
+          
+          // Detect active dark mode theme
+          var isDarkMode = document.documentElement.classList.contains('dark-mode');
+          
+          Object.assign(toast.style, {
+            padding: '14px 18px',
+            borderRadius: '16px',
+            backgroundColor: isDarkMode ? 'rgba(22, 28, 45, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(12px)',
+            webkitBackdropFilter: 'blur(12px)',
+            border: '1px solid ' + (isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(226, 232, 240, 0.8)'),
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            color: isDarkMode ? '#F1F5F9' : '#1F2937',
+            fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+            fontSize: '14px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            pointerEvents: 'auto',
+            transform: 'translateY(-20px) scale(0.95)',
+            opacity: '0',
+            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+          });
+
+          var isSuccess = /success|succeed|added|created|saved|updated|paid|approved|enroll/i.test(message);
+          
+          var icon = document.createElement('span');
+          icon.innerHTML = isSuccess ? '✅' : 'ℹ️';
+          icon.style.fontSize = '18px';
+          toast.appendChild(icon);
+
+          var text = document.createElement('div');
+          text.innerText = message;
+          text.style.flex = '1';
+          toast.appendChild(text);
+
+          var closeBtn = document.createElement('button');
+          closeBtn.innerHTML = '×';
+          Object.assign(closeBtn.style, {
+            border: 'none',
+            background: 'none',
+            fontSize: '22px',
+            color: isDarkMode ? '#94A3B8' : '#6B7280',
+            cursor: 'pointer',
+            padding: '0 4px',
+            lineHeight: '1',
+            outline: 'none'
+          });
+          closeBtn.onclick = function() {
+            toast.style.transform = 'translateY(-20px) scale(0.95)';
+            toast.style.opacity = '0';
+            setTimeout(function() { toast.remove(); }, 300);
+          };
+          toast.appendChild(closeBtn);
+
+          container.appendChild(toast);
+
+          // Animate in
+          setTimeout(function() {
+            toast.style.transform = 'translateY(0) scale(1)';
+            toast.style.opacity = '1';
+          }, 10);
+
+          // Auto remove
+          setTimeout(function() {
+            if (toast.parentNode) {
+              toast.style.transform = 'translateY(-20px) scale(0.95)';
+              toast.style.opacity = '0';
+              setTimeout(function() { toast.remove(); }, 300);
+            }
+          }, 4000);
+        };
+      })();
+    </script>
+    <title>SPS School Management Portal</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
