@@ -40,17 +40,25 @@ exports.getStudent = async (req, res) => {
 exports.updateStudentProfile = async (req, res) => {
   try {
     const { email } = req.params;
-    const { phone, address, parentName, parentPhone, bloodGroup, dob, gender, profileImage } = req.body;
+    const { email: newEmail, phone, address, parentName, parentPhone, bloodGroup, dob, gender, profileImage } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (newEmail) {
+      const existingUser = await User.findOne({ email: newEmail });
+      if (existingUser && String(existingUser._id) !== String(user._id)) {
+        return res.status(400).json({ message: "Email address is already in use by another account" });
+      }
+      user.email = newEmail;
+    }
+
     if (phone) {
       user.phone = phone;
-      await user.save();
     }
+    await user.save();
 
     let profile = await Student.findOne({ user: user._id });
     if (!profile) {

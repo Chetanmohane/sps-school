@@ -32,6 +32,7 @@ const StudentProfile = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editForm, setEditForm] = useState({
+    email: '',
     phone: '',
     parentName: '',
     parentPhone: '',
@@ -76,6 +77,7 @@ const StudentProfile = () => {
 
     setStudent(initialProfile);
     setEditForm({
+      email: initialProfile.user.email,
       phone: initialProfile.user.phone,
       parentName: initialProfile.parentName,
       parentPhone: initialProfile.parentPhone,
@@ -104,6 +106,7 @@ const StudentProfile = () => {
           setStudent((prev: any) => ({ ...prev, ...res.data, profileImage: img }));
           setEditForm((prev: any) => ({
             ...prev,
+            email: res.data.user?.email || prev.email || email,
             phone: res.data.user?.phone || prev.phone,
             parentName: res.data.parentName || prev.parentName,
             parentPhone: res.data.parentPhone || prev.parentPhone,
@@ -204,11 +207,14 @@ const StudentProfile = () => {
         if (editForm.profileImage) {
           localStorage.setItem(`student_photo_${email}`, editForm.profileImage);
         }
+        if (editForm.email && editForm.email !== email) {
+          localStorage.setItem('userEmail', editForm.email);
+        }
       }
       
       setStudent((prev: any) => ({
         ...prev,
-        user: { ...prev.user, phone: editForm.phone },
+        user: { ...prev.user, email: editForm.email, phone: editForm.phone },
         parentName: editForm.parentName,
         parentPhone: editForm.parentPhone,
         bloodGroup: editForm.bloodGroup,
@@ -218,6 +224,9 @@ const StudentProfile = () => {
 
       setIsEditModalOpen(false);
       triggerNotification("Profile details updated successfully!");
+      if (editForm.email && editForm.email !== email) {
+        window.location.reload();
+      }
     } catch (err: any) {
       alert("Failed to update profile: " + (err.response?.data?.message || err.message));
     } finally {
@@ -954,6 +963,18 @@ const StudentProfile = () => {
                     )}
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Email Address *</label>
+                <input 
+                  type="email" 
+                  required
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  placeholder="student@school.com"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[var(--input-bg)] border border-[var(--border-color)] text-sm font-semibold focus:outline-none focus:border-emerald-500"
+                />
               </div>
 
               <div>
