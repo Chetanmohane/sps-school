@@ -43,6 +43,13 @@ const Sidebar = () => {
       path: '/manager-admin',
     },
     {
+      key: 'applications',
+      name: 'Student Leave Requests',
+      emoji: '✉️',
+      color: '#ec4899',
+      path: '/teacher/application',
+    },
+    {
       key: 'exams',
       name: 'Exam Timetable',
       emoji: '📅',
@@ -72,6 +79,7 @@ const Sidebar = () => {
       { path: '/academic-admin', name: 'Teacher Admin Branch', icon: <FiBookOpen /> },
       { path: '/academic-admin?tab=admissions', name: 'Submit Admission', icon: <FiUserPlus /> },
       { path: '/finance-admin', name: 'Finance Admin Overview', icon: <FiDollarSign /> },
+      { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
@@ -87,6 +95,7 @@ const Sidebar = () => {
       { path: '/academic-admin?tab=promotions', name: 'Promotions Section', icon: <FiLayers /> },
       { path: '/academic-admin/attendance', name: 'Student Attendance', icon: <FiCheckSquare /> },
       { path: '/academic-admin/results', name: 'Exam Results', icon: <FiAward /> },
+      { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
@@ -102,6 +111,7 @@ const Sidebar = () => {
       { path: '/academic-admin?tab=promotions', name: 'Promotions Section', icon: <FiLayers /> },
       { path: '/academic-admin/attendance', name: 'Student Attendance', icon: <FiCheckSquare /> },
       { path: '/academic-admin/results', name: 'Exam Results', icon: <FiAward /> },
+      { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
 
@@ -120,6 +130,7 @@ const Sidebar = () => {
       { path: '/teacher/results', name: 'Subject Exam Results', icon: <FiAward /> },
       { path: '/teacher/exam-timetable', name: 'Exam Timetable & Duty', icon: <FiCalendar /> },
       { path: '/teacher/assignments', name: 'Assignments & Homework', icon: <FiEdit3 /> },
+      { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
     'student': [

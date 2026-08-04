@@ -49,10 +49,17 @@ exports.getAllApplications = async (req, res) => {
 exports.updateStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, teacherRemarks } = req.body;
-    console.log(id, " ", status, " ", teacherRemarks);
+    const { status, teacherRemarks, processedBy } = req.body;
+    console.log(id, " ", status, " ", teacherRemarks, " ", processedBy);
+    
     const updated = await Application.findByIdAndUpdate(id,
-      { status, teacherRemarks },
+      { 
+        status, 
+        teacherRemarks, 
+        processedBy: processedBy || "Admin",
+        approvedBy: processedBy || "Admin",
+        approvedAt: new Date()
+      },
       { new: true }
     );
 
