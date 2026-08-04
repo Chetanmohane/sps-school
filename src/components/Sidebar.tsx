@@ -64,6 +64,13 @@ const Sidebar = () => {
       path: '/super-admin?tab=hierarchy',
     },
     {
+      key: 'audit-logs',
+      name: 'Account Creation Log',
+      emoji: '🛡️',
+      color: '#4f46e5',
+      path: '/admin/audit-logs',
+    },
+    {
       key: 'settings',
       name: 'System Settings',
       emoji: '⚙️',
@@ -81,6 +88,7 @@ const Sidebar = () => {
       { path: '/finance-admin', name: 'Finance Admin Overview', icon: <FiDollarSign /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
+      { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
 
@@ -97,6 +105,7 @@ const Sidebar = () => {
       { path: '/academic-admin/results', name: 'Exam Results', icon: <FiAward /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
+      { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
 
@@ -112,6 +121,7 @@ const Sidebar = () => {
       { path: '/academic-admin/attendance', name: 'Student Attendance', icon: <FiCheckSquare /> },
       { path: '/academic-admin/results', name: 'Exam Results', icon: <FiAward /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
+      { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
 

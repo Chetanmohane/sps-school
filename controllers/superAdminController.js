@@ -106,3 +106,14 @@ exports.updateAdmin = async (req, res) => {
     res.status(500).json({ message: "Error updating admin", error: error.message });
   }
 };
+
+exports.getAuditLogs = async (req, res) => {
+  try {
+    const logs = await User.find()
+      .select('name email phone role createdBy remarks createdAt')
+      .sort({ createdAt: -1 });
+    res.status(200).json(logs);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching audit logs", error: error.message });
+  }
+};

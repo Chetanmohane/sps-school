@@ -46,6 +46,7 @@ import AdminManager from './pages/operations-admin/AdminManager';
 import Exams from './pages/operations-admin/Exams';
 import AdminStudentProfileView from './pages/operations-admin/AdminStudentProfileView';
 import SubjectsCatalog from './pages/operations-admin/SubjectsCatalog';
+import AuditLogs from './pages/operations-admin/AuditLogs';
 // Route Guard Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
   const token = localStorage.getItem('token');
@@ -261,6 +262,11 @@ const AppRoutes = () => {
         <Route path="/admin/student-profiles" element={
           <ProtectedRoute allowedRoles={['super-admin', 'manager-admin', 'student-admin', 'academic-admin']}>
             <AdminStudentProfileView />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/audit-logs" element={
+          <ProtectedRoute allowedRoles={['super-admin', 'manager-admin', 'academic-admin']}>
+            <AuditLogs />
           </ProtectedRoute>
         } />
       </Routes>
