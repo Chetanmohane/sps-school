@@ -23,28 +23,7 @@ const StudentFees = () => {
     rollNumber: 'STU-1001'
   });
 
-  const [fees, setFees] = useState<any[]>([
-    {
-      _id: 'default_fee_1',
-      title: 'Academic Tuition & Infrastructure Fee (Semester I)',
-      amount: 25000,
-      paidAmount: 25000,
-      status: 'Paid',
-      dueDate: '2026-06-15',
-      paymentDate: '2026-06-10',
-      transactionId: 'TXN_SPS_' + Math.floor(100000 + Math.random() * 900000)
-    },
-    {
-      _id: 'default_fee_2',
-      title: 'Annual Laboratory, Activity & Examination Fee',
-      amount: 12000,
-      paidAmount: 0,
-      status: 'Pending',
-      dueDate: '2026-09-15',
-      paymentDate: null,
-      transactionId: null
-    }
-  ]);
+  const [fees, setFees] = useState<any[]>([]);
 
   const [payingFee, setPayingFee] = useState<any>(null);
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState<string | null>(null);
@@ -78,7 +57,7 @@ const StudentFees = () => {
         setStudentProfile(profRes.data);
       }
 
-      if (feesRes && feesRes.data && Array.isArray(feesRes.data) && feesRes.data.length > 0) {
+      if (feesRes && feesRes.data && Array.isArray(feesRes.data)) {
         setFees(feesRes.data);
       }
     } catch (err) {
@@ -252,62 +231,70 @@ const StudentFees = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-color)]">
-                  {fees.map((item, index) => {
-                    const isPaid = item.status === 'Paid';
-                    return (
-                      <tr key={index} className="hover:bg-[var(--input-bg)] transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="font-bold text-sm text-[var(--text-main)]">{item.title || 'Tuition & Academic Fee'}</p>
-                          {item.transactionId && (
-                            <span className="text-[10px] text-[var(--text-muted)] font-mono">
-                              Txn ID: {item.transactionId}
+                  {fees.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-10 text-center text-[var(--text-muted)] font-medium">
+                        No outstanding fee invoices or statement records found.
+                      </td>
+                    </tr>
+                  ) : (
+                    fees.map((item, index) => {
+                      const isPaid = item.status === 'Paid';
+                      return (
+                        <tr key={index} className="hover:bg-[var(--input-bg)] transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="font-bold text-sm text-[var(--text-main)]">{item.title || 'Tuition & Academic Fee'}</p>
+                            {item.transactionId && (
+                              <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                                Txn ID: {item.transactionId}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-xs font-semibold text-[var(--text-muted)]">
+                            <span className="flex items-center gap-1.5">
+                              <FiClock size={13} />
+                              {item.dueDate ? new Date(item.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                             </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-xs font-semibold text-[var(--text-muted)]">
-                          <span className="flex items-center gap-1.5">
-                            <FiClock size={13} />
-                            {item.dueDate ? new Date(item.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 font-black text-base text-[var(--text-main)]">
-                          ₹{item.amount?.toLocaleString('en-IN')}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                            isPaid 
-                              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
-                              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                          }`}>
-                            {isPaid ? <FiCheckCircle size={12} /> : <FiAlertCircle size={12} />}
-                            {isPaid ? 'PAID IN FULL' : 'PENDING DUE'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-xs">
-                          <span className="font-semibold text-[var(--text-main)]">👔 {item.updatedBy || 'Super Admin'}</span>
-                          <br />
-                          <span className="text-[10px] text-[var(--text-muted)]">{isPaid ? 'Receipt Generated' : 'Official Statement'}</span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {isPaid ? (
-                            <button
-                              onClick={() => handlePrintReceipt(item)}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 font-bold text-xs transition-all cursor-pointer active:scale-95"
-                            >
-                              <FiDownload size={13} /> Receipt
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenPaymentModal(item)}
-                              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95"
-                            >
-                              <FiCreditCard size={14} /> Pay Now (₹{item.amount?.toLocaleString('en-IN')})
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                          <td className="px-6 py-4 font-black text-base text-[var(--text-main)]">
+                            ₹{item.amount?.toLocaleString('en-IN')}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                              isPaid 
+                                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                            }`}>
+                              {isPaid ? <FiCheckCircle size={12} /> : <FiAlertCircle size={12} />}
+                              {isPaid ? 'PAID IN FULL' : 'PENDING DUE'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-xs">
+                            <span className="font-semibold text-[var(--text-main)]">👔 {item.updatedBy || 'Super Admin'}</span>
+                            <br />
+                            <span className="text-[10px] text-[var(--text-muted)]">{isPaid ? 'Receipt Generated' : 'Official Statement'}</span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {isPaid ? (
+                              <button
+                                onClick={() => handlePrintReceipt(item)}
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 font-bold text-xs transition-all cursor-pointer active:scale-95"
+                              >
+                                <FiDownload size={13} /> Receipt
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenPaymentModal(item)}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer active:scale-95"
+                              >
+                                <FiCreditCard size={14} /> Pay Now (₹{item.amount?.toLocaleString('en-IN')})
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
