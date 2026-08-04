@@ -18,7 +18,7 @@ const StudentProfile = () => {
   const { onEvent } = useSocket();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'personal' | 'academic' | 'finance'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'personal' | 'academic' | 'finance' | 'exams'>('overview');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Data states
@@ -428,6 +428,7 @@ const StudentProfile = () => {
                   { id: 'personal', label: 'Personal & Parent Details', icon: FiUser },
                   { id: 'academic', label: 'Academic & Subjects', icon: FiBookOpen },
                   { id: 'finance', label: 'Fee Statement & Payments', icon: FiCreditCard },
+                  { id: 'exams', label: 'Exam Timetable', icon: FiCalendar },
                 ].map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -842,6 +843,60 @@ const StudentProfile = () => {
                       )}
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {activeTab === 'exams' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="bg-[var(--card-bg)] p-6 rounded-2xl border border-[var(--border-color)] shadow-sm">
+                <h3 className="text-base font-black border-b border-[var(--border-color)] pb-3 flex items-center gap-2 mb-6">
+                  <FiCalendar className="text-emerald-500" /> Exam Datesheet & Timetable (Class {student?.className || '10'})
+                </h3>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--border-color)] text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                        <th className="pb-3 pt-2">Exam Title</th>
+                        <th className="pb-3 pt-2">Subject</th>
+                        <th className="pb-3 pt-2">Date</th>
+                        <th className="pb-3 pt-2">Timings</th>
+                        <th className="pb-3 pt-2">Room / Hall No.</th>
+                        <th className="pb-3 pt-2">Max Marks</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border-color)]">
+                      {exams && exams.filter(e => String(e.className) === String(student?.className || '10')).length > 0 ? (
+                        exams.filter(e => String(e.className) === String(student?.className || '10')).map((exam, idx) => (
+                          <tr key={idx} className="text-sm font-semibold hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                            <td className="py-4 text-[var(--text-main)] font-bold">{exam.title}</td>
+                            <td className="py-4">
+                              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                {exam.subject}
+                              </span>
+                            </td>
+                            <td className="py-4 text-[var(--text-muted)] font-medium">
+                              {new Date(exam.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </td>
+                            <td className="py-4 text-[var(--text-muted)] font-medium">
+                              <span className="flex items-center gap-1">
+                                <FiClock className="text-emerald-500" size={13} /> {exam.startTime} - {exam.endTime}
+                              </span>
+                            </td>
+                            <td className="py-4 text-[var(--text-main)]">{exam.roomNumber}</td>
+                            <td className="py-4 font-bold text-emerald-600">{exam.maxMarks} Marks</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                            📅 No upcoming exams scheduled for Class {student?.className || '10'}.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
