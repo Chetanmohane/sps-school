@@ -912,7 +912,7 @@ const SuperAdminDashboard = () => {
     const matchStatus = subAdminStatusFilter === 'all' || status.toLowerCase() === subAdminStatusFilter.toLowerCase();
 
     let matchDate = true;
-    if (created) {
+    if (created && !isNaN(new Date(created).getTime())) {
       const dateStr = new Date(created).toISOString().slice(0, 10);
       if (subAdminDateFrom && dateStr < subAdminDateFrom) matchDate = false;
       if (subAdminDateTo && dateStr > subAdminDateTo) matchDate = false;
