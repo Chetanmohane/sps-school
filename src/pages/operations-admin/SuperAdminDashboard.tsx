@@ -2009,144 +2009,153 @@ const SuperAdminDashboard = () => {
           {/* ═══════════════════════════════════════════════════════════════════
                TAB 1 — SYSTEM OVERVIEW
           ═══════════════════════════════════════════════════════════════════ */}
-          {!activeSection && activeTab === 'overview' && (
-            <div>
+          {!activeSection && activeTab === 'overview' && (() => {
+            const classTeachersCount = new Set(classes.map(c => c.classTeacher?._id || c.classTeacher).filter(Boolean)).size;
+            const subjectTeachersCount = Math.max(0, teachers.length - classTeachersCount);
+            const superAdminName = localStorage.getItem('userName') || 'Super Admin';
+            const superAdminEmail = localStorage.getItem('userEmail') || 'admin@sps.edu';
+            const superAdminPhone = localStorage.getItem('userPhone') || '+91 99999 99999';
+            const totalPaid = fees.reduce((s: number, f: any) => s + (f.paid || 0), 0);
 
-              {/* ── Super Admin Welcome Banner ── */}
-              {(() => {
-                const superAdminName = localStorage.getItem('userName') || 'Super Admin';
-                const hour = new Date().getHours();
-                const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
-                const totalPaid = fees.reduce((s: number, f: any) => s + (f.paid || 0), 0);
-                const pendingAdm = students.filter((s: any) => s.status === 'Pending').length;
-                return (
-                  <div style={{
-                    background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #1e3a5f 100%)',
-                    borderRadius: '20px', padding: '28px 32px', marginBottom: '24px',
-                    position: 'relative', overflow: 'hidden', border: '1px solid rgba(99,102,241,0.3)'
-                  }}>
-                    <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', filter: 'blur(70px)', pointerEvents: 'none' }} />
-                    <div style={{ position: 'absolute', bottom: '-40px', left: '30%', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(245,158,11,0.1)', filter: 'blur(50px)', pointerEvents: 'none' }} />
-                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                          <span style={{ background: 'rgba(99,102,241,0.35)', color: '#a5b4fc', fontSize: '11px', fontWeight: '800', padding: '3px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.08em', border: '1px solid rgba(99,102,241,0.4)' }}>
-                            👑 Super Admin
-                          </span>
-                          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>• Full System Access</span>
-                        </div>
-                        <h1 style={{ fontSize: '26px', fontWeight: '900', margin: '0 0 6px', color: '#fff', letterSpacing: '-0.02em' }}>
-                          {greeting}, {superAdminName}! 👋
-                        </h1>
-                        <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '13px' }}>
-                          {students.length} Students &nbsp;•&nbsp; {teachers.length} Teachers &nbsp;•&nbsp; {subAdmins.length} Sub-Admins &nbsp;•&nbsp; ₹{totalPaid.toLocaleString()} Collected
-                        </p>
-                      </div>
-                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <button onClick={() => navigate('/super-admin?tab=admins')} style={{ backgroundColor: 'rgba(99,102,241,0.25)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
-                          🛡️ Manage Admins
-                        </button>
-                        <button onClick={() => navigate('/super-admin?tab=exams')} style={{ backgroundColor: 'rgba(245,158,11,0.25)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
-                          📅 Exam Timetable
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── Stats Row ── */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:'14px', marginBottom:'24px' }}>
-                {[
-                  { label:'Total Students',     value: students.length,                               icon:'🎓', color:'var(--primary)', bg:'rgba(30,58,138,0.06)' },
-                  { label:'Active Students',    value: students.filter(s=>s.status==='Active').length, icon:'✅', color:'var(--success)', bg:'rgba(16,185,129,0.06)' },
-                  { label:'Sub-Admin Accounts', value: subAdmins.length,                              icon:'🛡️', color:'#6366f1', bg:'rgba(99,102,241,0.06)' },
-                  { label:'Total Billed',       value:`₹${totalFees.toLocaleString()}`,               icon:'💵', color:'#f59e0b', bg:'rgba(245,158,11,0.06)' },
-                  { label:'Fees Collected',     value:`₹${collectedFees.toLocaleString()}`,           icon:'💰', color:'var(--success)', bg:'rgba(16,185,129,0.06)' },
-                  { label:'Outstanding Dues',   value:`₹${pendingFees.toLocaleString()}`,             icon:'⏳', color:'var(--danger)', bg:'rgba(239,68,68,0.06)' },
-                ].map((s,i)=>(
-                  <div key={i} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s ease' }}>
-                    <div>
-                      <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>{s.label}</span>
-                      <div style={{ fontSize: '22px', fontWeight: '800', color: s.color, marginTop: '4px' }}>{s.value}</div>
-                    </div>
-                    <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                      {s.icon}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* ── Executive Department Portals ── */}
-              <div style={{ marginBottom: '28px' }}>
-                <div style={{ marginBottom: '16px' }}>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>🏛️ Department Management Portals</span>
-                  </h3>
-                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
-                    Access and manage all key operational branches of the ERP system.
-                  </p>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                  {[
-                    {
-                      id: 'academic',
-                      emoji: '👩‍🏫',
-                      title: 'Teacher & Academic Admin',
-                      desc: 'Faculty directory, subject allocations, class teachers, student roster, admissions & promotions.',
-                      path: '/academic-admin',
-                      color: '#8b5cf6',
-                      bg: 'rgba(139,92,246,0.08)'
-                    },
-                    {
-                      id: 'finance',
-                      emoji: '💰',
-                      title: 'Finance Admin',
-                      desc: 'Fee structure, payments tracking, invoices & dues recovery.',
-                      path: '/finance-admin',
-                      color: '#10b981',
-                      bg: 'rgba(16,185,129,0.08)'
-                    },
-                    {
-                      id: 'executive',
-                      emoji: '👔',
-                      title: 'Manager Admin',
-                      desc: 'Executive management across academic & student operations.',
-                      path: '/manager-admin',
-                      color: '#3b82f6',
-                      bg: 'rgba(59,130,246,0.08)'
-                    },
-                  ].map((card) => (
-                    <div
-                      key={card.id}
-                      style={{
-                        backgroundColor: 'var(--card-bg)',
-                        border: `1px solid var(--border-color)`,
-                        borderRadius: '16px',
-                        padding: '20px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        transition: 'transform 0.2s, box-shadow 0.2s'
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                          <div style={{ fontSize: '24px', width: '44px', height: '44px', borderRadius: '12px', backgroundColor: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {card.emoji}
-                          </div>
+            return (
+              <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                {/* Left Side: Welcome, Stats & Portals */}
+                <div style={{ flex: '1 1 600px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  
+                  {/* Super Admin Welcome Banner */}
+                  {(() => {
+                    const hour = new Date().getHours();
+                    const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+                    return (
+                      <div style={{
+                        background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #1e3a5f 100%)',
+                        borderRadius: '20px', padding: '28px 32px',
+                        position: 'relative', overflow: 'hidden', border: '1px solid rgba(99,102,241,0.3)'
+                      }}>
+                        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', filter: 'blur(70px)', pointerEvents: 'none' }} />
+                        <div style={{ position: 'absolute', bottom: '-40px', left: '30%', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(245,158,11,0.1)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+                        <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                           <div>
-                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)' }}>{card.title}</h4>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                              <span style={{ background: 'rgba(99,102,241,0.35)', color: '#a5b4fc', fontSize: '11px', fontWeight: '800', padding: '3px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.08em', border: '1px solid rgba(99,102,241,0.4)' }}>
+                                👑 Super Admin
+                              </span>
+                              <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>• Full System Access</span>
+                            </div>
+                            <h1 style={{ fontSize: '26px', fontWeight: '900', margin: '0 0 6px', color: '#fff', letterSpacing: '-0.02em' }}>
+                              {greeting}, {superAdminName}! 👋
+                            </h1>
+                            <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '13px' }}>
+                              {students.length} Students &nbsp;•&nbsp; {teachers.length} Teachers &nbsp;•&nbsp; {subAdmins.length} Sub-Admins &nbsp;•&nbsp; ₹{totalPaid.toLocaleString()} Collected
+                            </p>
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <button onClick={() => navigate('/super-admin?tab=admins')} style={{ backgroundColor: 'rgba(99,102,241,0.25)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                              🛡️ Manage Admins
+                            </button>
+                            <button onClick={() => navigate('/super-admin?tab=exams')} style={{ backgroundColor: 'rgba(245,158,11,0.25)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                              📅 Exam Timetable
+                            </button>
                           </div>
                         </div>
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px', lineHeight: '1.4' }}>
-                          {card.desc}
-                        </p>
                       </div>
+                    );
+                  })()}
 
-                      <button
-                        onClick={() => navigate(card.path)}
+                  {/* Stats Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+                    {[
+                      { label: 'Total Students', value: students.length, icon: '🎓', color: 'var(--primary)', bg: 'rgba(30,58,138,0.06)' },
+                      { label: 'Active Students', value: students.filter(s => s.status === 'Active').length, icon: '✅', color: 'var(--success)', bg: 'rgba(16,185,129,0.06)' },
+                      { label: 'Total Teachers', value: teachers.length, icon: '👩‍🏫', color: '#8b5cf6', bg: 'rgba(139,92,246,0.06)' },
+                      { label: 'Class Teachers', value: classTeachersCount, icon: '🏫', color: '#06b6d4', bg: 'rgba(6,182,212,0.06)' },
+                      { label: 'Subject Teachers', value: subjectTeachersCount, icon: '📚', color: '#ec4899', bg: 'rgba(236,72,153,0.06)' },
+                      { label: 'Fees Collected', value: `₹${collectedFees.toLocaleString()}`, icon: '💰', color: 'var(--success)', bg: 'rgba(16,185,129,0.06)' },
+                      { label: 'Outstanding Dues', value: `₹${pendingFees.toLocaleString()}`, icon: '⏳', color: 'var(--danger)', bg: 'rgba(239,68,68,0.06)' },
+                      { label: 'Sub-Admins', value: subAdmins.length, icon: '🛡️', color: '#6366f1', bg: 'rgba(99,102,241,0.06)' },
+                    ].map((s, i) => (
+                      <div key={i} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s ease' }}>
+                        <div>
+                          <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>{s.label}</span>
+                          <div style={{ fontSize: '20px', fontWeight: '800', color: s.color, marginTop: '4px' }}>{s.value}</div>
+                        </div>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                          {s.icon}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Executive Department Portals */}
+                  <div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🏛️ Department Management Portals</span>
+                      </h3>
+                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                        Access and manage all key operational branches of the ERP system.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+                      {[
+                        {
+                          id: 'academic',
+                          emoji: '👩‍🏫',
+                          title: 'Teacher & Academic Admin',
+                          desc: 'Faculty directory, subject allocations, class teachers, student roster, admissions & promotions.',
+                          path: '/academic-admin',
+                          color: '#8b5cf6',
+                          bg: 'rgba(139,92,246,0.08)'
+                        },
+                        {
+                          id: 'finance',
+                          emoji: '💰',
+                          title: 'Finance Admin',
+                          desc: 'Fee structure, payments tracking, invoices & dues recovery.',
+                          path: '/finance-admin',
+                          color: '#10b981',
+                          bg: 'rgba(16,185,129,0.08)'
+                        },
+                        {
+                          id: 'executive',
+                          emoji: '👔',
+                          title: 'Manager Admin',
+                          desc: 'Executive management across academic & student operations.',
+                          path: '/manager-admin',
+                          color: '#3b82f6',
+                          bg: 'rgba(59,130,246,0.08)'
+                        },
+                      ].map((card) => (
+                        <div
+                          key={card.id}
+                          style={{
+                            backgroundColor: 'var(--card-bg)',
+                            border: `1px solid var(--border-color)`,
+                            borderRadius: '16px',
+                            padding: '20px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            transition: 'transform 0.2s, box-shadow 0.2s'
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                              <div style={{ fontSize: '24px', width: '44px', height: '44px', borderRadius: '12px', backgroundColor: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {card.emoji}
+                              </div>
+                              <div>
+                                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)' }}>{card.title}</h4>
+                              </div>
+                            </div>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px', lineHeight: '1.4' }}>
+                              {card.desc}
+                            </p>
+                          </div>
+
+                          <button
+                            onClick={() => navigate(card.path)}
                         style={{
                           width: '100%',
                           padding: '10px',
@@ -2252,8 +2261,70 @@ const SuperAdminDashboard = () => {
                   ))}
                 </div>
               </div>
+
+              </div>
+
+              {/* Profile Widget (Right Column) */}
+              <div style={{ width: '300px', flexShrink: 0 }}>
+                <div style={{
+                  backgroundColor: 'var(--card-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '20px',
+                  padding: '24px',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+                  position: 'sticky',
+                  top: '20px'
+                }}>
+                  <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                    <div style={{
+                      width: '80px', height: '80px',
+                      borderRadius: '24px',
+                      backgroundColor: 'var(--primary)',
+                      color: 'white',
+                      fontWeight: '800',
+                      fontSize: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 12px',
+                      boxShadow: '0 8px 16px rgba(99, 102, 241, 0.2)'
+                    }}>
+                      {superAdminName.charAt(0).toUpperCase()}
+                    </div>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: '800', color: 'var(--text-main)' }}>{superAdminName}</h4>
+                    <span style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', fontSize: '11px', fontWeight: '800', padding: '3px 10px', borderRadius: '12px' }}>
+                      ● Active Status
+                    </span>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email ID</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', marginTop: '2px', wordBreak: 'break-all' }}>{superAdminEmail}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone Number</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', marginTop: '2px' }}>{superAdminPhone}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>System Role</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', marginTop: '2px' }}>Super System Administrator</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Permissions</div>
+                      <div style={{ fontSize: '12px', fontWeight: 500, color: '#f59e0b', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        <span style={{ padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(245,158,11,0.1)' }}>Full CRUD</span>
+                        <span style={{ padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(245,158,11,0.1)' }}>Financials</span>
+                        <span style={{ padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(245,158,11,0.1)' }}>Users</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
-          )}
+          );
+        })()}
 
           {/* ═══════════════════════════════════════════════════════════════════
                TAB 2 — FINANCE ADMIN (Full Details)
