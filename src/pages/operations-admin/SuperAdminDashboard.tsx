@@ -355,14 +355,14 @@ const SuperAdminDashboard = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showEditAdminModal, setShowEditAdminModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<any>(null);
-  const [editAdminForm, setEditAdminForm] = useState({ name:'', phone:'', role:'', password:'' });
+  const [editAdminForm, setEditAdminForm] = useState({ name:'', phone:'', role:'', password:'', remarks:'' });
   const [showEditPassword, setShowEditPassword] = useState(false);
 
   const [studentForm, setStudentForm] = useState({ name:'', email:'', class:'', section:'', roll:'', dob:'', gender:'', phone:'', parent:'', parentPhone:'', blood:'' });
-  const [feeForm, setFeeForm] = useState({ studentId:'', amount:'', dueDate:'' });
+  const [feeForm, setFeeForm] = useState({ studentId:'', amount:'', dueDate:'', remarks:'' });
   const [feeFormClass, setFeeFormClass] = useState('');
   const [feeFormSection, setFeeFormSection] = useState('');
-  const [adminForm, setAdminForm] = useState({ name:'', email:'', phone:'', password:'', role:'finance-admin' });
+  const [adminForm, setAdminForm] = useState({ name:'', email:'', phone:'', password:'', role:'finance-admin', remarks:'' });
   const [searchStudent, setSearchStudent] = useState('');
   const [studentClassFilter, setStudentClassFilter] = useState('all');
   const [studentSectionFilter, setStudentSectionFilter] = useState('all');
@@ -515,7 +515,10 @@ const SuperAdminDashboard = () => {
         phone: a.phone || '',
         role: a.role || '',
         created: a.createdAt ? a.createdAt.slice(0, 10) : '',
-        status: 'Active'
+        status: 'Active',
+        createdBy: a.createdBy || 'Super Admin',
+        updatedBy: a.updatedBy || 'Super Admin',
+        remarks: a.remarks || 'No remarks recorded'
       }));
       setSubAdmins(mappedAdmins);
     } catch (err) {
@@ -556,6 +559,7 @@ const SuperAdminDashboard = () => {
           due: pendingAmount,
           status: calculatedStatus,
           updatedBy: f.updatedBy || 'Super Admin',
+          remarks: f.remarks || 'No remarks recorded',
           date: f.dueDate ? f.dueDate.slice(0, 10) : '',
           paymentDate: f.paymentDate ? f.paymentDate.slice(0, 10) : '',
           term: 'Term 1',
@@ -988,9 +992,15 @@ const SuperAdminDashboard = () => {
     try {
       const targetFee = fees.find(f => f.id === id);
       if (!targetFee) return;
+      const userRemarks = window.prompt(`Enter approval/reset remarks for this fee status change to ${status}:`, status === 'Paid' ? 'Fee received in full' : 'Fee status reset to pending');
+      if (userRemarks === null) return; // Cancelled
+      const updaterName = localStorage.getItem('userName') || 'Super Admin';
+      const updaterRole = localStorage.getItem('userRole') || 'super-admin';
       await API.put(`/api/finance/update/${id}`, {
         amount: targetFee.total,
-        status: status
+        status: status,
+        remarks: userRemarks,
+        updatedBy: `${updaterName} (${updaterRole})`
       });
       trigger(`Fee marked as ${status}.`);
       fetchFees();
@@ -1010,15 +1020,18 @@ const SuperAdminDashboard = () => {
       return;
     }
     try {
+      const creatorName = localStorage.getItem('userName') || 'Super Admin';
+      const creatorRole = localStorage.getItem('userRole') || 'super-admin';
       await API.post('/api/finance/create-fee', {
         studentId: feeForm.studentId,
         amount: Number(feeForm.amount),
         dueDate: feeForm.dueDate,
-        updatedBy: 'Super Admin'
+        remarks: feeForm.remarks || 'Initial Fee Generation',
+        updatedBy: `${creatorName} (${creatorRole})`
       });
       trigger('Fee record created successfully!');
       fetchFees();
-      setFeeForm({ studentId: '', amount: '', dueDate: '' });
+      setFeeForm({ studentId: '', amount: '', dueDate: '', remarks: '' });
       setFeeFormClass('');
       setFeeFormSection('');
       setShowAddFee(false);
@@ -1032,14 +1045,20 @@ const SuperAdminDashboard = () => {
   const addAdmin = async (e) => {
     e.preventDefault();
     try {
-      const res = await API.post('/api/super-admin/create-admin', adminForm);
-      trigger(res.data?.message || 'Sub-Admin account created successfully!');
+      const creatorName = localStorage.getItem('userName') || 'Super Admin';
+      const creatorRole = localStorage.getItem('userRole') || 'super-admin';
+      const payload = {
+        ...adminForm,
+        createdBy: `${creatorName} (${creatorRole})`
+      };
+      const res = await API.post('/api/super-admin/create-admin', payload);
+      trigger(res.data?.message || 'Manager account created successfully!');
       fetchAdmins();
-      setAdminForm({ name:'', email:'', phone:'', password:'', role:'finance-admin' });
+      setAdminForm({ name:'', email:'', phone:'', password:'', role:'finance-admin', remarks:'' });
       setShowAdminForm(false);
     } catch (err: any) {
       console.error(err);
-      const errorMsg = err.response?.data?.message || err.message || 'Failed to create sub-admin account';
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to create manager account';
       trigger(errorMsg, 'danger');
     }
   };
@@ -1057,7 +1076,13 @@ const SuperAdminDashboard = () => {
 
   const openEditAdmin = (admin: any) => {
     setEditingAdmin(admin);
-    setEditAdminForm({ name: admin.name || '', phone: admin.phone || '', role: admin.role || 'finance-admin', password: '' });
+    setEditAdminForm({
+      name: admin.name || '',
+      phone: admin.phone || '',
+      role: admin.role || 'finance-admin',
+      password: '',
+      remarks: admin.remarks || ''
+    });
     setShowEditPassword(false);
     setShowEditAdminModal(true);
   };
@@ -1066,8 +1091,14 @@ const SuperAdminDashboard = () => {
     e.preventDefault();
     if (!editingAdmin) return;
     try {
-      await API.put(`/api/super-admin/update-admin/${editingAdmin.id}`, editAdminForm);
-      trigger('Sub-Admin account updated successfully!');
+      const updaterName = localStorage.getItem('userName') || 'Super Admin';
+      const updaterRole = localStorage.getItem('userRole') || 'super-admin';
+      const payload = {
+        ...editAdminForm,
+        updatedBy: `${updaterName} (${updaterRole})`
+      };
+      await API.put(`/api/super-admin/update-admin/${editingAdmin.id}`, payload);
+      trigger('Manager account updated successfully!');
       setShowEditAdminModal(false);
       setEditingAdmin(null);
       fetchAdmins();
@@ -2523,9 +2554,13 @@ const SuperAdminDashboard = () => {
                       <label style={lb}>Due Date *</label>
                       <input required type="date" value={feeForm.dueDate} onChange={e=>setFeeForm({...feeForm, dueDate: e.target.value})} style={inS} />
                     </div>
-                    <div style={{ display:'flex', gap:'10px', alignItems:'flex-end' }}>
-                      <button type="submit" style={{ flex:1, padding:'10px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600' }}>Save</button>
-                      <button type="button" onClick={()=>{setShowAddFee(false); setFeeForm({ studentId:'', amount:'', dueDate:'' }); setFeeFormClass(''); setFeeFormSection('');}} style={{ flex:1, padding:'10px', backgroundColor:'var(--panel-bg)', color:'var(--text-main)', border:'1px solid var(--border-color)', borderRadius:'7px', cursor:'pointer', fontWeight:'600' }}>Cancel</button>
+                    <div style={{ gridColumn: '1/-1' }}>
+                      <label style={lb}>Audit Remarks / Reason *</label>
+                      <input required type="text" value={feeForm.remarks} onChange={e=>setFeeForm({...feeForm, remarks: e.target.value})} style={inS} placeholder="e.g. Annual Tuition Fee / First Term Exam Fee" />
+                    </div>
+                    <div style={{ gridColumn: '1/-1', display:'flex', gap:'10px', marginTop: '10px' }}>
+                      <button type="submit" style={{ flex:1, padding:'10px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600' }}>Save Fee Record</button>
+                      <button type="button" onClick={()=>{setShowAddFee(false); setFeeForm({ studentId:'', amount:'', dueDate:'', remarks:'' }); setFeeFormClass(''); setFeeFormSection('');}} style={{ flex:1, padding:'10px', backgroundColor:'var(--panel-bg)', color:'var(--text-main)', border:'1px solid var(--border-color)', borderRadius:'7px', cursor:'pointer', fontWeight:'600' }}>Cancel</button>
                     </div>
                   </div>
                 </form>
@@ -2534,20 +2569,18 @@ const SuperAdminDashboard = () => {
               {/* Fee Table */}
               <div className="table-container">
                 <table className="data-table">
-                  <thead><tr><th>Student</th><th>Class</th><th>Tuition</th><th>Transport</th><th>Library</th><th>Total</th><th>Paid</th><th>Due</th><th>Term</th><th>Method</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+                  <thead><tr><th>Student</th><th>Class</th><th>Tuition</th><th>Total</th><th>Paid</th><th>Due</th><th>Audit Context</th><th>Remarks</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
                     {filteredFees.map(f => (
                       <tr key={f.id}>
                         <td><strong>{f.student}</strong></td>
                         <td style={{ fontSize:'12px' }}>{f.class}</td>
                         <td>₹{f.tuition.toLocaleString()}</td>
-                        <td>₹{f.transport.toLocaleString()}</td>
-                        <td>₹{f.library.toLocaleString()}</td>
                         <td><strong>₹{f.total.toLocaleString()}</strong></td>
                         <td style={{ color:'var(--success)', fontWeight:'600' }}>₹{f.paid.toLocaleString()}</td>
                         <td style={{ color: f.due>0 ? 'var(--danger)' : 'var(--text-muted)', fontWeight:f.due>0?'600':'400' }}>₹{f.due.toLocaleString()}</td>
-                        <td style={{ fontSize:'12px' }}>{f.term}</td>
-                        <td style={{ fontSize:'12px', color:'var(--text-muted)' }}>{f.method}</td>
+                        <td style={{ fontSize:'12px', color:'var(--text-muted)' }}>{f.updatedBy}</td>
+                        <td style={{ fontSize:'12px', color:'var(--text-muted)', maxWidth:'180px', wordBreak:'break-word' }}>{f.remarks}</td>
                         <td style={{ fontSize:'12px' }}>{f.date}</td>
                         <td>{badge(f.status)}</td>
                         <td>
@@ -3006,10 +3039,13 @@ const SuperAdminDashboard = () => {
                         <option value="manager-admin">👔 Manager Admin (Executive Overview &amp; Finance Read-Only)</option>
                         <option value="finance-admin">💰 Finance Admin</option>
                       </select>
-
                     </div>
-                    <div style={{ display:'flex', gap:'10px', alignItems:'flex-end' }}>
-                      <button type="submit" style={{ flex:1, padding:'10px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600' }}>Create</button>
+                    <div style={{ gridColumn: '1/-1' }}>
+                      <label style={lb}>Audit Remarks / Reason *</label>
+                      <input required type="text" value={adminForm.remarks} onChange={e=>setAdminForm({...adminForm,remarks:e.target.value})} style={inS} placeholder="e.g. Account created for academic session / staff onboarding reason" />
+                    </div>
+                    <div style={{ gridColumn: '1/-1', display:'flex', gap:'10px', marginTop: '10px' }}>
+                      <button type="submit" style={{ flex:1, padding:'10px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600' }}>Create Account</button>
                       <button type="button" onClick={()=>setShowAdminForm(false)} style={{ flex:1, padding:'10px', backgroundColor:'var(--panel-bg)', color:'var(--text-main)', border:'1px solid var(--border-color)', borderRadius:'7px', cursor:'pointer', fontWeight:'600' }}>Cancel</button>
                     </div>
                   </div>
@@ -3121,7 +3157,7 @@ const SuperAdminDashboard = () => {
 
               <div className="table-container">
                 <table className="data-table">
-                  <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Created</th><th>Status</th><th>Action</th></tr></thead>
+                  <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Created</th><th>Audit Context</th><th>Remarks</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
                     {filteredSubAdmins.length > 0 ? filteredSubAdmins.map(a => (
                       <tr key={a.id}>
@@ -3141,6 +3177,11 @@ const SuperAdminDashboard = () => {
                           </span>
                         </td>
                         <td style={{ fontSize:'13px', color:'var(--text-muted)' }}>{a.created}</td>
+                        <td style={{ fontSize:'12px', color:'var(--text-muted)' }}>
+                          <div><strong>By:</strong> {a.createdBy}</div>
+                          {a.updatedBy && a.updatedBy !== a.createdBy && <div><strong>Up:</strong> {a.updatedBy}</div>}
+                        </td>
+                        <td style={{ fontSize:'12px', color:'var(--text-muted)', maxWidth: '200px', wordBreak: 'break-word' }}>{a.remarks}</td>
                         <td>{badge(a.status)}</td>
                         <td>
                           <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
@@ -3262,6 +3303,19 @@ const SuperAdminDashboard = () => {
                               {showEditPassword ? <FiEyeOff size={15}/> : <FiEye size={15}/>}
                             </button>
                           </div>
+                        </div>
+
+                        {/* Audit Remarks */}
+                        <div style={{ gridColumn: '1/-1' }}>
+                          <label style={{ display:'block', fontSize:'11px', fontWeight:'700', color:'var(--text-muted)', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Audit Remarks / Update Reason *</label>
+                          <input
+                            required
+                            type="text"
+                            value={editAdminForm.remarks}
+                            onChange={e => setEditAdminForm({...editAdminForm, remarks: e.target.value})}
+                            style={{ width:'100%', padding:'10px 13px', borderRadius:'9px', border:'1px solid var(--border-color)', backgroundColor:'var(--input-bg)', color:'var(--text-main)', fontSize:'13px', boxSizing:'border-box', outline:'none' }}
+                            placeholder="e.g. Updating phone number / role modification for staff onboarding"
+                          />
                         </div>
                       </div>
 

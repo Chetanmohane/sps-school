@@ -29,6 +29,10 @@ const feeSchema = new mongoose.Schema({
   updatedBy: {
     type: String,
     default: "Super Admin"
+  },
+  remarks: {
+    type: String,
+    default: ""
   }
 }, { timestamps: true });
 

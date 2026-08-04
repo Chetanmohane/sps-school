@@ -51,11 +51,13 @@ exports.createSpecializedAdmin = async (req, res) => {
       email: cleanEmail,
       password: hashedPassword,
       phone: formattedPhone,
-      role
+      role,
+      createdBy: req.body.createdBy || "Super Admin",
+      remarks: req.body.remarks || "Account Registered"
     });
 
     await newAdmin.save();
-    notifyChange("USER_CHANGED", { action: "create", role, user: { _id: newAdmin._id, name, email: cleanEmail, phone: formattedPhone, role } });
+    notifyChange("USER_CHANGED", { action: "create", role, user: { _id: newAdmin._id, name, email: cleanEmail, phone: formattedPhone, role, createdBy: newAdmin.createdBy, remarks: newAdmin.remarks } });
     res.status(201).json({ message: `${role} created successfully`, user: newAdmin });
   } catch (error) {
     console.error("Error creating admin:", error);
@@ -94,9 +96,11 @@ exports.updateAdmin = async (req, res) => {
     if (password && password.trim().length >= 6) {
       admin.password = await bcrypt.hash(password, 10);
     }
+    if (req.body.updatedBy) admin.updatedBy = req.body.updatedBy;
+    if (req.body.remarks !== undefined) admin.remarks = req.body.remarks;
 
     await admin.save();
-    notifyChange("USER_CHANGED", { action: "update", user: { _id: admin._id, name: admin.name, role: admin.role } });
+    notifyChange("USER_CHANGED", { action: "update", user: { _id: admin._id, name: admin.name, role: admin.role, updatedBy: admin.updatedBy, remarks: admin.remarks } });
     res.status(200).json({ message: "Admin updated successfully", user: admin });
   } catch (error) {
     res.status(500).json({ message: "Error updating admin", error: error.message });

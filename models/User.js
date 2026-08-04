@@ -48,6 +48,18 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  createdBy: {
+    type: String,
+    default: "Super Admin"
+  },
+  updatedBy: {
+    type: String,
+    default: "Super Admin"
+  },
+  remarks: {
+    type: String,
+    default: ""
   }
 });
 

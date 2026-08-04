@@ -6,7 +6,7 @@ const { notifyChange } = require("../config/socket");
 
 exports.createFee = async (req, res) => {
   try {
-    let { studentId, amount, paidAmount = 0, dueDate, updatedBy } = req.body;
+    let { studentId, amount, paidAmount = 0, dueDate, updatedBy, remarks } = req.body;
 
     if (!studentId) {
       return res.status(400).json({ message: "Student selection is required" });
@@ -48,7 +48,8 @@ exports.createFee = async (req, res) => {
       paidAmount,
       status,
       dueDate: validDueDate,
-      updatedBy: updatedBy || "Super Admin"
+      updatedBy: updatedBy || "Super Admin",
+      remarks: remarks || ""
     });
 
     await fee.save();
@@ -169,6 +170,7 @@ exports.updateFee = async (req, res) => {
         paidAmount,
         status,
         updatedBy: req.body.updatedBy || "Super Admin",
+        remarks: req.body.remarks !== undefined ? req.body.remarks : existingFee.remarks,
         paymentDate: status === "Paid" || status === "Partial" ? new Date() : existingFee.paymentDate
       },
       { new: true }
