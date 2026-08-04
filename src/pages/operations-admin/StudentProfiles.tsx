@@ -156,10 +156,10 @@ const StudentProfiles = () => {
       setSelectedViewStudent((prev: any) => ({ ...prev, profileImage: base64 }));
       try {
         await API.put(`/api/admin/student-admin/students/${selectedViewStudent._id}`, { profileImage: base64 });
-        showStatus("Student photo updated successfully!");
+        alert("Student photo updated successfully!");
         fetchStudents();
-      } catch (err) {
-        showStatus("Failed to update photo", "error");
+      } catch (err: any) {
+        alert("Failed to update photo: " + (err.response?.data?.message || err.message));
       }
     };
     reader.readAsDataURL(file);
@@ -171,11 +171,11 @@ const StudentProfiles = () => {
     try {
       setLoading(true);
       await API.put(`/api/admin/student-admin/students/${editingStudent._id}`, formData);
-      showStatus("Student profile updated successfully!");
+      alert("Student profile updated successfully!");
       setShowModal(false);
       fetchStudents();
-    } catch (error) {
-      showStatus("Failed to update student profile", "error");
+    } catch (error: any) {
+      alert("Failed to update student profile: " + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -186,10 +186,10 @@ const StudentProfiles = () => {
     try {
       setLoading(true);
       await API.delete(`/api/admin/student-admin/students/${studentId}`);
-      showStatus("Student deleted successfully!");
+      alert("Student deleted successfully!");
       fetchStudents();
-    } catch (error) {
-      showStatus("Failed to delete student", "error");
+    } catch (error: any) {
+      alert("Failed to delete student: " + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -200,12 +200,12 @@ const StudentProfiles = () => {
     try {
       setLoading(true);
       await API.post("/api/admin/student-admin/students", addFormData);
-      showStatus("Student added successfully!");
+      alert("Student added successfully!");
       setShowAddModal(false);
       setAddFormData({ name: "", email: "", phone: "", password: "", address: "", dob: "", className: "", section: "", rollNumber: "", parentName: "", parentPhone: "", bloodGroup: "", gender: "", profileImage: "" });
       fetchStudents();
     } catch (error: any) {
-      showStatus(error.response?.data?.message || "Failed to add student", "error");
+      alert("Failed to add student: " + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }

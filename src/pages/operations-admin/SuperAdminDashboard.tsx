@@ -1086,10 +1086,10 @@ const SuperAdminDashboard = () => {
       title: 'Core System',
       emoji: '🛡️',
       color: '#6366f1',
-      description: 'Central system controls — overview, sub-admin account management, and server diagnostics.',
+      description: 'Central system controls — overview, manager account management, and server diagnostics.',
       options: [
-        { icon: '🏠', label: 'System Overview', desc: 'Live stats: students, finance, sub-admins', path: '/super-admin?tab=overview' },
-        { icon: '👑', label: 'Manage Accounts', desc: 'Create & manage sub-admin accounts', path: '/super-admin?tab=admins' },
+        { icon: '🏠', label: 'System Overview', desc: 'Live stats: students, finance, managers', path: '/super-admin?tab=overview' },
+        { icon: '👑', label: 'Manage Accounts', desc: 'Create & manage manager/staff accounts', path: '/super-admin?tab=admins' },
         { icon: '⚙️', label: 'System Logs', desc: 'Server health & audit trail', path: '/super-admin?tab=system' },
       ],
     },
@@ -1130,7 +1130,7 @@ const SuperAdminDashboard = () => {
       options: [
         { icon: '💰', label: 'Fee Management', desc: 'Fees, payment collection & student dues', path: '/super-admin?tab=finance' },
         { icon: '🎉', label: 'School Events', desc: 'Plan & manage school events & sports', path: '/operations-admin/events' },
-        { icon: '👑', label: 'Sub-Admin Accounts', desc: 'Manage Finance & Student Admin users', path: '/super-admin?tab=admins' },
+        { icon: '👑', label: 'Manager Accounts', desc: 'Manage Manager & Staff users', path: '/super-admin?tab=admins' },
       ],
     },
   };
@@ -1886,11 +1886,11 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
 
-            {/* Sub-Admin User Accounts Table */}
+            {/* Manager User Accounts Table */}
             <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>👑 Sub-Admin Accounts Directory</h3>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>👑 Manager Accounts Directory</h3>
                   <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Registered Manager Admin, Student Admin, Teacher Admin & Finance Admin users.</p>
                 </div>
                 <button onClick={() => navigate('/super-admin?tab=admins')} style={{ padding: '8px 16px', backgroundColor: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
@@ -1928,7 +1928,7 @@ const SuperAdminDashboard = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No sub-admin accounts registered yet.</td>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No manager accounts registered yet.</td>
                       </tr>
                     )}
                   </tbody>
@@ -1956,7 +1956,7 @@ const SuperAdminDashboard = () => {
               { id: 'finance', label: 'Finance Admin', icon: '💰' },
               { id: 'hierarchy', label: 'Role Hierarchy', icon: '🌳' },
               { id: 'attendance', label: 'Daily Attendance', icon: '✅' },
-              { id: 'admins', label: 'Sub-Admin Accounts', icon: '🛡️' },
+              { id: 'admins', label: 'Manager Accounts', icon: '🛡️' },
               { id: 'system', label: 'System Logs', icon: '⚙️' },
             ].map((t) => (
               <button
@@ -2919,7 +2919,7 @@ const SuperAdminDashboard = () => {
             <div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px', flexWrap:'wrap', gap:'12px' }}>
                 <div>
-                  <h2 style={{ margin:'0 0 4px', fontSize:'18px', fontWeight:'700' }}>👑 Manage Sub-Admin Accounts</h2>
+                  <h2 style={{ margin:'0 0 4px', fontSize:'18px', fontWeight:'700' }}>👑 Manage Manager Accounts</h2>
                   <p style={{ color:'var(--text-muted)', fontSize:'13px', margin:0 }}>Register and manage Finance Admin and Student Admin accounts.</p>
                 </div>
                 <div style={{ display:'flex', gap:'10px' }}>
@@ -2938,7 +2938,7 @@ const SuperAdminDashboard = () => {
                   {
                     role:'manager-admin', emoji:'👔', name:'Manager Admin',
                     color:'#3b82f6', bg:'rgba(59,130,246,0.08)', border:'rgba(59,130,246,0.25)',
-                    desc:'Overall system management access. Can submit and oversee all operational desks.',
+                    desc:'Overall school supervision and executive control. Full overview capability.',
                     path:'/manager-admin',
                     count: subAdmins.filter(a=>a.role==='manager-admin').length
                   },
@@ -2984,7 +2984,7 @@ const SuperAdminDashboard = () => {
 
               {showAdminForm && (
                 <form onSubmit={addAdmin} style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'10px', padding:'20px', marginBottom:'20px' }}>
-                  <h4 style={{ margin:'0 0 16px', color:'var(--text-main)' }}>➕ Register New Sub-Admin</h4>
+                  <h4 style={{ margin:'0 0 16px', color:'var(--text-main)' }}>➕ Register New Manager / Staff</h4>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'14px' }}>
                     <div><label style={lb}>Full Name *</label><input required type="text" value={adminForm.name} onChange={e=>setAdminForm({...adminForm,name:e.target.value})} style={inS} placeholder="Admin full name" /></div>
                     <div><label style={lb}>Email *</label><input required type="email" value={adminForm.email} onChange={e=>setAdminForm({...adminForm,email:e.target.value})} style={inS} placeholder="admin@school.com" /></div>
@@ -3159,13 +3159,13 @@ const SuperAdminDashboard = () => {
                         </td>
                       </tr>
                     )) : (
-                      <tr><td colSpan={7} style={{ textAlign:'center', padding:'30px', color:'var(--text-muted)' }}>No sub-admins registered. Add one above.</td></tr>
+                      <tr><td colSpan={7} style={{ textAlign:'center', padding:'30px', color:'var(--text-muted)' }}>No managers registered. Add one above.</td></tr>
                     )}
                   </tbody>
                 </table>
               </div>
 
-              {/* ── Edit Sub-Admin Modal ── */}
+              {/* ── Edit Manager Modal ── */}
               {showEditAdminModal && editingAdmin && (
                 <div
                   onClick={() => setShowEditAdminModal(false)}
@@ -3178,7 +3178,7 @@ const SuperAdminDashboard = () => {
                     {/* Modal Header */}
                     <div style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', padding:'22px 28px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div>
-                        <h3 style={{ margin:0, color:'white', fontSize:'18px', fontWeight:'800', display:'flex', alignItems:'center', gap:'8px' }}>✏️ Edit Sub-Admin Account</h3>
+                        <h3 style={{ margin:0, color:'white', fontSize:'18px', fontWeight:'800', display:'flex', alignItems:'center', gap:'8px' }}>✏️ Edit Manager Account</h3>
                         <p style={{ margin:'4px 0 0', color:'rgba(255,255,255,0.75)', fontSize:'13px' }}>Update account details for <strong>{editingAdmin.name}</strong></p>
                       </div>
                       <button

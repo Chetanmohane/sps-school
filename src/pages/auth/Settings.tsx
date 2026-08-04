@@ -244,16 +244,15 @@ const Settings = () => {
                     name="email"
                     value={profileData.email}
                     onChange={handleProfileChange}
-                    disabled={userRole === 'student'}
                     style={{
                       padding: '10px 14px',
                       borderRadius: '8px',
                       border: '1px solid var(--border-color)',
-                      backgroundColor: userRole === 'student' ? 'rgba(0,0,0,0.05)' : 'var(--input-bg)',
-                      color: userRole === 'student' ? 'var(--text-muted)' : 'var(--text-main)',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-main)',
                       outline: 'none',
                       fontSize: '14px',
-                      cursor: userRole === 'student' ? 'not-allowed' : 'text'
+                      cursor: 'text'
                     }}
                     required
                   />
