@@ -5,6 +5,7 @@ import API from '../../api/axios';
 import { FiUser, FiLock, FiSave, FiEye, FiEyeOff, FiCamera, FiTrash2 } from 'react-icons/fi';
 
 const Settings = () => {
+  const userRole = (localStorage.getItem('role') || '').toLowerCase();
   const email = localStorage.getItem('userEmail') || '';
   const [profileData, setProfileData] = useState({
     name: localStorage.getItem('userName') || '',
@@ -57,6 +58,10 @@ const Settings = () => {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+    if (userRole === 'student') {
+      alert('Students are not allowed to update their profile information.');
+      return;
+    }
     setLoadingProfile(true);
     try {
       // Replicate saving local storage values
@@ -174,40 +179,42 @@ const Settings = () => {
               <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 
                 {/* Photo Upload Box */}
-                <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "16px" }}>
-                  <div style={{ width: "64px", height: "64px", borderRadius: "16px", backgroundColor: "var(--primary)", color: "white", fontWeight: "800", fontSize: "24px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                    {profileImage ? (
-                      <img src={profileImage} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      profileData.name ? profileData.name.charAt(0).toUpperCase() : '👤'
-                    )}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "13px", fontWeight: "700", marginBottom: "4px" }}>Profile Photo</div>
-                    <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "0 0 8px" }}>Upload a JPEG/PNG photo (max 5MB)</p>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        style={{ padding: "6px 14px", borderRadius: "8px", backgroundColor: "var(--primary)", color: "white", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}
-                      >
-                        <FiCamera size={14} /> Upload Photo
-                      </button>
-                      {profileImage && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setProfileImage('');
-                            if (profileData.email) localStorage.removeItem(`student_photo_${profileData.email}`);
-                          }}
-                          style={{ padding: "6px 14px", borderRadius: "8px", backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}
-                        >
-                          <FiTrash2 size={14} /> Remove
-                        </button>
+                {userRole !== 'student' && (
+                  <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "16px" }}>
+                    <div style={{ width: "64px", height: "64px", borderRadius: "16px", backgroundColor: "var(--primary)", color: "white", fontWeight: "800", fontSize: "24px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                      {profileImage ? (
+                        <img src={profileImage} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        profileData.name ? profileData.name.charAt(0).toUpperCase() : '👤'
                       )}
                     </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "13px", fontWeight: "700", marginBottom: "4px" }}>Profile Photo</div>
+                      <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "0 0 8px" }}>Upload a JPEG/PNG photo (max 5MB)</p>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          style={{ padding: "6px 14px", borderRadius: "8px", backgroundColor: "var(--primary)", color: "white", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}
+                        >
+                          <FiCamera size={14} /> Upload Photo
+                        </button>
+                        {profileImage && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProfileImage('');
+                              if (profileData.email) localStorage.removeItem(`student_photo_${profileData.email}`);
+                            }}
+                            style={{ padding: "6px 14px", borderRadius: "8px", backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}
+                          >
+                            <FiTrash2 size={14} /> Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>Full Name</label>
                   <input
@@ -215,14 +222,16 @@ const Settings = () => {
                     name="name"
                     value={profileData.name}
                     onChange={handleProfileChange}
+                    disabled={userRole === 'student'}
                     style={{
                       padding: '10px 14px',
                       borderRadius: '8px',
                       border: '1px solid var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-main)',
+                      backgroundColor: userRole === 'student' ? 'rgba(0,0,0,0.05)' : 'var(--input-bg)',
+                      color: userRole === 'student' ? 'var(--text-muted)' : 'var(--text-main)',
                       outline: 'none',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      cursor: userRole === 'student' ? 'not-allowed' : 'text'
                     }}
                     required
                   />
@@ -235,14 +244,16 @@ const Settings = () => {
                     name="email"
                     value={profileData.email}
                     onChange={handleProfileChange}
+                    disabled={userRole === 'student'}
                     style={{
                       padding: '10px 14px',
                       borderRadius: '8px',
                       border: '1px solid var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-main)',
+                      backgroundColor: userRole === 'student' ? 'rgba(0,0,0,0.05)' : 'var(--input-bg)',
+                      color: userRole === 'student' ? 'var(--text-muted)' : 'var(--text-main)',
                       outline: 'none',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      cursor: userRole === 'student' ? 'not-allowed' : 'text'
                     }}
                     required
                   />
@@ -255,35 +266,43 @@ const Settings = () => {
                     name="phone"
                     value={profileData.phone}
                     onChange={handleProfileChange}
+                    disabled={userRole === 'student'}
                     style={{
                       padding: '10px 14px',
                       borderRadius: '8px',
                       border: '1px solid var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-main)',
+                      backgroundColor: userRole === 'student' ? 'rgba(0,0,0,0.05)' : 'var(--input-bg)',
+                      color: userRole === 'student' ? 'var(--text-muted)' : 'var(--text-main)',
                       outline: 'none',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      cursor: userRole === 'student' ? 'not-allowed' : 'text'
                     }}
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loadingProfile}
-                  className="login-btn"
-                  style={{
-                    marginTop: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    width: 'fit-content',
-                    padding: '10px 20px',
-                    fontSize: '14px'
-                  }}
-                >
-                  <FiSave /> {loadingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
+                {userRole === 'student' ? (
+                  <div style={{ padding: "12px", borderRadius: "8px", backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)", fontSize: "13px", fontWeight: "600", marginTop: "10px" }}>
+                    ⚠️ Students are not allowed to edit their profile details. Please contact the administration department for any changes.
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={loadingProfile}
+                    className="login-btn"
+                    style={{
+                      marginTop: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      width: 'fit-content',
+                      padding: '10px 20px',
+                      fontSize: '14px'
+                    }}
+                  >
+                    <FiSave /> {loadingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </form>
             </div>
           )}

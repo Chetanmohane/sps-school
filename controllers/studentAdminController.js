@@ -309,7 +309,7 @@ exports.createStudent = async (req, res) => {
     
     const existingProfile = await Student.findOne({ rollNumber });
     if (existingProfile) {
-      return res.status(400).json({ message: "Student profile already exists for this user." });
+      return res.status(400).json({ message: "Student with this Roll Number already exists" });
     }
     
     let formattedPhone = (phone || "").trim();
@@ -357,6 +357,11 @@ exports.createStudent = async (req, res) => {
       data: newProfile
     });
   } catch (error) {
+    console.error("Error in createStudent:", error);
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ message: messages.join(", ") });
+    }
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
@@ -432,7 +437,17 @@ exports.updateStudentProfile = async (req, res) => {
       if (user) {
         if (name) user.name = name;
         if (email) user.email = email;
-        if (phone) user.phone = phone;
+        if (phone) {
+          let formattedPhone = phone.trim();
+          if (!formattedPhone || !/^\+91\d{10}$/.test(formattedPhone)) {
+            if (/^\d{10}$/.test(formattedPhone)) {
+              formattedPhone = `+91${formattedPhone}`;
+            } else {
+              formattedPhone = `+9199999${Math.floor(10000 + Math.random() * 90000)}`;
+            }
+          }
+          user.phone = formattedPhone;
+        }
         await user.save();
       }
     }
@@ -448,6 +463,11 @@ exports.updateStudentProfile = async (req, res) => {
       data: updatedStudent,
     });
   } catch (error) {
+    console.error("Error in updateStudentProfile:", error);
+    if (error.name === "ValidationError") {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({ message: messages.join(", ") });
+    }
     res.status(500).json({ message: "Error updating student profile", error: error.message });
   }
 };
