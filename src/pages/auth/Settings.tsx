@@ -1,15 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
 import API from '../../api/axios';
-import { FiUser, FiLock, FiSave, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiUser, FiLock, FiSave, FiEye, FiEyeOff, FiCamera, FiTrash2 } from 'react-icons/fi';
 
 const Settings = () => {
+  const email = localStorage.getItem('userEmail') || '';
   const [profileData, setProfileData] = useState({
     name: localStorage.getItem('userName') || '',
-    email: localStorage.getItem('userEmail') || '',
+    email: email,
     phone: localStorage.getItem('userPhone') || '+91 99999 99999',
   });
+  const [profileImage, setProfileImage] = useState<string>(
+    localStorage.getItem(`student_photo_${email}`) || ''
+  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -21,6 +26,24 @@ const Settings = () => {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64 = reader.result as string;
+      setProfileImage(base64);
+      if (profileData.email) {
+        localStorage.setItem(`student_photo_${profileData.email}`, base64);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
@@ -145,8 +168,46 @@ const Settings = () => {
           {/* Tab Content: Profile */}
           {activeTab === 'profile' && (
             <div className="stat-card" style={{ padding: '24px', borderRadius: '12px', cursor: 'default' }}>
+              <input type="file" ref={fileInputRef} onChange={handlePhotoSelect} accept="image/*" style={{ display: 'none' }} />
+              
               <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '700' }}>Personal Details</h3>
               <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                
+                {/* Photo Upload Box */}
+                <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "16px" }}>
+                  <div style={{ width: "64px", height: "64px", borderRadius: "16px", backgroundColor: "var(--primary)", color: "white", fontWeight: "800", fontSize: "24px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                    {profileImage ? (
+                      <img src={profileImage} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      profileData.name ? profileData.name.charAt(0).toUpperCase() : '👤'
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "13px", fontWeight: "700", marginBottom: "4px" }}>Profile Photo</div>
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "0 0 8px" }}>Upload a JPEG/PNG photo (max 5MB)</p>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{ padding: "6px 14px", borderRadius: "8px", backgroundColor: "var(--primary)", color: "white", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "6px" }}
+                      >
+                        <FiCamera size={14} /> Upload Photo
+                      </button>
+                      {profileImage && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileImage('');
+                            if (profileData.email) localStorage.removeItem(`student_photo_${profileData.email}`);
+                          }}
+                          style={{ padding: "6px 14px", borderRadius: "8px", backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", fontSize: "12px", fontWeight: "700", display: "flex", alignItems: "center", gap: "4px" }}
+                        >
+                          <FiTrash2 size={14} /> Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>Full Name</label>
                   <input

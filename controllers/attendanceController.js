@@ -1,6 +1,7 @@
 const Attendance = require("../models/Attendance");
 const User = require('../models/User');
 const Student = require('../models/Student');
+const { notifyChange } = require("../config/socket");
 
 exports.getStudentsForAttendance = async (req, res) => {
    try {
@@ -20,18 +21,20 @@ exports.getStudentsForAttendance = async (req, res) => {
 
 exports.submitBulkAttendance = async (req, res) => {
     try {
-        const { attendanceData, date } = req.body; 
+        const { attendanceData, date, updatedBy } = req.body; 
+        const actionBy = updatedBy || "Class Teacher In-Charge";
         // Create an array of update promises
         const updatePromises = attendanceData.map(record => {
             return Attendance.findOneAndUpdate(
                 { student: record.studentId, date: new Date(date) },
-                { status: record.status },
+                { status: record.status, updatedBy: actionBy, remark: `Marked ${record.status}` },
                 { upsert: true, new: true }
             );
         });
 
         // Run all updates in parallel
         await Promise.all(updatePromises);
+        notifyChange("ATTENDANCE_CHANGED", { date });
 
         res.status(200).json({ message: "Attendance marked successfully!" });
     } 

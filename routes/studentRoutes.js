@@ -8,5 +8,6 @@ const studentController = require("../controllers/studentController");
 
 router.get("/all-students", studentController.getAllStudents);
 router.get("/profile/:email", studentController.getStudent);
+router.put("/profile/:email", studentController.updateStudentProfile);
 
 module.exports = router;

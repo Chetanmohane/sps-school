@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const { notifyChange } = require("../config/socket");
 
 exports.getAdminsByRole = async (req, res) => {
   try {
@@ -15,23 +16,50 @@ exports.createSpecializedAdmin = async (req, res) => {
   try {
     const { name, email, phone, password, role } = req.body;
     
-    const existingUser = await User.findOne({ email });
-    if (existingUser) 
-      return res.status(400).json({ message: "User already exists" });
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: "Name, email, password and role are required." });
+    }
+
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const existingUser = await User.findOne({ email: cleanEmail });
+    if (existingUser) {
+      return res.status(400).json({ message: "An account with this email already exists." });
+    }
     
+    // Auto-format 10-digit Indian phone numbers
+    let formattedPhone = (phone || "").trim();
+    if (/^\d{10}$/.test(formattedPhone)) {
+      formattedPhone = `+91${formattedPhone}`;
+    }
+
+    if (!formattedPhone) {
+      return res.status(400).json({ message: "Phone number is required. Format: +919876543210" });
+    }
+
+    if (!/^\+91\d{10}$/.test(formattedPhone)) {
+      return res.status(400).json({ message: "Invalid phone number! Must be +91 followed by 10 digits (e.g. +919876543210)." });
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+    if (!passwordRegex.test(password || '')) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long and include an uppercase letter, lowercase letter, number, and special character (e.g. Admin@123)." });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newAdmin = new User({
       name,
-      email,
+      email: cleanEmail,
       password: hashedPassword,
-      phone,
+      phone: formattedPhone,
       role
     });
 
     await newAdmin.save();
+    notifyChange("USER_CHANGED", { action: "create", role, user: { _id: newAdmin._id, name, email: cleanEmail, phone: formattedPhone, role } });
     res.status(201).json({ message: `${role} created successfully`, user: newAdmin });
   } catch (error) {
-    res.status(500).json({ message: "Error creating admin", error: error.message });
+    console.error("Error creating admin:", error);
+    res.status(400).json({ message: error.message || "Error creating admin" });
   }
 };
 
@@ -44,8 +72,33 @@ exports.deleteAdmin = async (req, res) => {
     }
 
     await User.findByIdAndDelete(req.params.id);
+    notifyChange("USER_CHANGED", { action: "delete", id: req.params.id });
     res.status(200).json({ message: "Admin deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting admin" });
+  }
+};
+
+exports.updateAdmin = async (req, res) => {
+  try {
+    const { name, phone, role, password } = req.body;
+    const admin = await User.findById(req.params.id);
+
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+
+    if (name) admin.name = name;
+    if (phone !== undefined) admin.phone = phone;
+    if (role) admin.role = role;
+    if (password && password.trim().length >= 6) {
+      admin.password = await bcrypt.hash(password, 10);
+    }
+
+    await admin.save();
+    notifyChange("USER_CHANGED", { action: "update", user: { _id: admin._id, name: admin.name, role: admin.role } });
+    res.status(200).json({ message: "Admin updated successfully", user: admin });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating admin", error: error.message });
   }
 };

@@ -2,6 +2,8 @@ const User = require("../models/User");
 const Teacher = require("../models/Teacher");
 const Subject = require("../models/Subject");
 const Class = require("../models/Class");
+const { notifyChange } = require("../config/socket");
+
 
 // ==================== DASHBOARD STATS ====================
 exports.getDashboardStats = async (req, res) => {
@@ -82,12 +84,21 @@ exports.createTeacher = async (req, res) => {
       return res.status(400).json({ message: "User with this email already exists" });
     }
 
+    let formattedPhone = (phone || "").trim();
+    if (!formattedPhone || !/^\+91\d{10}$/.test(formattedPhone)) {
+      if (/^\d{10}$/.test(formattedPhone)) {
+        formattedPhone = `+91${formattedPhone}`;
+      } else {
+        formattedPhone = `+9199999${Math.floor(10000 + Math.random() * 90000)}`;
+      }
+    }
+
     // Create user with teacher role
     const hashedPassword = require("bcryptjs").hashSync(password, 10);
     const user = new User({
       name,
       email,
-      phone,
+      phone: formattedPhone,
       password: hashedPassword,
       role: "teacher"
     });
@@ -107,6 +118,7 @@ exports.createTeacher = async (req, res) => {
 
     const savedTeacher = await teacher.save();
 
+    notifyChange("TEACHER_CHANGED", { action: "create", teacher: savedTeacher });
     res.status(201).json({
       message: "Teacher created successfully",
       data: {
@@ -151,6 +163,7 @@ exports.updateTeacher = async (req, res) => {
       return res.status(404).json({ message: "Teacher not found" });
     }
 
+    notifyChange("TEACHER_CHANGED", { action: "update", teacher });
     res.status(200).json({
       message: "Teacher updated successfully",
       data: teacher
@@ -172,6 +185,7 @@ exports.deleteTeacher = async (req, res) => {
 
     // Delete associated user
     await User.findByIdAndDelete(teacher.user);
+    notifyChange("TEACHER_CHANGED", { action: "delete", id: teacherId });
 
     res.status(200).json({
       message: "Teacher deleted successfully",
@@ -242,6 +256,7 @@ exports.createSubject = async (req, res) => {
     });
 
     const savedSubject = await subject.save();
+    notifyChange("SUBJECT_CHANGED", { action: "create", subject: savedSubject });
 
     res.status(201).json({
       message: "Subject created successfully",
@@ -276,6 +291,7 @@ exports.updateSubject = async (req, res) => {
       return res.status(404).json({ message: "Subject not found" });
     }
 
+    notifyChange("SUBJECT_CHANGED", { action: "update", subject });
     res.status(200).json({
       message: "Subject updated successfully",
       data: subject
@@ -294,6 +310,7 @@ exports.deleteSubject = async (req, res) => {
     if (!subject) {
       return res.status(404).json({ message: "Subject not found" });
     }
+    notifyChange("SUBJECT_CHANGED", { action: "delete", id: subjectId });
 
     res.status(200).json({
       message: "Subject deleted successfully",
@@ -384,6 +401,7 @@ exports.createClass = async (req, res) => {
       populate: { path: "user", select: "name email" }
     });
     await savedClass.populate("subjects", "name code");
+    notifyChange("CLASS_CHANGED", { action: "create", class: savedClass });
 
     res.status(201).json({
       message: "Class created successfully",
@@ -451,6 +469,157 @@ exports.deleteClass = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Error deleting class", error: error.message });
+  }
+};
+
+// Bulk Update Global Class Timings for all classes at once
+exports.updateGlobalClassTimings = async (req, res) => {
+  try {
+    const { startTime, endTime, updatedBy } = req.body;
+    if (!startTime || !endTime) {
+      return res.status(400).json({ message: "Start time and End time are required" });
+    }
+
+    const adminUser = updatedBy || "Super Admin";
+
+    const result = await Class.updateMany(
+      {},
+      {
+        $set: {
+          startTime: startTime,
+          endTime: endTime,
+          updatedBy: adminUser,
+          updatedAt: Date.now()
+        }
+      }
+    );
+
+    res.status(200).json({
+      message: `Global class timings updated to ${startTime} - ${endTime} across all classes successfully!`,
+      data: result
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating global class timings", error: error.message });
+  }
+};
+
+// Assign class teacher to a class
+exports.assignClassTeacher = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { teacherId, updatedBy } = req.body;
+
+    const adminUser = updatedBy || "Super Admin";
+
+    // If teacherId is empty/null, unassign the class teacher
+    const schoolClass = await Class.findByIdAndUpdate(
+      classId,
+      {
+        classTeacher: teacherId && teacherId !== '' ? teacherId : null,
+        updatedBy: adminUser,
+        updatedAt: Date.now()
+      },
+      { new: true }
+    )
+      .populate({
+        path: "classTeacher",
+        populate: { path: "user", select: "name email phone" }
+      })
+      .populate("subjects", "name code");
+
+    if (!schoolClass) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+
+    res.status(200).json({
+      message: teacherId ? "Class teacher assigned successfully" : "Class teacher unassigned successfully",
+      data: schoolClass
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error assigning class teacher", error: error.message });
+  }
+};
+
+// Get class subject-teacher details (which teachers teach which subjects in a class)
+exports.getClassSubjectTeachers = async (req, res) => {
+  try {
+    const { classId } = req.params;
+
+    // Get the class with its subjects and class teacher
+    const schoolClass = await Class.findById(classId)
+      .populate({
+        path: "classTeacher",
+        populate: { path: "user", select: "name email phone" }
+      })
+      .populate("subjects", "name code description");
+
+    if (!schoolClass) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+
+    // Find all teachers who are assigned to this class
+    const subjectTeachers = await Teacher.find({
+      classes: classId,
+      status: "active"
+    })
+      .populate("user", "name email phone")
+      .populate("subjects", "name code");
+
+    // Map each subject in the class to its teacher(s)
+    const subjectTeacherMap = schoolClass.subjects.map(subject => {
+      const teachersForSubject = subjectTeachers.filter(teacher =>
+        teacher.subjects.some(s => s._id.toString() === subject._id.toString())
+      );
+      return {
+        subject: {
+          _id: subject._id,
+          name: subject.name,
+          code: subject.code,
+          description: subject.description
+        },
+        teachers: teachersForSubject.map(t => ({
+          _id: t._id,
+          name: t.user?.name,
+          email: t.user?.email,
+          phone: t.user?.phone,
+          specialization: t.specialization,
+          experience: t.experience
+        }))
+      };
+    });
+
+    res.status(200).json({
+      message: "Class subject teachers retrieved successfully",
+      data: {
+        class: {
+          _id: schoolClass._id,
+          className: schoolClass.className,
+          section: schoolClass.section,
+          academicYear: schoolClass.academicYear,
+          room: schoolClass.room,
+          capacity: schoolClass.capacity
+        },
+        classTeacher: schoolClass.classTeacher
+          ? {
+              _id: schoolClass.classTeacher._id,
+              name: schoolClass.classTeacher.user?.name,
+              email: schoolClass.classTeacher.user?.email,
+              phone: schoolClass.classTeacher.user?.phone,
+              specialization: schoolClass.classTeacher.specialization,
+              experience: schoolClass.classTeacher.experience
+            }
+          : null,
+        subjectTeachers: subjectTeacherMap,
+        allSubjectTeachers: subjectTeachers.map(t => ({
+          _id: t._id,
+          name: t.user?.name,
+          specialization: t.specialization,
+          subjects: t.subjects
+        }))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving class subject teachers", error: error.message });
   }
 };
 

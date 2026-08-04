@@ -8,6 +8,7 @@ import {
   FiPlus, FiSearch, FiCheckSquare, FiUsers, FiFileText, FiLayers
 } from 'react-icons/fi';
 import { useSharedState } from '../../hooks/useSharedState';
+import StudentAdminTabs from '../../components/StudentAdminTabs';
 import StudentProfiles from './StudentProfiles';
 import Admissions from './Admission';
 import ClassAllocation from './ClassAllocation';
@@ -42,6 +43,10 @@ const avt = n => ({ bg: AC[(n?.charCodeAt(0)||0)%AC.length], ini: n ? n.split(' 
 const StudentAdminDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate(`/academic-admin${location.search}`, { replace: true });
+  }, [location, navigate]);
 
   const activeTab = (() => {
     const t = new URLSearchParams(location.search).get('tab');
@@ -187,19 +192,11 @@ const StudentAdminDashboard = () => {
       <main className="main-content">
         <Navbar />
 
-        {/* Tab Bar */}
-        <div style={{borderBottom:'2px solid var(--border-color)',backgroundColor:'var(--panel-bg)',padding:'0 20px',overflowX:'auto'}}>
-          <div style={{display:'flex',gap:'4px'}}>
-            {TABS.map(t=>(
-              <button key={t.id} onClick={()=>goTab(t.id)}
-                style={{padding:'11px 18px',backgroundColor:activeTab===t.id?'var(--primary)':'transparent',color:activeTab===t.id?'white':'var(--text-main)',border:'none',borderRadius:'6px 6px 0 0',cursor:'pointer',fontWeight:activeTab===t.id?'700':'500',fontSize:'13px',marginTop:'8px',whiteSpace:'nowrap',transition:'all 0.2s'}}>
-                {t.label}
-              </button>
-            ))}
-          </div>
+        <div style={{ padding: '24px 24px 0 24px' }}>
+          <StudentAdminTabs />
         </div>
 
-        <div style={{padding:'22px'}}>
+        <div style={{ padding: '0 24px 24px 24px' }}>
 
           {/* Status banner */}
           {statusMsg&&(
@@ -214,8 +211,8 @@ const StudentAdminDashboard = () => {
           {activeTab==='dashboard'&&(
             <div>
               <div style={{marginBottom:'22px'}}>
-                <h1 style={{margin:0,fontSize:'21px',fontWeight:'700'}}>🎓 Student Management Dashboard</h1>
-                <p style={{color:'var(--text-muted)',margin:'4px 0 0',fontSize:'13px'}}>Overview of all student operations — admissions, profiles, allocations, and promotions.</p>
+                <h1 style={{margin:0,fontSize:'22px',fontWeight:'800'}}>🎓 Student Admin Portal — Student Operations & Admissions</h1>
+                <p style={{color:'var(--text-muted)',margin:'4px 0 0',fontSize:'13px'}}>Official Student Admin Portal — Admissions, student profiles, class allocations, and academic promotions.</p>
               </div>
 
               {/* Stats */}

@@ -55,6 +55,10 @@ const classSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  updatedBy: {
+    type: String,
+    default: "Super Admin"
   }
 });
 

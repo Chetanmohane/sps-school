@@ -1,0 +1,4 @@
+{
+  "ignore": ["build/*", "src/*", "public/*", "*.test.js"],
+  "watch": ["server.js", "config/*", "routes/*", "controllers/*", "models/*", "middleware/*"]
+}

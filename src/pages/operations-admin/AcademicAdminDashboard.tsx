@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import API from '../../api/axios';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
 import AcademicTabs from '../../components/AcademicTabs';
+import StudentProfiles from './StudentProfiles';
+import Admissions from './Admission';
+import ClassAllocation from './ClassAllocation';
+import Promotions from './Promotions';
 import { 
   FiUsers, FiBookOpen, FiActivity, FiAward, 
-  FiClock, FiPlus, FiSmile, FiCompass, 
+  FiClock, FiPlus, FiCompass, 
   FiLayers, FiMapPin, FiTerminal, FiSearch
 } from 'react-icons/fi';
 
 const AcademicAdminDashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const activeTab = new URLSearchParams(location.search).get('tab') || 'overview';
   const [stats, setStats] = useState({
     totalTeachers: 0,
     totalSubjects: 0,
@@ -22,6 +28,9 @@ const AcademicAdminDashboard = () => {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deptFilter, setDeptFilter] = useState('all');
+  const [classFilter, setClassFilter] = useState('all');
+  const [sectionFilter, setSectionFilter] = useState('all');
   const [systemLogs, setSystemLogs] = useState([
     { time: '10:00:02', message: 'Academic dashboard initialized' },
     { time: '10:00:05', message: 'MongoDB connection active: sps_school' },
@@ -88,11 +97,33 @@ const AcademicAdminDashboard = () => {
     }));
   };
 
+  const departments = Array.from(new Set(teachers.map((t: any) => t.department).filter(Boolean)));
+  const uniqueClasses = Array.from(new Set(classes.map((c: any) => c.className).filter(Boolean))).sort();
+  const uniqueSections = Array.from(new Set(classes.map((c: any) => c.section).filter(Boolean))).sort();
+
   const filteredClasses = classes.filter((c: any) => {
     const classStr = `${c.className} ${c.section}`.toLowerCase();
     const teacherStr = (c.classTeacher?.user?.name || '').toLowerCase();
+    const roomStr = (c.room || '').toLowerCase();
     const query = searchQuery.toLowerCase();
-    return classStr.includes(query) || teacherStr.includes(query);
+    
+    const matchSearch = !searchQuery || classStr.includes(query) || teacherStr.includes(query) || roomStr.includes(query);
+    const matchClass = classFilter === 'all' || c.className === classFilter;
+    const matchSection = sectionFilter === 'all' || c.section === sectionFilter;
+
+    return matchSearch && matchClass && matchSection;
+  });
+
+  const filteredTeachers = teachers.filter((t: any) => {
+    const name = (t.user?.name || '').toLowerCase();
+    const spec = (t.specialization || '').toLowerCase();
+    const dept = t.department || '';
+    const query = searchQuery.toLowerCase();
+
+    const matchSearch = !searchQuery || name.includes(query) || spec.includes(query) || dept.toLowerCase().includes(query);
+    const matchDept = deptFilter === 'all' || dept === deptFilter;
+
+    return matchSearch && matchDept;
   });
 
   const departmentStats = getDepartmentStats();
@@ -102,58 +133,151 @@ const AcademicAdminDashboard = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container" style={{ padding: '30px', background: 'linear-gradient(135deg, var(--bg-color) 0%, rgba(30, 58, 138, 0.03) 100%)' }}>
+        <div className="dashboard-container" style={{ padding: '20px', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden', background: 'linear-gradient(135deg, var(--bg-color) 0%, rgba(30, 58, 138, 0.03) 100%)' }}>
           <AcademicTabs />
-          
+
+          {activeTab === 'admissions' && <Admissions />}
+          {activeTab === 'profiles' && <StudentProfiles />}
+          {activeTab === 'allocation' && <ClassAllocation />}
+          {activeTab === 'promotions' && <Promotions />}
+
+          {(!activeTab || activeTab === 'overview') && (
+            <>
           {/* Header Greeting Banner */}
           <div 
             style={{
-              background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)',
-              color: 'white',
-              padding: '30px',
+              backgroundColor: 'var(--card-bg)',
+              color: 'var(--text-main)',
+              padding: '24px 28px',
               borderRadius: '16px',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 10px 25px -5px rgba(30, 58, 138, 0.3)',
-              marginBottom: '10px'
+              border: '1px solid var(--border-color)',
+              marginBottom: '20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px'
             }}
           >
-            <div style={{ position: 'relative', zIndex: 2 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <FiSmile size={20} className="animate-bounce" />
-                <span style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.9 }}>
-                  Portal Control Center
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '4px 10px', borderRadius: '20px', backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>
+                  👩‍🏫 Teacher & Student Admin Portal
                 </span>
               </div>
-              <h1 style={{ fontSize: '32px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
-                {getGreeting()}, Academic Administrator!
+              <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
+                {getGreeting()}, {localStorage.getItem('userName') || 'Academic Admin'}! 👋
               </h1>
-              <p style={{ margin: '8px 0 0', opacity: 0.85, fontSize: '15px', maxWidth: '600px' }}>
-                Welcome to the SPS School Academic management suite. Review metrics, design class structures, allocate teachers, and audit examination outcomes.
+              <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '13px', maxWidth: '650px' }}>
+                Unified portal for Faculty directory, Class Teacher In-Charges, Subject syllabi, Student Master Profiles, Admissions Desk, and Exam Results.
               </p>
             </div>
             
-            {/* Background design elements */}
-            <div style={{
-              position: 'absolute',
-              right: '-50px',
-              top: '-50px',
-              width: '250px',
-              height: '250px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: '50%',
-              zIndex: 1
-            }} />
-            <div style={{
-              position: 'absolute',
-              right: '120px',
-              bottom: '-80px',
-              width: '180px',
-              height: '180px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              borderRadius: '50%',
-              zIndex: 1
-            }} />
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={() => navigate('/academic-admin/teachers')} 
+                style={{ padding: '9px 16px', borderRadius: '8px', backgroundColor: '#3b82f6', color: 'white', border: 'none', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+              >
+                + Add Teacher
+              </button>
+              <button 
+                onClick={() => navigate('/academic-admin/classes')} 
+                style={{ padding: '9px 16px', borderRadius: '8px', backgroundColor: '#f59e0b', color: 'white', border: 'none', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+              >
+                + Manage Classes
+              </button>
+            </div>
+          </div>
+
+          {/* ── Advanced Academic Multi-Filter Bar ── */}
+          <div style={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: '12px', 
+            marginBottom: '24px', 
+            backgroundColor: 'var(--card-bg)', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: '14px', 
+            padding: '16px',
+            alignItems: 'flex-end'
+          }}>
+            {/* Search */}
+            <div style={{ flex: '1 1 220px', position: 'relative' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🔍 Search Faculty / Subject / Class
+              </label>
+              <div style={{ position: 'relative' }}>
+                <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input 
+                  type="text" 
+                  placeholder="Search name, class, room, subject..."
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px 8px 36px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} 
+                />
+              </div>
+            </div>
+
+            {/* Department Filter */}
+            <div style={{ flex: '1 1 140px', minWidth: '120px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🏬 Department
+              </label>
+              <select 
+                value={deptFilter} 
+                onChange={e => setDeptFilter(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              >
+                <option value="all">All Departments</option>
+                {departments.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Class Filter */}
+            <div style={{ flex: '1 1 120px', minWidth: '110px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🏫 Grade
+              </label>
+              <select 
+                value={classFilter} 
+                onChange={e => setClassFilter(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              >
+                <option value="all">All Grades</option>
+                {uniqueClasses.map(c => (
+                  <option key={c} value={c}>Grade {c}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Section Filter */}
+            <div style={{ flex: '1 1 120px', minWidth: '110px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🅰️ Section
+              </label>
+              <select 
+                value={sectionFilter} 
+                onChange={e => setSectionFilter(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              >
+                <option value="all">All Sections</option>
+                {uniqueSections.map(s => (
+                  <option key={s} value={s}>Section {s}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Clear Button */}
+            {(searchQuery || deptFilter !== 'all' || classFilter !== 'all' || sectionFilter !== 'all') && (
+              <button 
+                onClick={() => { setSearchQuery(''); setDeptFilter('all'); setClassFilter('all'); setSectionFilter('all'); }}
+                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}
+              >
+                🧹 Clear Filters
+              </button>
+            )}
           </div>
 
           {/* Core Analytics Cards */}
@@ -299,6 +423,90 @@ const AcademicAdminDashboard = () => {
             </div>
           </div>
 
+          {/* ═══════════════════════════════════════════════════════════════════
+               SHOWCASE 1 — CLASS TEACHER SECTION & CLASS IN-CHARGES
+          ═══════════════════════════════════════════════════════════════════ */}
+          <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>👔 Class Teacher Section — Assigned Class In-Charges</span>
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Overview of all class sections and their assigned official Class Teachers.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/academic-admin/classes')}
+                style={{ padding: '8px 16px', borderRadius: '8px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Manage Class Teachers →
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
+              {classes.slice(0, 6).map((c: any) => (
+                <div key={c._id} style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <strong style={{ fontSize: '16px', color: 'var(--primary)' }}>Class {c.className}-{c.section}</strong>
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', backgroundColor: c.classTeacher ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: c.classTeacher ? '#10b981' : '#ef4444', fontWeight: '700' }}>
+                      {c.classTeacher ? 'Assigned' : 'Vacant'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '4px' }}>
+                    {c.classTeacher?.user?.name || 'Class Teacher Not Allocated'}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>📍 Room {c.room || 'N/A'}</span>
+                    <span>🕒 {c.startTime || '08:00'} - {c.endTime || '14:00'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════
+               SHOWCASE 2 — TEACHER SECTION & FACULTY DIRECTORY
+          ═══════════════════════════════════════════════════════════════════ */}
+          <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>👩‍🏫 Teacher Section — Faculty Roster & Specializations</span>
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Active faculty members, academic departments, and specializations.
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/academic-admin/teachers')}
+                style={{ padding: '8px 16px', borderRadius: '8px', backgroundColor: '#3b82f6', color: 'white', border: 'none', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Manage Faculty Directory →
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
+              {teachers.slice(0, 4).map((t: any) => (
+                <div key={t._id} style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {t.user?.name ? t.user.name.split(' ').map((n: string) => n[0]).join('').slice(0,2) : 'T'}
+                    </div>
+                    <div>
+                      <strong style={{ fontSize: '14px', color: 'var(--text-main)', display: 'block' }}>{t.user?.name}</strong>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.department || 'Science'} Department</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', marginTop: '8px' }}>
+                    <span>Specialization: <strong>{t.specialization || 'General'}</strong></span>
+                    <span>Exp: <strong>{t.experience || 0} yrs</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Quick Action Hub */}
           <div 
             style={{ 
@@ -418,8 +626,8 @@ const AcademicAdminDashboard = () => {
             <div className="panel" style={{ padding: '24px', borderRadius: '16px', background: 'var(--card-bg)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: 'none', paddingBottom: 0 }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, border: 'none', paddingBottom: 0 }}>Classes Directory Explorer</h3>
-                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Search and quick view active class configurations.</p>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, border: 'none', paddingBottom: 0 }}>📚 Master Class & Teacher Schedule Explorer</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Real-time overview of class sections, timings, room locations, class teachers, and assigned subjects.</p>
                 </div>
                 
                 {/* Micro Search Input */}
@@ -595,6 +803,8 @@ const AcademicAdminDashboard = () => {
             </div>
 
           </div>
+          </>
+          )}
 
         </div>
       </main>

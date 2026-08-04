@@ -59,6 +59,20 @@ const AdminManager = () => {
     }
   };
 
+  const formatRoleTitle = (r: string) => {
+    const roleMap: Record<string, string> = {
+      'super-admin': 'Super Admin',
+      'manager-admin': 'Manager Admin',
+      'student-admin': 'Student Admin',
+      'academic-admin': 'Teacher Admin',
+      'finance-admin': 'Finance Admin',
+      'operations-admin': 'Operations Admin',
+    };
+    return roleMap[r] || (r ? r.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Admin');
+  };
+
+  const formattedRoleName = formatRoleTitle(role || '');
+
   return (
     <div className="app-layout">
       <Sidebar />
@@ -67,7 +81,7 @@ const AdminManager = () => {
 
         <div className="dashboard-container" style={{ padding: '30px' }}>
           <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid var(--border-color)' }}>
-            <h2 style={{ margin: 0, textTransform: 'capitalize' }}>Manage {role.replace('-', ' ')}</h2>
+            <h2 style={{ margin: 0 }}>Manage {formattedRoleName} Accounts</h2>
             <button 
               className="flex items-center px-5 py-2.5 rounded-lg font-semibold transition-all shadow-sm bg-indigo-600 text-white" 
               onClick={() => setShowForm(!showForm)}
@@ -131,7 +145,7 @@ const AdminManager = () => {
 
           <div className="table-container">
             <div className="overflow-x-auto w-full">
-            <h3 className='ml-2'>All {role.replace('-', ' ')}</h3>
+            <h3 className='ml-2'>All {formattedRoleName} Accounts</h3>
             <table className="data-table">
               <thead>
                 <tr>

@@ -15,13 +15,19 @@ const Attendance = require('./models/Attendance');
 const Event = require('./models/event');
 
 const connectDB = async () => {
+  const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/sps_school';
   try {
-    const dbUrl = process.env.DB_URL || 'mongodb://127.0.0.1:27017/sps_school';
-    await mongoose.connect(dbUrl);
-    console.log('MongoDB Connected...');
+    await mongoose.connect(dbUrl, { serverSelectionTimeoutMS: 5000 });
+    console.log('✅ Connected to Atlas MongoDB...');
   } catch (err) {
-    console.error(err.message);
-    process.exit(1);
+    console.warn('⚠️ Atlas connection failed, connecting to Local MongoDB...');
+    try {
+      await mongoose.connect('mongodb://127.0.0.1:27017/sps_school', { serverSelectionTimeoutMS: 5000 });
+      console.log('✅ Connected to Local MongoDB...');
+    } catch (localErr) {
+      console.error('❌ Could not connect to any MongoDB instance:', localErr.message);
+      process.exit(1);
+    }
   }
 };
 

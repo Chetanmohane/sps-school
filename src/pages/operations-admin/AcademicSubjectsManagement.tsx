@@ -10,6 +10,11 @@ const SubjectsManagement = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
+  
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [creditFilter, setCreditFilter] = useState('all');
+
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -106,25 +111,122 @@ const SubjectsManagement = () => {
     setShowModal(true);
   };
 
+  const totalCreditsSum = subjects.reduce((acc: number, curr: any) => acc + (Number(curr.credits) || 0), 0);
+  const avgCredits = subjects.length ? (totalCreditsSum / subjects.length).toFixed(1) : '0.0';
+
+  const filteredSubjects = subjects.filter((sub: any) => {
+    const name = (sub.name || '').toLowerCase();
+    const code = (sub.code || '').toLowerCase();
+    const desc = (sub.description || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+    const credits = Number(sub.credits || 0);
+
+    const matchSearch = !searchQuery || name.includes(query) || code.includes(query) || desc.includes(query);
+    let matchCredit = true;
+    if (creditFilter === '1') matchCredit = credits === 1;
+    else if (creditFilter === '2') matchCredit = credits === 2;
+    else if (creditFilter === '3') matchCredit = credits === 3;
+    else if (creditFilter === '4+') matchCredit = credits >= 4;
+
+    return matchSearch && matchCredit;
+  });
+
   return (
     <div className="app-layout">
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container">
+        <div className="dashboard-container" style={{ padding: '24px' }}>
           <AcademicTabs />
-          <div className="dashboard-header">
+
+          {/* Header Banner */}
+          <div className="dashboard-header" style={{ marginBottom: '20px' }}>
             <div>
-              <h1>Subject Management</h1>
-              <p style={{ color: 'var(--text-muted)' }}>Create and manage school subjects.</p>
+              <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>📖 Academic Subjects Catalog</h1>
+              <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: '13px' }}>
+                Subjects Catalog — Define course names, codes, credit weights, syllabi, and active statuses.
+              </p>
             </div>
             <button className="btn-primary flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors" onClick={handleNewSubject}>
               <FiPlus /> 
-              <span>Add Subject</span>
+              <span>Add New Subject</span>
             </button>
           </div>
 
-          {loading && <p>Loading subjects...</p>}
+          {/* Metric Cards Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            {[
+              { label: 'Total Subjects Offered', value: subjects.length, color: '#3b82f6', icon: '📖' },
+              { label: 'Filtered Subjects', value: filteredSubjects.length, color: '#10b981', icon: '📊' },
+              { label: 'Total Course Credits', value: `${totalCreditsSum} Cr`, color: '#8b5cf6', icon: '🎓' },
+              { label: 'Avg Credits per Subject', value: `${avgCredits} Cr`, color: '#f59e0b', icon: '⚡' },
+            ].map((m, idx) => (
+              <div key={idx} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{m.label}</span>
+                  <div style={{ fontSize: '24px', fontWeight: '800', color: m.color, marginTop: '4px' }}>{m.value}</div>
+                </div>
+                <span style={{ fontSize: '28px' }}>{m.icon}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Advanced Subject Multi-Filter Bar ── */}
+          <div style={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: '12px', 
+            marginBottom: '24px', 
+            backgroundColor: 'var(--card-bg)', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: '14px', 
+            padding: '16px',
+            alignItems: 'flex-end'
+          }}>
+            {/* Search */}
+            <div style={{ flex: '1 1 240px', position: 'relative' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🔍 Search Subject / Code
+              </label>
+              <input
+                type="text"
+                placeholder="Search by subject name, code, description..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            {/* Credits Filter */}
+            <div style={{ width: '160px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🎓 Course Credits
+              </label>
+              <select
+                value={creditFilter}
+                onChange={e => setCreditFilter(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              >
+                <option value="all">All Credits</option>
+                <option value="1">1 Credit</option>
+                <option value="2">2 Credits</option>
+                <option value="3">3 Credits</option>
+                <option value="4+">4+ Credits</option>
+              </select>
+            </div>
+
+            {/* Clear Button */}
+            {(searchQuery || creditFilter !== 'all') && (
+              <button
+                onClick={() => { setSearchQuery(''); setCreditFilter('all'); }}
+                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}
+              >
+                🧹 Clear Filters
+              </button>
+            )}
+          </div>
+
+          {loading && <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading subjects...</p>}
 
           <div className="table-container">
             <table className="data-table">
@@ -139,8 +241,8 @@ const SubjectsManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {subjects.length > 0 ? (
-                  subjects.map((subject) => (
+                {filteredSubjects.length > 0 ? (
+                  filteredSubjects.map((subject) => (
                     <tr key={subject._id}>
                       <td>{subject.name}</td>
                       <td><strong>{subject.code}</strong></td>

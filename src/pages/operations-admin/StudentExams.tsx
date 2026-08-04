@@ -110,19 +110,22 @@ const StudentExams = () => {
                       <h3 className="font-black text-lg text-[var(--text-main)] mb-1">
                         {exam.title}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--text-muted)]">
-                        <span className="flex items-center gap-1.5">
-                          <FiCalendar /> {examDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--text-muted)] mt-2">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <FiCalendar className="text-blue-500" /> {examDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </span>
-                        <span className="flex items-center gap-1.5">
-                          <FiClock /> 10:00 AM - 01:00 PM
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <FiClock className="text-indigo-500" /> {exam.startTime || '10:00 AM'} - {exam.endTime || '01:00 PM'}
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-[var(--input-bg)] text-xs font-bold border border-[var(--border-color)]">
+                          🏫 Venue: {exam.roomNumber || 'Hall-1'}
                         </span>
                       </div>
                     </div>
 
                     <div className="flex flex-col items-start md:items-end justify-center pl-3 md:pl-0">
-                      <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Duration</span>
-                      <span className="text-lg font-black text-blue-600">3 Hours</span>
+                      <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Max Score</span>
+                      <span className="text-lg font-black text-blue-600">{exam.maxMarks || 100} Marks</span>
                     </div>
                   </div>
                 );

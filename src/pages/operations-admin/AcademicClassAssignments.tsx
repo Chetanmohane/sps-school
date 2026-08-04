@@ -13,25 +13,80 @@ const ClassAssignmentsManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
   const [expandedClassId, setExpandedClassId] = useState(null);
+  
+  // Multi-Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [gradeFilter, setGradeFilter] = useState('all');
+  const [sectionFilter, setSectionFilter] = useState('all');
+  const [allocFilter, setAllocFilter] = useState('all');
+  const [showGlobalTimingModal, setShowGlobalTimingModal] = useState(false);
+  const [globalTiming, setGlobalTiming] = useState({
+    startTime: '08:00',
+    endTime: '14:00'
+  });
+
   const [formData, setFormData] = useState({
     className: '',
     section: 'A',
-    academicYear: '',
+    academicYear: '2026-2027',
     classTeacher: '',
     subjects: [],
-    capacity: 0,
-    startTime: '', 
-    endTime: '', 
+    capacity: 40,
+    startTime: '08:00', 
+    endTime: '14:00', 
     room: ''       
   });
 
-  const getTeacherForSubjectInClass = (subjectId, className, section) => {
+  const getTeacherForSubjectInClass = (subjectId, className, section, schoolClass) => {
+    // 1. Check if schoolClass has classTeacher assigned
     const matchingTeacher = teachers.find(t => {
-      const teachesClass = t.classes?.some(c => c.className === className && c.section === section);
-      const teachesSubject = t.subjects?.some(s => s._id === subjectId);
+      const teachesClass = t.classes?.some(c => (c.className === className && c.section === section) || c._id === schoolClass?._id);
+      const teachesSubject = t.subjects?.some(s => s._id === subjectId || s === subjectId);
       return teachesClass && teachesSubject;
     });
-    return matchingTeacher ? matchingTeacher.user?.name : 'Not Assigned';
+    if (matchingTeacher) return matchingTeacher.user?.name || 'Assigned';
+    if (schoolClass?.classTeacher?.user?.name) return `${schoolClass.classTeacher.user.name} (Class Teacher)`;
+    return 'Not Assigned';
+  };
+
+  const getSubjectPeriodTime = (baseStart = '08:00', index = 0) => {
+    let [hours, mins] = (baseStart || '08:00').split(':').map(Number);
+    if (isNaN(hours)) hours = 8;
+    if (isNaN(mins)) mins = 0;
+
+    let totalMins = hours * 60 + mins + index * 45;
+    if (index >= 3) {
+      totalMins += 15; // 15-min tea/recess break after 3rd period
+    }
+
+    const startH = Math.floor(totalMins / 60);
+    const startM = totalMins % 60;
+    const endMins = totalMins + 45;
+    const endH = Math.floor(endMins / 60);
+    const endM = endMins % 60;
+
+    const formatTime = (h, m) => {
+      const period = h >= 12 ? 'PM' : 'AM';
+      const formattedH = h % 12 === 0 ? 12 : h % 12;
+      const formattedM = m < 10 ? `0${m}` : m;
+      return `${formattedH}:${formattedM} ${period}`;
+    };
+
+    return {
+      periodNum: index + 1,
+      timeRange: `${formatTime(startH, startM)} - ${formatTime(endH, endM)}`
+    };
+  };
+
+  const format12HourTime = (timeStr) => {
+    if (!timeStr) return '08:00 AM';
+    if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
+    const [h, m] = timeStr.split(':').map(Number);
+    if (isNaN(h)) return timeStr;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const formattedH = h % 12 === 0 ? 12 : h % 12;
+    const formattedM = (m !== undefined && !isNaN(m)) ? (m < 10 ? `0${m}` : m) : '00';
+    return `${formattedH < 10 ? '0' + formattedH : formattedH}:${formattedM} ${period}`;
   };
 
   const toggleClassExpand = (classId) => {
@@ -45,21 +100,21 @@ const ClassAssignmentsManagement = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [classesRes, subjectsRes, teachersRes] = await Promise.all([
+      const [classesRes, subjectsRes, teachersRes] = await Promise.allSettled([
         API.get('/api/academic-admin/classes'),
         API.get('/api/academic-admin/subjects'),
         API.get('/api/academic-admin/teachers')
       ]);
-      setClasses(classesRes.data.data);
-      setSubjects(subjectsRes.data.data);
-      setTeachers(teachersRes.data.data || []);
+      setClasses(classesRes.status === 'fulfilled' ? (classesRes.value.data?.data || []) : []);
+      setSubjects(subjectsRes.status === 'fulfilled' ? (subjectsRes.value.data?.data || []) : []);
+      setTeachers(teachersRes.status === 'fulfilled' ? (teachersRes.value.data?.data || []) : []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      alert('Failed to fetch data: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -78,6 +133,31 @@ const ClassAssignmentsManagement = () => {
     });
   };
 
+  const handleUpdateGlobalTiming = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const adminUserName = localStorage.getItem("userName") || "Super Admin";
+      const adminUserRole = localStorage.getItem("role") || "super-admin";
+      const formattedAdmin = `${adminUserName} (${adminUserRole.replace('-', ' ').toUpperCase()})`;
+
+      const res = await API.put('/api/academic-admin/classes/update-global-timings', {
+        startTime: globalTiming.startTime,
+        endTime: globalTiming.endTime,
+        updatedBy: formattedAdmin
+      });
+
+      alert(res.data.message || `Global class timings updated to ${globalTiming.startTime} - ${globalTiming.endTime} across all classes!`);
+      setShowGlobalTimingModal(false);
+      await fetchData();
+    } catch (error) {
+      console.error('Error updating global timings:', error);
+      alert('Failed to update global class timings: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.classTeacher && !formData.classTeacher.match(/^[0-9a-f]{24}$/i)) {
@@ -85,13 +165,18 @@ const ClassAssignmentsManagement = () => {
       return;
     }
 
+    const adminUserName = localStorage.getItem("userName") || "Super Admin";
+    const adminUserRole = localStorage.getItem("role") || "super-admin";
+    const formattedAdmin = `${adminUserName} (${adminUserRole.replace('-', ' ').toUpperCase()})`;
+    const payload = { ...formData, updatedBy: formattedAdmin };
+
     try {
       if (editingClass) {
-        await API.put(`/api/academic-admin/classes/${editingClass._id}`, formData);
-        alert('Class updated successfully');
+        await API.put(`/api/academic-admin/classes/${editingClass._id}`, payload);
+        alert(`Class updated successfully by ${formattedAdmin}!`);
       } else {
-        await API.post('/api/academic-admin/classes', formData);
-        alert('Class created successfully');
+        await API.post('/api/academic-admin/classes', payload);
+        alert(`Class created successfully by ${formattedAdmin}!`);
       }
       setShowModal(false);
       setEditingClass(null);
@@ -107,12 +192,12 @@ const ClassAssignmentsManagement = () => {
     setFormData({
       className: '',
       section: 'A',
-      academicYear: '',
+      academicYear: '2026-2027',
       classTeacher: '',
       subjects: [],
-      capacity: 0,
-      startTime: '',
-      endTime: '',
+      capacity: 40,
+      startTime: '08:00',
+      endTime: '14:00',
       room: ''
     });
   };
@@ -152,27 +237,230 @@ const ClassAssignmentsManagement = () => {
     setShowModal(true);
   };
 
+  const assignedClassTeachersCount = classes.filter((c: any) => c.classTeacher).length;
+  const unassignedClassesCount = classes.filter((c: any) => !c.classTeacher).length;
+  const totalCapacitySum = classes.reduce((acc: number, curr: any) => acc + (curr.capacity || 0), 0);
+
+  const uniqueGrades = Array.from(new Set(classes.map((c: any) => c.className).filter(Boolean))).sort();
+  const uniqueSections = Array.from(new Set(classes.map((c: any) => c.section).filter(Boolean))).sort();
+
+  const filteredClasses = classes.filter((c: any) => {
+    const classStr = `${c.className} ${c.section}`.toLowerCase();
+    const teacherStr = (c.classTeacher?.user?.name || '').toLowerCase();
+    const roomStr = (c.room || '').toLowerCase();
+    const query = searchQuery.toLowerCase();
+
+    const matchSearch = !searchQuery || classStr.includes(query) || teacherStr.includes(query) || roomStr.includes(query);
+    const matchGrade = gradeFilter === 'all' || c.className === gradeFilter;
+    const matchSection = sectionFilter === 'all' || c.section === sectionFilter;
+    const matchAlloc = allocFilter === 'all' ||
+      (allocFilter === 'assigned' && c.classTeacher) ||
+      (allocFilter === 'vacant' && !c.classTeacher);
+
+    return matchSearch && matchGrade && matchSection && matchAlloc;
+  });
+
   return (
     <div className="app-layout">
       <Sidebar />
   
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container">
+        <div className="dashboard-container" style={{ padding: '24px' }}>
           <AcademicTabs />
-          <div className="dashboard-header">
+          
+          {/* Header Banner */}
+          <div className="dashboard-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h1>Class Management</h1>
-              <p style={{ color: 'var(--text-muted)' }}>Manage classes, assign teachers and subjects.</p>
+              <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>👔 Class Teacher & Class Section Management</h1>
+              <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: '13px' }}>
+                Class Teacher Section — Assign Class Teachers (In-Charges) for each class section, set room numbers, timings & subjects.
+              </p>
             </div>
-            <button className="btn-primary flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors" 
-              onClick={handleNewClass}>
-              <FiPlus /> 
-              <span>Add Class</span>
-            </button>
+            
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button 
+                onClick={() => setShowGlobalTimingModal(true)}
+                style={{ padding: '9px 16px', backgroundColor: 'rgba(99,102,241,0.15)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.4)', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                title="Update Class Timings across all classes in the school"
+              >
+                <FiClock size={15} /> ⏰ Update Global Class Timings
+              </button>
+
+              <button className="btn-primary flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors" 
+                onClick={handleNewClass}>
+                <FiPlus /> 
+                <span>Add New Class Section</span>
+              </button>
+            </div>
           </div>
 
-          {loading && <p>Loading classes...</p>}
+          {/* Metric Cards Row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            {[
+              { label: 'Total Class Sections', value: classes.length, color: '#3b82f6', icon: '🏛️' },
+              { label: 'Filtered Sections', value: filteredClasses.length, color: '#10b981', icon: '📊' },
+              { label: 'Class Teachers Assigned', value: assignedClassTeachersCount, color: '#8b5cf6', icon: '⭐' },
+              { label: 'Unassigned Sections', value: unassignedClassesCount, color: unassignedClassesCount > 0 ? '#ef4444' : '#10b981', icon: '⚠️' },
+            ].map((m, idx) => (
+              <div key={idx} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{m.label}</span>
+                  <div style={{ fontSize: '24px', fontWeight: '800', color: m.color, marginTop: '4px' }}>{m.value}</div>
+                </div>
+                <span style={{ fontSize: '28px' }}>{m.icon}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Advanced Class Multi-Filter Bar ── */}
+          <div style={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: '12px', 
+            marginBottom: '24px', 
+            backgroundColor: 'var(--card-bg)', 
+            border: '1px solid var(--border-color)', 
+            borderRadius: '14px', 
+            padding: '16px',
+            alignItems: 'flex-end'
+          }}>
+            {/* Search */}
+            <div style={{ flex: '1 1 220px', position: 'relative' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🔍 Search Class / Teacher / Room
+              </label>
+              <input
+                type="text"
+                placeholder="Search class, section, teacher, room..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            {/* Grade Filter */}
+            <div style={{ width: '140px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🏫 Grade
+              </label>
+              <select
+                value={gradeFilter}
+                onChange={e => setGradeFilter(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              >
+                <option value="all">All Grades</option>
+                {uniqueGrades.map(g => (
+                  <option key={g} value={g}>Grade {g}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Section Filter */}
+            <div style={{ width: '130px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                🅰️ Section
+              </label>
+              <select
+                value={sectionFilter}
+                onChange={e => setSectionFilter(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              >
+                <option value="all">All Sections</option>
+                {uniqueSections.map(s => (
+                  <option key={s} value={s}>Section {s}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* In-Charge Allocation Filter */}
+            <div style={{ width: '170px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                ⭐ In-Charge Status
+              </label>
+              <select
+                value={allocFilter}
+                onChange={e => setAllocFilter(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+              >
+                <option value="all">All Statuses</option>
+                <option value="assigned">⭐ Teacher Assigned</option>
+                <option value="vacant">⚠️ Vacant In-Charge</option>
+              </select>
+            </div>
+
+            {/* Clear Button */}
+            {(searchQuery || gradeFilter !== 'all' || sectionFilter !== 'all' || allocFilter !== 'all') && (
+              <button
+                onClick={() => { setSearchQuery(''); setGradeFilter('all'); setSectionFilter('all'); setAllocFilter('all'); }}
+                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}
+              >
+                🧹 Clear Filters
+              </button>
+            )}
+          </div>
+
+          {/* Class In-Charges Card Grid */}
+          <div style={{ marginBottom: '28px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '14px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>👔 Class Teachers (In-Charges) Directory</span>
+            </h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {filteredClasses.map((cls: any) => {
+                const teacherObj = cls.classTeacher?.user || {};
+                const teacherName = teacherObj.name || 'Not Assigned';
+                const teacherEmail = teacherObj.email || '';
+                const teacherPhone = teacherObj.phone || '';
+                return (
+                  <div key={cls._id} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '20px', transition: 'transform 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '18px', fontWeight: '800', color: 'var(--primary)' }}>
+                        Class {cls.className} - {cls.section}
+                      </span>
+                      <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', backgroundColor: cls.classTeacher ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: cls.classTeacher ? '#10b981' : '#ef4444', fontWeight: '700' }}>
+                        {cls.classTeacher ? 'Assigned' : 'Vacant'}
+                      </span>
+                    </div>
+
+                    <div style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Class In-Charge</div>
+                      <div style={{ fontSize: '14px', fontWeight: '800', color: cls.classTeacher ? 'var(--text-main)' : '#ef4444' }}>
+                        {teacherName}
+                      </div>
+                      {teacherEmail && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{teacherEmail}</div>}
+                      {teacherPhone && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>📞 {teacherPhone}</div>}
+                    </div>
+
+                    {(() => {
+                      const startTimeFormatted = format12HourTime(cls.startTime || '08:00');
+                      const endTimeFormatted = format12HourTime(cls.endTime || '14:00');
+                      return (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                          <span style={{ fontWeight: '800', color: '#6366f1' }}>🕒 Class Timing: {startTimeFormatted} - {endTimeFormatted}</span>
+                          <span>📍 Room {cls.room || 'N/A'}</span>
+                        </div>
+                      );
+                    })()}
+
+                    <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-main)', marginBottom: '12px', backgroundColor: 'var(--panel-bg)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>👔 Modified By:</span>
+                      <span style={{ color: 'var(--primary)' }}>{cls.updatedBy || 'Super Admin'}</span>
+                    </div>
+
+                    <button
+                      onClick={() => handleEdit(cls)}
+                      style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid var(--primary)', backgroundColor: 'transparent', color: 'var(--primary)', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      <FiEdit2 size={13} /> Edit Class Teacher & Subjects
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {loading && <p style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>Loading classes...</p>}
 
           <div className="table-container">
             <table className="data-table">
@@ -281,10 +569,10 @@ const ClassAssignmentsManagement = () => {
                                 )}
                                 <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color)', paddingTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                   <div>
-                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>CLASS TIMING</span>
-                                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>CLASS TIMING</span>
+                                    <div style={{ fontSize: '12px', fontWeight: '800', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                       <FiClock className="text-indigo-500" />
-                                      {schoolClass.startTime} - {schoolClass.endTime}
+                                      {format12HourTime(schoolClass.startTime || '08:00')} - {format12HourTime(schoolClass.endTime || '14:00')}
                                     </div>
                                   </div>
                                   <div>
@@ -299,26 +587,37 @@ const ClassAssignmentsManagement = () => {
 
                               {/* 2. Subjects & Teacher Assignments list */}
                               <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '18px', flex: 2 }}>
-                                <h4 style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', display: 'flex', justifyContent: 'space-between' }}>
-                                  <span>📚 Subjects & Assigned Teachers</span>
+                                <h4 style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: '700', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span>📚 Subjects, Period Timings & Assigned Teachers</span>
                                   <span style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: '600', textTransform: 'none' }}>
                                     {schoolClass.subjects ? schoolClass.subjects.length : 0} Subjects Assigned
                                   </span>
                                 </h4>
                                 {schoolClass.subjects && schoolClass.subjects.length > 0 ? (
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
-                                    {schoolClass.subjects.map((sub) => {
-                                      const teacherName = getTeacherForSubjectInClass(sub._id, schoolClass.className, schoolClass.section);
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '12px' }}>
+                                    {schoolClass.subjects.map((sub, idx) => {
+                                      const teacherName = getTeacherForSubjectInClass(sub._id, schoolClass.className, schoolClass.section, schoolClass);
+                                      const periodInfo = getSubjectPeriodTime(schoolClass.startTime, idx);
+
                                       return (
-                                        <div key={sub._id} style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px' }}>
-                                          <div style={{ fontSize: '20px' }}>📖</div>
-                                          <div>
-                                            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-main)' }}>
-                                              {sub.name} <span style={{ fontSize: '10px', color: 'var(--primary)', backgroundColor: 'var(--primary-bg)', padding: '1px 4px', borderRadius: '4px' }}>{sub.code}</span>
+                                        <div key={sub._id} style={{ display: 'flex', flexDirection: 'column', gap: '6px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '12px', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <span>📖 {sub.name}</span>
+                                              <span style={{ fontSize: '10px', color: 'var(--primary)', backgroundColor: 'var(--primary-bg)', padding: '2px 6px', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)' }}>{sub.code}</span>
                                             </div>
-                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                              👨‍🏫 Teacher: <strong style={{ color: teacherName === 'Not Assigned' ? 'var(--danger)' : 'var(--text-main)' }}>{teacherName}</strong>
-                                            </div>
+                                            <span style={{ fontSize: '10px', fontWeight: '800', padding: '2px 8px', borderRadius: '6px', backgroundColor: 'rgba(99,102,241,0.15)', color: '#6366f1' }}>
+                                              Period {periodInfo.periodNum}
+                                            </span>
+                                          </div>
+
+                                          <div style={{ fontSize: '11px', color: '#6366f1', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(99,102,241,0.08)', padding: '4px 8px', borderRadius: '6px' }}>
+                                            <FiClock size={12} />
+                                            <span>Timing: {periodInfo.timeRange}</span>
+                                          </div>
+
+                                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', borderTop: '1px solid var(--border-color)', paddingTop: '6px' }}>
+                                            👨‍🏫 Teacher: <strong style={{ color: teacherName === 'Not Assigned' ? 'var(--danger)' : 'var(--text-main)' }}>{teacherName}</strong>
                                           </div>
                                         </div>
                                       );
@@ -497,6 +796,84 @@ const ClassAssignmentsManagement = () => {
                     type="button"
                     className="px-6 py-2 bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] text-[var(--text-main)] font-medium rounded-md hover:bg-[var(--input-bg)] transition-colors"
                     onClick={() => setShowModal(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Global Class Timing Modal */}
+        {showGlobalTimingModal && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
+            onClick={() => setShowGlobalTimingModal(false)}
+          >
+            <div 
+              className="w-full max-w-md bg-[var(--card-bg)] text-[var(--text-main)] rounded-xl shadow-2xl p-6 border border-[var(--border-color)]" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center pb-4 mb-4 border-b border-[var(--border-color)]">
+                <div>
+                  <h3 className="text-lg font-bold text-indigo-500 flex items-center gap-2">
+                    ⏰ Update Global School Class Timings
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)] mt-1">
+                    This will update class start & end timings across ALL school classes simultaneously.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowGlobalTimingModal(false)}
+                  className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateGlobalTiming} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">
+                    🌅 School Start Time (e.g. 08:00 AM)
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={globalTiming.startTime}
+                    onChange={(e) => setGlobalTiming({ ...globalTiming, startTime: e.target.value })}
+                    className="w-full p-2.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-sm font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">
+                    🌇 School End Time (e.g. 02:00 PM)
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={globalTiming.endTime}
+                    onChange={(e) => setGlobalTiming({ ...globalTiming, endTime: e.target.value })}
+                    className="w-full p-2.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-sm font-semibold"
+                  />
+                </div>
+
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-600 font-semibold">
+                  ⚡ Note: Updating global timings will instantly sync all class schedules and period timings for every subject in the school portal.
+                </div>
+
+                <div className="flex items-center gap-3 pt-4 border-t border-[var(--border-color)]">
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors shadow-md text-sm"
+                  >
+                    Apply & Update All Classes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGlobalTimingModal(false)}
+                    className="px-4 py-2.5 bg-[var(--input-bg)] border border-[var(--border-color)] font-semibold rounded-lg hover:bg-gray-200 transition-colors text-sm"
                   >
                     Cancel
                   </button>

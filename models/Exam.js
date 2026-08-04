@@ -10,6 +10,22 @@ const examSchema = new mongoose.Schema({
     type: Date,
     required: [true, "Exam date is required"]
   },
+  startTime: {
+    type: String,
+    default: "10:00 AM"
+  },
+  endTime: {
+    type: String,
+    default: "01:00 PM"
+  },
+  roomNumber: {
+    type: String,
+    default: "Hall-1"
+  },
+  maxMarks: {
+    type: Number,
+    default: 100
+  },
   className: {
     type: String,
     required: [true, "Class is required"]
@@ -25,3 +41,4 @@ const examSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("Exam", examSchema);
+

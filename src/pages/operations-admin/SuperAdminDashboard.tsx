@@ -2,28 +2,361 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
+import RoleHierarchyMap from '../../components/RoleHierarchyMap';
 import API from '../../api/axios';
+import { useSocket } from '../../context/SocketContext';
 import { useSharedState } from '../../hooks/useSharedState';
-import { FiShield, FiActivity, FiUsers, FiTrendingUp, FiTrash2, FiPlus, FiEye, FiEyeOff, FiEdit2, FiX, FiCheck } from 'react-icons/fi';
+import { FiShield, FiActivity, FiUsers, FiTrendingUp, FiTrash2, FiPlus, FiEye, FiEyeOff, FiEdit2, FiX, FiCheck, FiCalendar, FiClock, FiDownload } from 'react-icons/fi';
+
+/* ─────────────────────────────────────────────────────────────────
+   EXAM TIMETABLE TAB COMPONENT (used inside Super Admin Dashboard)
+───────────────────────────────────────────────────────────────── */
+const CLASSES = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'];
+const TIME_OPTIONS = ['08:00 AM','08:30 AM','09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','01:00 PM','01:30 PM','02:00 PM','02:30 PM','03:00 PM','03:30 PM','04:00 PM','04:30 PM','05:00 PM'];
+
+const inputSx: React.CSSProperties = {
+  width: '100%', padding: '10px 12px', borderRadius: '8px',
+  border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)',
+  color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box'
+};
+const labelSx: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: '4px',
+  fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)',
+  textTransform: 'uppercase' as const, letterSpacing: '0.04em', marginBottom: '6px'
+};
+
+const ExamTimetableTab: React.FC = () => {
+  const [exams, setExams] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [statusMsg, setStatusMsg] = useState('');
+  const [statusType, setStatusType] = useState<'success' | 'error'>('success');
+  const [startFilter, setStartFilter] = useState('');
+  const [endFilter, setEndFilter] = useState('');
+  const [form, setForm] = useState({
+    title: '', date: '', startTime: '10:00 AM', endTime: '01:00 PM',
+    roomNumber: 'Hall-A', maxMarks: '100', className: '1st', subject: ''
+  });
+
+  const fetchExams = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get('/api/exams');
+      setExams(res.data.exams || []);
+    } catch { setExams([]); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchExams(); }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title || !form.date || !form.subject) {
+      setStatusMsg('Please fill in Exam Title, Date, and Subject.'); setStatusType('error'); return;
+    }
+    try {
+      setSubmitting(true); setStatusMsg('');
+      await API.post('/api/exams', form);
+      setStatusMsg(`✅ Exam "${form.title}" for Class ${form.className} scheduled on ${form.date}!`);
+      setStatusType('success');
+      setForm({ title: '', date: '', startTime: '10:00 AM', endTime: '01:00 PM', roomNumber: 'Hall-A', maxMarks: '100', className: '1st', subject: '' });
+      fetchExams();
+    } catch (err: any) {
+      setStatusMsg(err.response?.data?.message || 'Failed to schedule exam. Try again.'); setStatusType('error');
+    } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!window.confirm(`Delete exam "${title}"?`)) return;
+    try {
+      await API.delete(`/api/exams/${id}`);
+      setStatusMsg(`🗑️ Exam "${title}" deleted.`); setStatusType('success');
+      fetchExams();
+    } catch { setStatusMsg('Failed to delete exam.'); setStatusType('error'); }
+  };
+
+  const filtered = exams.filter(e => {
+    const d = e.date ? e.date.split('T')[0] : '';
+    if (startFilter && endFilter) return d >= startFilter && d <= endFilter;
+    if (startFilter) return d >= startFilter;
+    if (endFilter) return d <= endFilter;
+    return true;
+  });
+
+  const downloadCSV = () => {
+    if (!filtered.length) { alert('No data to export.'); return; }
+    const esc = (v: any) => { let s = String(v ?? ''); if (s.includes(',') || s.includes('"')) s = `"${s.replace(/"/g,'""')}"`; return s; };
+    const rows = [['Exam Title','Date','Start Time','End Time','Class','Subject','Room','Max Marks'].join(',')];
+    filtered.forEach(e => rows.push([e.title, new Date(e.date).toLocaleDateString(), e.startTime, e.endTime, e.className, e.subject, e.roomNumber, e.maxMarks || 100].map(esc).join(',')));
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'exam_timetable.csv'; a.click();
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ margin: '0 0 4px', fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '8px 12px', borderRadius: '10px', fontSize: '18px' }}>📅</span>
+          Exam Timetable Management
+        </h2>
+        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>
+          Schedule new exams with time slots, class & subject assignment. Manage and export exam timetables.
+        </p>
+      </div>
+
+      {/* Status Message */}
+      {statusMsg && (
+        <div style={{ marginBottom: '16px', padding: '11px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+          backgroundColor: statusType === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+          color: statusType === 'success' ? '#10b981' : '#ef4444',
+          border: `1px solid ${statusType === 'success' ? 'rgba(16,185,129,0.25)' : 'rgba(239,68,68,0.25)'}` }}>
+          {statusMsg}
+        </div>
+      )}
+
+      {/* Schedule Form */}
+      <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '28px', marginBottom: '28px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FiPlus style={{ color: '#f59e0b' }} /> Schedule New Exam
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <div>
+              <label style={labelSx}>Exam Title *</label>
+              <input style={inputSx} type="text" name="title" required value={form.title} onChange={handleChange} placeholder="e.g. Mid-Term Examination" />
+            </div>
+            <div>
+              <label style={labelSx}><FiCalendar size={11}/> Exam Date *</label>
+              <input style={inputSx} type="date" name="date" required value={form.date} onChange={handleChange} />
+            </div>
+            <div>
+              <label style={labelSx}><FiClock size={11}/> Start Time</label>
+              <select style={inputSx} name="startTime" value={form.startTime} onChange={handleChange}>
+                {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelSx}><FiClock size={11}/> End Time</label>
+              <select style={inputSx} name="endTime" value={form.endTime} onChange={handleChange}>
+                {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelSx}>Class</label>
+              <select style={inputSx} name="className" value={form.className} onChange={handleChange}>
+                {CLASSES.map(c => <option key={c} value={c}>Class {c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelSx}>Subject *</label>
+              <input style={inputSx} type="text" name="subject" required value={form.subject} onChange={handleChange} placeholder="e.g. Mathematics" />
+            </div>
+            <div>
+              <label style={labelSx}>Room / Venue</label>
+              <input style={inputSx} type="text" name="roomNumber" value={form.roomNumber} onChange={handleChange} placeholder="Hall-A / Room 101" />
+            </div>
+            <div>
+              <label style={labelSx}>Max Marks</label>
+              <input style={inputSx} type="number" name="maxMarks" value={form.maxMarks} onChange={handleChange} placeholder="100" />
+            </div>
+          </div>
+          <div style={{ marginTop: '20px', display: 'flex', gap: '12px', alignItems: 'center', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+            <button type="submit" disabled={submitting} style={{
+              padding: '12px 28px', backgroundColor: '#f59e0b', color: 'white',
+              border: 'none', borderRadius: '10px', cursor: submitting ? 'not-allowed' : 'pointer',
+              fontWeight: 800, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
+              boxShadow: '0 4px 14px rgba(245,158,11,0.35)', opacity: submitting ? 0.7 : 1, transition: 'all 0.2s'
+            }}>
+              <FiPlus />
+              {submitting ? 'Scheduling...' : '📅 Add to Timetable'}
+            </button>
+            <button type="button" onClick={() => setForm({ title: '', date: '', startTime: '10:00 AM', endTime: '01:00 PM', roomNumber: 'Hall-A', maxMarks: '100', className: '1st', subject: '' })}
+              style={{ padding: '12px 20px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '13px' }}>
+              🧹 Clear
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Timetable List */}
+      <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '14px', marginBottom: '20px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)' }}>📋 Scheduled Exam Timetable ({filtered.length} exams)</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>From</div>
+              <input type="date" value={startFilter} onChange={e => setStartFilter(e.target.value)} style={{ ...inputSx, width: 'auto' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>To</div>
+              <input type="date" value={endFilter} onChange={e => setEndFilter(e.target.value)} style={{ ...inputSx, width: 'auto' }} />
+            </div>
+            <button onClick={downloadCSV} style={{ padding: '10px 16px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <FiDownload /> Export CSV
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '14px' }}>⏳ Loading exam timetables...</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '14px' }}>📭 No exam timetables scheduled yet. Add one above!</div>
+        ) : (
+          <div className="table-container">
+            <table className="data-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Exam Title</th>
+                  <th>Date</th>
+                  <th>Time Slot</th>
+                  <th>Class</th>
+                  <th>Subject</th>
+                  <th>Room / Venue</th>
+                  <th>Max Marks</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((exam, idx) => (
+                  <tr key={exam._id}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 700 }}>{idx + 1}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>{exam.title}</td>
+                    <td>
+                      <span style={{ padding: '3px 8px', backgroundColor: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: '6px', fontSize: '12px', fontWeight: 700 }}>
+                        {new Date(exam.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    </td>
+                    <td>
+                      <span style={{ padding: '3px 8px', backgroundColor: 'rgba(245,158,11,0.1)', color: '#f59e0b', borderRadius: '6px', fontSize: '12px', fontWeight: 700 }}>
+                        🕐 {exam.startTime || '10:00 AM'} – {exam.endTime || '01:00 PM'}
+                      </span>
+                    </td>
+                    <td><span style={{ padding: '2px 8px', backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: '6px', fontSize: '12px', fontWeight: 700 }}>Class {exam.className}</span></td>
+                    <td style={{ fontWeight: 600 }}>{exam.subject}</td>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{exam.roomNumber || 'Hall-A'}</td>
+                    <td style={{ fontWeight: 700, textAlign: 'center' }}>{exam.maxMarks || 100}</td>
+                    <td>
+                      <button onClick={() => handleDelete(exam._id, exam.title)} style={{ padding: '6px 14px', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <FiTrash2 size={12} /> Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 const SuperAdminDashboard = () => {
+  const { onEvent } = useSocket();
   const location = useLocation();
   const navigate = useNavigate();
   const [statusMsg, setStatusMsg] = useState(null);
 
+  useEffect(() => {
+    const unsubFee = onEvent('FEE_CHANGED', () => {
+      fetchFees();
+      if (window.showToast) {
+        window.showToast("⚡ Real-time Update: Student fee statement updated!", "success");
+      }
+    });
+    const unsubAtt = onEvent('ATTENDANCE_CHANGED', () => {
+      fetchAttendanceData();
+      if (window.showToast) {
+        window.showToast("📋 Real-time Update: Student attendance marked!", "info");
+      }
+    });
+    return () => {
+      unsubFee();
+      unsubAtt();
+    };
+  }, [onEvent]);
+
   const activeTab = new URLSearchParams(location.search).get('tab') || 'overview';
+
 
   // ── MONGO DB STATE ─────────────────────────────────────────────────────────────
   const [students, setStudents] = useState<any[]>([]);
   const [fees, setFees] = useState<any[]>([]);
   const [subAdmins, setSubAdmins] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
 
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showEditStudent, setShowEditStudent] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [selectedViewStudent, setSelectedViewStudent] = useState<any>(null);
+  const [viewStudentAttendance, setViewStudentAttendance] = useState<any>({ records: [], percentage: 0 });
+  const [viewStudentExams, setViewStudentExams] = useState<any[]>([]);
+  const [viewStudentFees, setViewStudentFees] = useState<any[]>([]);
+  const [viewTab, setViewTab] = useState<'profile' | 'attendance' | 'exams' | 'results' | 'fees'>('profile');
+
+  const handleViewStudentDetails = async (student: any) => {
+    setSelectedViewStudent(student);
+    setViewTab('profile');
+    try {
+      const email = student.email;
+      const studentClass = (student.class || student.className || '').toString().trim();
+      console.log("[ViewDetails] Student:", student.name, "| Email:", email, "| Class:", studentClass);
+
+      const [attRes, examsRes, feesRes] = await Promise.allSettled([
+        email ? API.get(`/api/attendance/${email}`) : Promise.reject('no email'),
+        API.get('/api/exams'),
+        email ? API.get('/api/finance/my-fees', { params: { email } }) : Promise.reject('no email')
+      ]);
+
+      // Attendance
+      if (attRes.status === 'fulfilled' && attRes.value.data) {
+        setViewStudentAttendance(attRes.value.data);
+      } else {
+        setViewStudentAttendance({ records: [], percentage: 0 });
+      }
+
+      // Exam Timetable — filter by student's class
+      if (examsRes.status === 'fulfilled' && examsRes.value.data) {
+        const allExams = examsRes.value.data.exams || [];
+        console.log("[ViewDetails] Total Exams from API:", allExams.length, "| Student class:", studentClass);
+        console.log("[ViewDetails] Exam classNames:", allExams.map((e: any) => e.className));
+        const classExams = allExams.filter((exam: any) => {
+          const examClass = (exam.className || '').toString().trim().toLowerCase();
+          const stuClass = studentClass.toLowerCase();
+          return examClass === stuClass || examClass.includes(stuClass) || stuClass.includes(examClass);
+        });
+        console.log("[ViewDetails] Filtered Exams for class:", classExams.length);
+        setViewStudentExams(classExams);
+      } else {
+        console.log("[ViewDetails] Exams fetch failed:", examsRes);
+        setViewStudentExams([]);
+      }
+
+      // Fees
+      if (feesRes.status === 'fulfilled' && feesRes.value.data) {
+        setViewStudentFees(feesRes.value.data);
+      } else {
+        setViewStudentFees([]);
+      }
+    } catch (err) {
+      console.error("Error loading view student details:", err);
+    }
+  };
   const [showAddFee, setShowAddFee] = useState(false);
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showEditAdminModal, setShowEditAdminModal] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState<any>(null);
+  const [editAdminForm, setEditAdminForm] = useState({ name:'', phone:'', role:'', password:'' });
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   const [studentForm, setStudentForm] = useState({ name:'', email:'', class:'', section:'', roll:'', dob:'', gender:'', phone:'', parent:'', parentPhone:'', blood:'' });
   const [feeForm, setFeeForm] = useState({ studentId:'', amount:'', dueDate:'' });
@@ -31,8 +364,32 @@ const SuperAdminDashboard = () => {
   const [feeFormSection, setFeeFormSection] = useState('');
   const [adminForm, setAdminForm] = useState({ name:'', email:'', phone:'', password:'', role:'finance-admin' });
   const [searchStudent, setSearchStudent] = useState('');
+  const [studentClassFilter, setStudentClassFilter] = useState('all');
+  const [studentSectionFilter, setStudentSectionFilter] = useState('all');
+  const [studentDateFrom, setStudentDateFrom] = useState('');
+  const [studentDateTo, setStudentDateTo] = useState('');
+
+  // Teacher Filter States
+  const [academicSubTab, setAcademicSubTab] = useState<'dashboard' | 'class-teacher' | 'subject-teacher'>('dashboard');
+  const [searchTeacher, setSearchTeacher] = useState('');
+  const [teacherDeptFilter, setTeacherDeptFilter] = useState('all');
+  const [teacherSpecFilter, setTeacherSpecFilter] = useState('all');
+  const [teacherRoleFilter, setTeacherRoleFilter] = useState('all');
+
+  // Finance Filter States
   const [searchFee, setSearchFee] = useState('');
   const [feeFilter, setFeeFilter] = useState('all');
+  const [feeClassFilter, setFeeClassFilter] = useState('all');
+  const [feeSectionFilter, setFeeSectionFilter] = useState('all');
+  const [feeDateFrom, setFeeDateFrom] = useState('');
+  const [feeDateTo, setFeeDateTo] = useState('');
+
+  // Sub-Admin & Manager Operations Filter States
+  const [searchSubAdmin, setSearchSubAdmin] = useState('');
+  const [subAdminRoleFilter, setSubAdminRoleFilter] = useState('all');
+  const [subAdminStatusFilter, setSubAdminStatusFilter] = useState('all');
+  const [subAdminDateFrom, setSubAdminDateFrom] = useState('');
+  const [subAdminDateTo, setSubAdminDateTo] = useState('');
 
   // Attendance States
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
@@ -143,12 +500,13 @@ const SuperAdminDashboard = () => {
   // Fetch Sub-Admins from MongoDB
   const fetchAdmins = async () => {
     try {
-      const [financeRes, studentRes, academicRes] = await Promise.all([
+      const [financeRes, studentRes, academicRes, managerRes] = await Promise.all([
         API.get('/api/super-admin/role/finance-admin'),
         API.get('/api/super-admin/role/student-admin'),
-        API.get('/api/super-admin/role/academic-admin')
+        API.get('/api/super-admin/role/academic-admin'),
+        API.get('/api/super-admin/role/manager-admin')
       ]);
-      const allAdmins = [...(financeRes.data || []), ...(studentRes.data || []), ...(academicRes.data || [])];
+      const allAdmins = [...(financeRes.data || []), ...(studentRes.data || []), ...(academicRes.data || []), ...(managerRes.data || [])];
       const mappedAdmins = allAdmins.map((a: any) => ({
         id: a._id,
         _id: a._id,
@@ -173,6 +531,16 @@ const SuperAdminDashboard = () => {
       const mappedFees = dbFees.map((f: any) => {
         const studentObj = f.studentId || {};
         const userObj = studentObj.user || {};
+        const totalAmount = Number(f.amount) || 0;
+        let paidAmount = f.paidAmount !== undefined ? Number(f.paidAmount) : (f.status === 'Paid' ? totalAmount : 0);
+        if (f.status === 'Paid') paidAmount = totalAmount;
+        const pendingAmount = Math.max(0, totalAmount - paidAmount);
+
+        let calculatedStatus = f.status || 'Pending';
+        if (paidAmount >= totalAmount && totalAmount > 0) calculatedStatus = 'Paid';
+        else if (paidAmount > 0 && paidAmount < totalAmount) calculatedStatus = 'Partial';
+        else if (paidAmount === 0) calculatedStatus = 'Pending';
+
         return {
           id: f._id,
           _id: f._id,
@@ -180,17 +548,18 @@ const SuperAdminDashboard = () => {
           studentId: studentObj._id || '',
           roll: studentObj.rollNumber || 'N/A',
           class: studentObj.className ? `Class ${studentObj.className}-${studentObj.section || ''}` : 'N/A',
-          tuition: f.amount || 0,
+          tuition: totalAmount,
           transport: 0,
           library: 0,
-          total: f.amount || 0,
-          paid: f.status === 'Paid' ? f.amount : 0,
-          due: f.status === 'Paid' ? 0 : f.amount,
-          status: f.status || 'Pending',
+          total: totalAmount,
+          paid: paidAmount,
+          due: pendingAmount,
+          status: calculatedStatus,
+          updatedBy: f.updatedBy || 'Super Admin',
           date: f.dueDate ? f.dueDate.slice(0, 10) : '',
           paymentDate: f.paymentDate ? f.paymentDate.slice(0, 10) : '',
           term: 'Term 1',
-          method: f.status === 'Paid' ? 'Online' : '-'
+          method: f.status === 'Paid' || f.status === 'Partial' ? 'Online' : '-'
         };
       });
       setFees(mappedFees);
@@ -199,11 +568,25 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const fetchAcademicData = async () => {
+    try {
+      const [teachersRes, classesRes] = await Promise.all([
+        API.get('/api/academic-admin/teachers'),
+        API.get('/api/academic-admin/classes')
+      ]);
+      setTeachers(teachersRes.data.data || []);
+      setClasses(classesRes.data.data || []);
+    } catch (err) {
+      console.error("Error fetching academic data:", err);
+    }
+  };
+
   useEffect(() => {
     fetchStudents();
     fetchAttendanceData();
     fetchAdmins();
     fetchFees();
+    fetchAcademicData();
   }, []);
 
   useEffect(() => {
@@ -433,13 +816,109 @@ const SuperAdminDashboard = () => {
   const avatarColors = ['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#3b82f6','#ef4444','#14b8a6'];
   const av = (name) => ({ bg: avatarColors[(name?.charCodeAt(0)||0) % avatarColors.length], initials: name ? name.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2) : '?' });
 
-  const filteredStudents = students.filter(s =>
-    !searchStudent || s.name.toLowerCase().includes(searchStudent.toLowerCase()) || s.email.toLowerCase().includes(searchStudent.toLowerCase()) || s.roll.includes(searchStudent)
-  );
+  const uniqueStudentClasses = [...new Set(students.map(s => (s.class || s.className || '').toString()).filter(Boolean))].sort();
+  const uniqueStudentSections = [...new Set(students.map(s => (s.section || '').toString()).filter(Boolean))].sort();
+
+  const filteredStudents = students.filter(s => {
+    const sName = s.name || s.user?.name || '';
+    const sEmail = s.email || s.user?.email || '';
+    const sRoll = (s.roll || s.rollNumber || '').toString();
+    const sClass = (s.class || s.className || '').toString();
+    const sSec = (s.section || '').toString();
+
+    const matchSearch = !searchStudent ||
+      sName.toLowerCase().includes(searchStudent.toLowerCase()) ||
+      sEmail.toLowerCase().includes(searchStudent.toLowerCase()) ||
+      sRoll.toLowerCase().includes(searchStudent.toLowerCase());
+
+    const matchClass = studentClassFilter === 'all' || sClass === studentClassFilter || normalizeClass(sClass) === normalizeClass(studentClassFilter);
+    const matchSection = studentSectionFilter === 'all' || sSec.toUpperCase() === studentSectionFilter.toUpperCase();
+
+    const sDate = s.createdAt || s.allocationDate || s.admissionDate || s.dob;
+    let matchDate = true;
+    if (sDate) {
+      const studentDateStr = new Date(sDate).toISOString().slice(0, 10);
+      if (studentDateFrom && studentDateStr < studentDateFrom) matchDate = false;
+      if (studentDateTo && studentDateStr > studentDateTo) matchDate = false;
+    }
+
+    return matchSearch && matchClass && matchSection && matchDate;
+  });
+
+  const uniqueTeacherDepts = [...new Set(teachers.map((t: any) => t.department).filter(Boolean))].sort();
+  const uniqueTeacherSpecs = [...new Set(teachers.map((t: any) => t.specialization).filter(Boolean))].sort();
+
+  const filteredTeachers = teachers.filter((t: any) => {
+    const name = t.user?.name || '';
+    const email = t.user?.email || '';
+    const phone = t.user?.phone || '';
+    const dept = t.department || '';
+    const spec = t.specialization || '';
+    const isClassTeacher = t.isClassTeacher;
+
+    const matchSearch = !searchTeacher ||
+      name.toLowerCase().includes(searchTeacher.toLowerCase()) ||
+      email.toLowerCase().includes(searchTeacher.toLowerCase()) ||
+      phone.toLowerCase().includes(searchTeacher.toLowerCase()) ||
+      spec.toLowerCase().includes(searchTeacher.toLowerCase()) ||
+      dept.toLowerCase().includes(searchTeacher.toLowerCase());
+
+    const matchDept = teacherDeptFilter === 'all' || dept === teacherDeptFilter;
+    const matchSpec = teacherSpecFilter === 'all' || spec === teacherSpecFilter;
+    const matchRole = teacherRoleFilter === 'all' ||
+      (teacherRoleFilter === 'class-teacher' && isClassTeacher) ||
+      (teacherRoleFilter === 'subject-teacher' && !isClassTeacher);
+
+    return matchSearch && matchDept && matchSpec && matchRole;
+  });
+  const uniqueFeeClasses = [...new Set(fees.map((f: any) => (f.class || f.className || '').toString()).filter(Boolean))].sort();
+  const uniqueFeeSections = [...new Set(fees.map((f: any) => (f.section || '').toString()).filter(Boolean))].sort();
+
   const filteredFees = fees.filter(f => {
-    const matchSearch = !searchFee || f.student.toLowerCase().includes(searchFee.toLowerCase());
-    const matchFilter = feeFilter === 'all' || f.status === feeFilter;
-    return matchSearch && matchFilter;
+    const sName = f.student || f.name || '';
+    const fClass = (f.class || f.className || '').toString();
+    const fSec = (f.section || '').toString();
+    const fDate = f.dueDate || f.createdAt || f.paymentDate;
+
+    const matchSearch = !searchFee || sName.toLowerCase().includes(searchFee.toLowerCase());
+    const matchStatus = feeFilter === 'all' || f.status === feeFilter;
+    const matchClass = feeClassFilter === 'all' || fClass === feeClassFilter || normalizeClass(fClass) === normalizeClass(feeClassFilter);
+    const matchSection = feeSectionFilter === 'all' || fSec.toUpperCase() === feeSectionFilter.toUpperCase();
+
+    let matchDate = true;
+    if (fDate) {
+      const feeDateStr = new Date(fDate).toISOString().slice(0, 10);
+      if (feeDateFrom && feeDateStr < feeDateFrom) matchDate = false;
+      if (feeDateTo && feeDateStr > feeDateTo) matchDate = false;
+    }
+
+    return matchSearch && matchStatus && matchClass && matchSection && matchDate;
+  });
+
+  const filteredSubAdmins = subAdmins.filter(a => {
+    const name = a.name || '';
+    const email = a.email || '';
+    const phone = a.phone || '';
+    const role = a.role || '';
+    const status = a.status || 'Active';
+    const created = a.created || a.createdAt;
+
+    const matchSearch = !searchSubAdmin ||
+      name.toLowerCase().includes(searchSubAdmin.toLowerCase()) ||
+      email.toLowerCase().includes(searchSubAdmin.toLowerCase()) ||
+      phone.toLowerCase().includes(searchSubAdmin.toLowerCase());
+
+    const matchRole = subAdminRoleFilter === 'all' || role === subAdminRoleFilter;
+    const matchStatus = subAdminStatusFilter === 'all' || status.toLowerCase() === subAdminStatusFilter.toLowerCase();
+
+    let matchDate = true;
+    if (created) {
+      const dateStr = new Date(created).toISOString().slice(0, 10);
+      if (subAdminDateFrom && dateStr < subAdminDateFrom) matchDate = false;
+      if (subAdminDateTo && dateStr > subAdminDateTo) matchDate = false;
+    }
+
+    return matchSearch && matchRole && matchStatus && matchDate;
   });
 
   const filteredAttendance = attendanceRecords.filter(r => {
@@ -473,20 +952,39 @@ const SuperAdminDashboard = () => {
   const pendingFees = fees.reduce((a,c)=>a+c.due,0);
 
   // ── HANDLERS ───────────────────────────────────────────────────────────────
-  const addStudent = (e) => {
+  const addStudent = async (e: any) => {
     e.preventDefault();
-    setStudents(p => [...p, { ...studentForm, id:`S00${p.length+1}`, status:'Active', admission: new Date().toISOString().slice(0,10) }]);
-    setStudentForm({ name:'', email:'', class:'', section:'', roll:'', dob:'', gender:'', phone:'', parent:'', parentPhone:'', blood:'' });
-    setShowAddStudent(false); trigger('Student profile created successfully!');
+    try {
+      await API.post('/api/admin/student-admin/admissions/direct', {
+        name: studentForm.name,
+        email: studentForm.email,
+        phone: studentForm.phone,
+        className: studentForm.class,
+        section: studentForm.section,
+        rollNumber: studentForm.roll,
+        dob: studentForm.dob,
+        gender: studentForm.gender,
+        parentName: studentForm.parent,
+        parentPhone: studentForm.parentPhone,
+        bloodGroup: studentForm.blood
+      });
+      trigger('Student profile created successfully!');
+      fetchStudents();
+      setStudentForm({ name:'', email:'', class:'', section:'', roll:'', dob:'', gender:'', phone:'', parent:'', parentPhone:'', blood:'' });
+      setShowAddStudent(false);
+    } catch (err: any) {
+      console.error(err);
+      trigger(err.response?.data?.message || 'Failed to create student profile', 'danger');
+    }
   };
-  const saveStudent = (e) => {
+  const saveStudent = (e: any) => {
     e.preventDefault();
     setStudents(p => p.map(s => s.id === editingStudent.id ? { ...s, ...editingStudent } : s));
     setShowEditStudent(false); trigger('Student profile updated successfully!');
   };
-  const deleteStudent = (id) => { if(!window.confirm('Delete this student?')) return; setStudents(p=>p.filter(s=>s.id!==id)); trigger('Student deleted.'); };
+  const deleteStudent = (id: any) => { if(!window.confirm('Delete this student?')) return; setStudents(p=>p.filter(s=>s.id!==id)); trigger('Student deleted.'); };
 
-  const markFee = async (id, status) => {
+  const markFee = async (id: any, status: any) => {
     try {
       const targetFee = fees.find(f => f.id === id);
       if (!targetFee) return;
@@ -501,13 +999,22 @@ const SuperAdminDashboard = () => {
       trigger('Failed to update fee status', 'danger');
     }
   };
-  const addFee = async (e) => {
+  const addFee = async (e: any) => {
     e.preventDefault();
+    if (!feeForm.studentId) {
+      trigger('Please select a student', 'danger');
+      return;
+    }
+    if (!feeForm.amount || Number(feeForm.amount) <= 0) {
+      trigger('Please enter a valid fee amount', 'danger');
+      return;
+    }
     try {
       await API.post('/api/finance/create-fee', {
         studentId: feeForm.studentId,
         amount: Number(feeForm.amount),
-        dueDate: feeForm.dueDate
+        dueDate: feeForm.dueDate,
+        updatedBy: 'Super Admin'
       });
       trigger('Fee record created successfully!');
       fetchFees();
@@ -515,23 +1022,25 @@ const SuperAdminDashboard = () => {
       setFeeFormClass('');
       setFeeFormSection('');
       setShowAddFee(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      trigger('Failed to create fee record', 'danger');
+      const errMsg = err.response?.data?.message || err.message || 'Failed to create fee record';
+      trigger(errMsg, 'danger');
     }
   };
 
   const addAdmin = async (e) => {
     e.preventDefault();
     try {
-      await API.post('/api/super-admin/create-admin', adminForm);
-      trigger('Sub-Admin account created!');
+      const res = await API.post('/api/super-admin/create-admin', adminForm);
+      trigger(res.data?.message || 'Sub-Admin account created successfully!');
       fetchAdmins();
       setAdminForm({ name:'', email:'', phone:'', password:'', role:'finance-admin' });
       setShowAdminForm(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      trigger('Failed to create sub-admin account', 'danger');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to create sub-admin account';
+      trigger(errorMsg, 'danger');
     }
   };
   const deleteAdmin = async (id) => {
@@ -546,55 +1055,82 @@ const SuperAdminDashboard = () => {
     }
   };
 
+  const openEditAdmin = (admin: any) => {
+    setEditingAdmin(admin);
+    setEditAdminForm({ name: admin.name || '', phone: admin.phone || '', role: admin.role || 'finance-admin', password: '' });
+    setShowEditPassword(false);
+    setShowEditAdminModal(true);
+  };
+
+  const handleUpdateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAdmin) return;
+    try {
+      await API.put(`/api/super-admin/update-admin/${editingAdmin.id}`, editAdminForm);
+      trigger('Sub-Admin account updated successfully!');
+      setShowEditAdminModal(false);
+      setEditingAdmin(null);
+      fetchAdmins();
+    } catch (err) {
+      console.error(err);
+      trigger('Failed to update admin account', 'danger');
+    }
+  };
+
   // ── RENDER ─────────────────────────────────────────────────────────────────
   const activeSection = new URLSearchParams(location.search).get('section');
 
-  // ── Section definitions (for the landing cards) ────────────────────────────
+  // ── Section definitions (for domain landing cards) ────────────────────────────
   const SECTIONS = {
     core: {
       title: 'Core System',
       emoji: '🛡️',
       color: '#6366f1',
-      description: 'Central system controls — overview, account management, and server diagnostics.',
+      description: 'Central system controls — overview, sub-admin account management, and server diagnostics.',
       options: [
-        { icon: '🏠', label: 'System Overview', desc: 'Live stats: students, finance, admins', path: '/super-admin?tab=overview' },
+        { icon: '🏠', label: 'System Overview', desc: 'Live stats: students, finance, sub-admins', path: '/super-admin?tab=overview' },
         { icon: '👑', label: 'Manage Accounts', desc: 'Create & manage sub-admin accounts', path: '/super-admin?tab=admins' },
         { icon: '⚙️', label: 'System Logs', desc: 'Server health & audit trail', path: '/super-admin?tab=system' },
       ],
     },
     students: {
-      title: 'Student Admin',
+      title: 'Student Admin Portal',
       emoji: '🎓',
       color: '#10b981',
-      description: 'Full student lifecycle management — from admission to class allocation and promotions.',
+      description: 'All student operations — profiles, admissions, class allocation, promotions, daily roll call attendance & exam results.',
       options: [
-        { icon: '👤', label: 'Student Profiles', desc: 'View & manage all student records', path: '/student-admin?tab=profiles' },
-        { icon: '📋', label: 'Admissions', desc: 'Process new student applications', path: '/student-admin?tab=admissions' },
-        { icon: '🏫', label: 'Class Allocation', desc: 'Assign students to class sections', path: '/student-admin?tab=allocation' },
-        { icon: '🚀', label: 'Promotions', desc: 'Promote students to next class', path: '/student-admin?tab=promotions' },
-        { icon: '✅', label: 'Mark Attendance', desc: 'Record daily class attendance', path: '/teacher/attendanceMark' },
+        { icon: '👤', label: 'Student Profiles', desc: 'View & manage all student records', path: '/academic-admin?tab=profiles' },
+        { icon: '📋', label: 'Admissions', desc: 'Process new student applications', path: '/academic-admin?tab=admissions' },
+        { icon: '🏫', label: 'Class Allocation', desc: 'Assign students to class sections', path: '/academic-admin?tab=allocation' },
+        { icon: '🚀', label: 'Promotions', desc: 'Promote students to next academic year', path: '/academic-admin?tab=promotions' },
+        { icon: '✅', label: 'Daily Attendance', desc: 'View & mark daily roll call attendance', path: '/super-admin?tab=attendance' },
+        { icon: '📊', label: 'Student Results', desc: 'View student marks & report cards', path: '/academic-admin/results' },
       ],
     },
     academics: {
-      title: 'Academics',
+      title: 'Teacher & Academic Admin Portal',
       emoji: '📚',
       color: '#3b82f6',
-      description: 'Academic operations — teachers, subjects, class management, and exam scheduling.',
+      description: 'All faculty & academic management — teachers, subject syllabi, class schedules, exam management, and leave reviews.',
       options: [
-        { icon: '👩‍🏫', label: 'Teacher Management', desc: 'Add, edit & assign teachers', path: '/academic-admin/teachers' },
+        { icon: '👩‍🏫', label: 'Teacher Management', desc: 'Manage faculty profiles & subjects', path: '/academic-admin/teachers' },
         { icon: '📖', label: 'Subject Management', desc: 'Manage syllabus & subjects', path: '/academic-admin/subjects' },
-        { icon: '🏛️', label: 'Class Management', desc: 'Class sections and timetables', path: '/academic-admin/classes' },
-        { icon: '📝', label: 'Exam Scheduling', desc: 'Schedule and manage exams', path: '/exams' },
+        { icon: '🏛️', label: 'Class & Timetables', desc: 'Class sections, rooms & class in-charges', path: '/academic-admin/classes' },
+        { icon: '📝', label: 'Exam Scheduling', desc: 'Schedule and manage school exams', path: '/exams' },
+        { icon: '🎒', label: 'Teacher Schedules', desc: 'View teacher class timetables', path: '/teacher/myclasses' },
+        { icon: '✍️', label: 'Assignments & Homework', desc: 'Create & grade student assignments', path: '/teacher/assignments' },
+        { icon: '✉️', label: 'Leave Applications', desc: 'Review & approve student leave requests', path: '/teacher/application' },
       ],
     },
     operations: {
-      title: 'Operations & Finance',
+      title: 'Finance & Operations Portal',
       emoji: '💼',
       color: '#f59e0b',
-      description: 'Finance administration, fee management, and school event operations.',
+      description: 'All financial & operational tools — fee billing, payment collection, financial reports, and school events.',
       options: [
-        { icon: '💰', label: 'Finance Admin', desc: 'Fees, payments & financial reports', path: '/super-admin?tab=finance' },
-        { icon: '🎉', label: 'Event Management', desc: 'Plan & manage school events', path: '/operations-admin/events' },
+        { icon: '💰', label: 'Fee Management', desc: 'Fees, payment collection & student dues', path: '/super-admin?tab=finance' },
+        { icon: '🎉', label: 'School Events', desc: 'Plan & manage school events & sports', path: '/operations-admin/events' },
+        { icon: '👑', label: 'Sub-Admin Accounts', desc: 'Manage Finance & Student Admin users', path: '/super-admin?tab=admins' },
       ],
     },
   };
@@ -646,7 +1182,7 @@ const SuperAdminDashboard = () => {
         </div>
 
         {/* Option Cards Grid */}
-        <div className="option-card-grid">
+        <div className="option-card-grid" style={{ marginBottom: '28px' }}>
           {sec.options.map((opt, i) => (
             <div
               key={i}
@@ -698,6 +1234,709 @@ const SuperAdminDashboard = () => {
             </div>
           ))}
         </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+             LIVE SECTION DATA TABLES DIRECTLY IN SUPER ADMIN
+        ═══════════════════════════════════════════════════════════════════ */}
+        {sectionKey === 'students' && (
+          <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>🎓 Live Student Records & Roster</h3>
+                <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Real-time database records of all enrolled students.</p>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ padding: '6px 12px', backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6', borderRadius: '8px', fontWeight: '700', fontSize: '12px' }}>
+                  Total: {students.length}
+                </span>
+                <span style={{ padding: '6px 12px', backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: '8px', fontWeight: '700', fontSize: '12px' }}>
+                  Filtered: {filteredStudents.length}
+                </span>
+              </div>
+            </div>
+
+            {/* ── Advanced Filter Bar for Class, Section, and Date ── */}
+            <div style={{ 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: '12px', 
+              marginBottom: '20px', 
+              padding: '16px', 
+              backgroundColor: 'var(--panel-bg)', 
+              borderRadius: '12px', 
+              border: '1px solid var(--border-color)',
+              alignItems: 'flex-end'
+            }}>
+              {/* Search */}
+              <div style={{ flex: '1 1 200px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  🔍 Search Student
+                </label>
+                <input
+                  type="text"
+                  placeholder="Search name, roll, email..."
+                  value={searchStudent}
+                  onChange={e => setSearchStudent(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Class Filter */}
+              <div style={{ width: '140px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  🏫 Class
+                </label>
+                <select
+                  value={studentClassFilter}
+                  onChange={e => setStudentClassFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                >
+                  <option value="all">All Classes</option>
+                  {uniqueStudentClasses.map(c => (
+                    <option key={c} value={c}>Class {c}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Section Filter */}
+              <div style={{ width: '130px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  🅰️ Section
+                </label>
+                <select
+                  value={studentSectionFilter}
+                  onChange={e => setStudentSectionFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                >
+                  <option value="all">All Sections</option>
+                  {uniqueStudentSections.map(s => (
+                    <option key={s} value={s}>Section {s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date From */}
+              <div style={{ width: '150px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  📅 From Date
+                </label>
+                <input
+                  type="date"
+                  value={studentDateFrom}
+                  onChange={e => setStudentDateFrom(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '12px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Date To */}
+              <div style={{ width: '150px' }}>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                  📅 To Date
+                </label>
+                <input
+                  type="date"
+                  value={studentDateTo}
+                  onChange={e => setStudentDateTo(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '12px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* Clear Button */}
+              {(searchStudent || studentClassFilter !== 'all' || studentSectionFilter !== 'all' || studentDateFrom || studentDateTo) && (
+                <button
+                  onClick={() => {
+                    setSearchStudent('');
+                    setStudentClassFilter('all');
+                    setStudentSectionFilter('all');
+                    setStudentDateFrom('');
+                    setStudentDateTo('');
+                  }}
+                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}
+                >
+                  🧹 Clear Filters
+                </button>
+              )}
+            </div>
+
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Roll No</th>
+                    <th>Student Name</th>
+                    <th>Class</th>
+                    <th>Section</th>
+                    <th>Email</th>
+                    <th>Parent Contact</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.length > 0 ? (
+                    filteredStudents.map(s => (
+                      <tr key={s.id || s._id}>
+                        <td><strong>{s.roll || 'R01'}</strong></td>
+                        <td><strong style={{ color: 'var(--text-main)' }}>{s.name}</strong></td>
+                        <td>Class {s.class}</td>
+                        <td><span className="badge management">{s.section || 'A'}</span></td>
+                        <td style={{ fontSize: '13px' }}>{s.email}</td>
+                        <td style={{ fontSize: '13px' }}>{s.parentPhone || s.phone || '+919876543210'}</td>
+                        <td>
+                          <span className={`badge ${s.status === 'Active' ? 'approved' : 'pending'}`}>
+                            {s.status || 'Active'}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            onClick={() => handleViewStudentDetails(s)}
+                            style={{
+                              padding: '5px 12px',
+                              backgroundColor: '#3b82f6',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontWeight: '700',
+                              fontSize: '12px'
+                            }}
+                          >
+                            👁️ View Details
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No student records found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {sectionKey === 'academics' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* ── Sub-Tab Option Bar (Dashboard | ⭐ Class Teacher | 📖 Subject Teacher) ── */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '12px', 
+              backgroundColor: 'var(--card-bg)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '16px', 
+              padding: '12px 18px',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>📚 Teacher Admin Portal Control Center</h3>
+                <p style={{ margin: '2px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Select view: General Dashboard, Class In-Charges, or Subject Faculty.</p>
+              </div>
+
+              {/* 3 Sub-Option Buttons */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => { setAcademicSubTab('dashboard'); setTeacherRoleFilter('all'); }}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    border: 'none',
+                    backgroundColor: academicSubTab === 'dashboard' ? 'var(--primary)' : 'var(--panel-bg)',
+                    color: academicSubTab === 'dashboard' ? '#fff' : 'var(--text-main)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: academicSubTab === 'dashboard' ? '0 4px 12px rgba(59,130,246,0.3)' : 'none',
+                    transition: 'all 0.18s'
+                  }}
+                >
+                  📊 Dashboard & All Faculty ({teachers.length})
+                </button>
+
+                <button
+                  onClick={() => { setAcademicSubTab('class-teacher'); setTeacherRoleFilter('class-teacher'); }}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    border: 'none',
+                    backgroundColor: academicSubTab === 'class-teacher' ? '#d97706' : 'var(--panel-bg)',
+                    color: academicSubTab === 'class-teacher' ? '#fff' : 'var(--text-main)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: academicSubTab === 'class-teacher' ? '0 4px 12px rgba(217,119,6,0.3)' : 'none',
+                    transition: 'all 0.18s'
+                  }}
+                >
+                  ⭐ Class Teacher (In-Charges) ({teachers.filter((t: any) => t.isClassTeacher).length})
+                </button>
+
+                <button
+                  onClick={() => { setAcademicSubTab('subject-teacher'); setTeacherRoleFilter('subject-teacher'); }}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    border: 'none',
+                    backgroundColor: academicSubTab === 'subject-teacher' ? '#8b5cf6' : 'var(--panel-bg)',
+                    color: academicSubTab === 'subject-teacher' ? '#fff' : 'var(--text-main)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: academicSubTab === 'subject-teacher' ? '0 4px 12px rgba(139,92,246,0.3)' : 'none',
+                    transition: 'all 0.18s'
+                  }}
+                >
+                  📖 Subject Teacher ({teachers.filter((t: any) => !t.isClassTeacher).length})
+                </button>
+              </div>
+            </div>
+
+            {/* ═══════════════════════════════════════════════════════════════════
+                 SUB-TAB 1 — DASHBOARD & OVERVIEW
+            ═══════════════════════════════════════════════════════════════════ */}
+            {academicSubTab === 'dashboard' && (
+              <>
+                <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>📊 Academic Faculty Overview</h3>
+                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Complete faculty directory with department, specialization, and class role statuses.</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{ padding: '6px 12px', backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6', borderRadius: '8px', fontWeight: '700', fontSize: '12px' }}>
+                        Total Faculty: {teachers.length}
+                      </span>
+                      <span style={{ padding: '6px 12px', backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981', borderRadius: '8px', fontWeight: '700', fontSize: '12px' }}>
+                        Filtered: {filteredTeachers.length}
+                      </span>
+                      <button onClick={() => navigate('/academic-admin/teachers')} style={{ padding: '8px 16px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                        Open Faculty Manager →
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Filter Bar */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', padding: '16px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', alignItems: 'flex-end' }}>
+                    <div style={{ flex: '1 1 220px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>🔍 Search Teacher / Subject</label>
+                      <input type="text" placeholder="Search name, email, subject, phone..." value={searchTeacher} onChange={e => setSearchTeacher(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }} />
+                    </div>
+
+                    <div style={{ width: '160px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>🏬 Department</label>
+                      <select value={teacherDeptFilter} onChange={e => setTeacherDeptFilter(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}>
+                        <option value="all">All Departments</option>
+                        {uniqueTeacherDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+
+                    <div style={{ width: '160px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>📖 Specialization</label>
+                      <select value={teacherSpecFilter} onChange={e => setTeacherSpecFilter(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}>
+                        <option value="all">All Subjects</option>
+                        {uniqueTeacherSpecs.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+
+                    <div style={{ width: '150px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>⭐ Class Role</label>
+                      <select value={teacherRoleFilter} onChange={e => setTeacherRoleFilter(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}>
+                        <option value="all">All Roles</option>
+                        <option value="class-teacher">⭐ Class In-Charge</option>
+                        <option value="subject-teacher">Subject Teacher</option>
+                      </select>
+                    </div>
+
+                    {(searchTeacher || teacherDeptFilter !== 'all' || teacherSpecFilter !== 'all' || teacherRoleFilter !== 'all') && (
+                      <button onClick={() => { setSearchTeacher(''); setTeacherDeptFilter('all'); setTeacherSpecFilter('all'); setTeacherRoleFilter('all'); }} style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}>🧹 Clear</button>
+                    )}
+                  </div>
+
+                  <div className="table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Teacher Name</th>
+                          <th>Email / Contact</th>
+                          <th>Specialization</th>
+                          <th>Department</th>
+                          <th>Experience</th>
+                          <th>Class Role</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTeachers.length > 0 ? (
+                          filteredTeachers.map((t: any) => (
+                            <tr key={t._id}>
+                              <td><strong style={{ color: 'var(--text-main)' }}>{t.user?.name}</strong></td>
+                              <td>
+                                <div style={{ fontSize: '13px' }}>{t.user?.email}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.user?.phone || 'N/A'}</div>
+                              </td>
+                              <td><span style={{ padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontWeight: '600', fontSize: '12px' }}>{t.specialization || 'General'}</span></td>
+                              <td>{t.department || 'Science'}</td>
+                              <td><strong>{t.experience || 0} yrs</strong></td>
+                              <td>
+                                {t.isClassTeacher ? (
+                                  <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(245,158,11,0.15)', color: '#d97706' }}>
+                                    ⭐ Class In-Charge
+                                  </span>
+                                ) : (
+                                  <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', backgroundColor: 'var(--panel-bg)', color: 'var(--text-muted)' }}>
+                                    Subject Teacher
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No teacher records found.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════════
+                 SUB-TAB 2 — ⭐ CLASS TEACHER (IN-CHARGES) SECTION & DETAILS
+            ═══════════════════════════════════════════════════════════════════ */}
+            {academicSubTab === 'class-teacher' && (
+              <>
+                <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#d97706', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>⭐ Class Teacher (Class In-Charges) Section</span>
+                      </h3>
+                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                        Detailed roster of official Class In-Charges assigned to each class section with room numbers, timings & contact details.
+                      </p>
+                    </div>
+                    <button onClick={() => navigate('/academic-admin/classes')} style={{ padding: '8px 16px', backgroundColor: '#d97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                      Manage Class In-Charges →
+                    </button>
+                  </div>
+
+                  {/* Filter Bar */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', padding: '16px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', alignItems: 'flex-end' }}>
+                    <div style={{ flex: '1 1 220px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>🔍 Search Class Teacher / Room</label>
+                      <input type="text" placeholder="Search teacher name, class, room..." value={searchTeacher} onChange={e => setSearchTeacher(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }} />
+                    </div>
+
+                    <div style={{ width: '160px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>🏬 Department</label>
+                      <select value={teacherDeptFilter} onChange={e => setTeacherDeptFilter(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}>
+                        <option value="all">All Departments</option>
+                        {uniqueTeacherDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+
+                    {searchTeacher || teacherDeptFilter !== 'all' ? (
+                      <button onClick={() => { setSearchTeacher(''); setTeacherDeptFilter('all'); }} style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}>🧹 Clear</button>
+                    ) : null}
+                  </div>
+
+                  {/* Class Teacher Cards Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                    {classes.map((cls: any) => {
+                      const teacherObj = cls.classTeacher?.user || {};
+                      const teacherName = teacherObj.name || 'Not Allocated';
+                      const teacherEmail = teacherObj.email || '';
+                      const teacherPhone = teacherObj.phone || '';
+
+                      return (
+                        <div key={cls._id} style={{ backgroundColor: 'var(--input-bg)', border: cls.classTeacher ? '2px solid rgba(245,158,11,0.4)' : '1px solid var(--border-color)', borderRadius: '14px', padding: '18px', boxShadow: cls.classTeacher ? '0 4px 12px rgba(245,158,11,0.08)' : 'none' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                            <span style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-main)' }}>
+                              Grade {cls.className}-{cls.section}
+                            </span>
+                            <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', backgroundColor: cls.classTeacher ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: cls.classTeacher ? '#10b981' : '#ef4444', fontWeight: '700' }}>
+                              {cls.classTeacher ? '⭐ In-Charge Assigned' : '⚠️ Vacant'}
+                            </span>
+                          </div>
+
+                          <div style={{ marginBottom: '12px' }}>
+                            <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>
+                              {teacherName}
+                            </div>
+                            {teacherEmail && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>📧 {teacherEmail}</div>}
+                            {teacherPhone && <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>📞 {teacherPhone}</div>}
+                          </div>
+
+                          <div style={{ padding: '10px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>📍 Room {cls.room || 'N/A'}</span>
+                            <span style={{ fontWeight: '700', color: '#6366f1' }}>🕒 {cls.startTime || '08:00 AM'} - {cls.endTime || '02:00 PM'}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Class Teacher Table View */}
+                  <h4 style={{ fontSize: '15px', fontWeight: '700', margin: '0 0 12px', color: 'var(--text-main)' }}>📋 Class Teacher In-Charges List Details</h4>
+                  <div className="table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Class & Section</th>
+                          <th>Class Teacher (In-Charge)</th>
+                          <th>Email & Phone</th>
+                          <th>Room No</th>
+                          <th>Schedule Timings</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {teachers.filter((t: any) => t.isClassTeacher).length > 0 ? (
+                          teachers.filter((t: any) => t.isClassTeacher).map((t: any) => (
+                            <tr key={t._id}>
+                              <td><strong style={{ color: '#d97706' }}>Class In-Charge</strong></td>
+                              <td><strong style={{ color: 'var(--text-main)' }}>{t.user?.name}</strong></td>
+                              <td>
+                                <div style={{ fontSize: '13px' }}>{t.user?.email}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.user?.phone || 'N/A'}</div>
+                              </td>
+                              <td><span style={{ padding: '3px 8px', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', fontSize: '12px' }}>{t.department || 'Main Block'}</span></td>
+                              <td><span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>08:00 AM - 02:00 PM</span></td>
+                              <td>
+                                <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(245,158,11,0.15)', color: '#d97706' }}>
+                                  ⭐ Active Class Teacher
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No class teachers assigned yet.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ═══════════════════════════════════════════════════════════════════
+                 SUB-TAB 3 — 📖 SUBJECT TEACHER (FACULTY) SECTION & DETAILS
+            ═══════════════════════════════════════════════════════════════════ */}
+            {academicSubTab === 'subject-teacher' && (
+              <>
+                <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>📖 Subject Teacher (Subject Faculty) Section</span>
+                      </h3>
+                      <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                        Detailed roster of subject specialist faculty members, teaching assignments, departments & qualifications.
+                      </p>
+                    </div>
+                    <button onClick={() => navigate('/academic-admin/teachers')} style={{ padding: '8px 16px', backgroundColor: '#8b5cf6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                      Add Subject Teacher →
+                    </button>
+                  </div>
+
+                  {/* Filter Bar */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', padding: '16px', backgroundColor: 'var(--panel-bg)', borderRadius: '12px', border: '1px solid var(--border-color)', alignItems: 'flex-end' }}>
+                    <div style={{ flex: '1 1 220px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>🔍 Search Subject Teacher</label>
+                      <input type="text" placeholder="Search teacher name, subject, email..." value={searchTeacher} onChange={e => setSearchTeacher(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }} />
+                    </div>
+
+                    <div style={{ width: '160px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>🏬 Department</label>
+                      <select value={teacherDeptFilter} onChange={e => setTeacherDeptFilter(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}>
+                        <option value="all">All Departments</option>
+                        {uniqueTeacherDepts.map(d => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                    </div>
+
+                    <div style={{ width: '160px' }}>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>📖 Subject</label>
+                      <select value={teacherSpecFilter} onChange={e => setTeacherSpecFilter(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}>
+                        <option value="all">All Subjects</option>
+                        {uniqueTeacherSpecs.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+
+                    {searchTeacher || teacherDeptFilter !== 'all' || teacherSpecFilter !== 'all' ? (
+                      <button onClick={() => { setSearchTeacher(''); setTeacherDeptFilter('all'); setTeacherSpecFilter('all'); }} style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}>🧹 Clear</button>
+                    ) : null}
+                  </div>
+
+                  {/* Subject Teacher Table */}
+                  <div className="table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Subject Teacher Name</th>
+                          <th>Email & Contact</th>
+                          <th>Specialization Subject</th>
+                          <th>Department</th>
+                          <th>Qualifications</th>
+                          <th>Experience</th>
+                          <th>Role Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {teachers.filter((t: any) => !t.isClassTeacher).length > 0 ? (
+                          teachers.filter((t: any) => !t.isClassTeacher).map((t: any) => (
+                            <tr key={t._id}>
+                              <td><strong style={{ color: 'var(--text-main)' }}>{t.user?.name}</strong></td>
+                              <td>
+                                <div style={{ fontSize: '13px' }}>{t.user?.email}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.user?.phone || 'N/A'}</div>
+                              </td>
+                              <td><span style={{ padding: '4px 10px', borderRadius: '6px', backgroundColor: 'rgba(139,92,246,0.12)', color: '#8b5cf6', fontWeight: '700', fontSize: '12px' }}>{t.specialization || 'General Subject'}</span></td>
+                              <td>{t.department || 'Academic Department'}</td>
+                              <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{t.qualifications || 'B.Ed / M.Sc'}</td>
+                              <td><strong>{t.experience || 0} yrs</strong></td>
+                              <td>
+                                <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '600', backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>
+                                  Subject Specialist
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No subject teachers registered.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {sectionKey === 'operations' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Fee Collection Table */}
+            <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>💰 Fee Collection & Outstanding Dues</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Financial transactions, paid amounts, and student dues.</p>
+                </div>
+                <button onClick={() => navigate('/super-admin?tab=finance')} style={{ padding: '8px 16px', backgroundColor: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                  Manage Fees Portal →
+                </button>
+              </div>
+
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Student Name</th>
+                      <th>Class</th>
+                      <th>Total Fee</th>
+                      <th>Amount Paid</th>
+                      <th>Outstanding Dues</th>
+                      <th>Status</th>
+                      <th>Last Modified By</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fees.length > 0 ? (
+                      fees.map((f: any) => (
+                        <tr key={f.id || f._id}>
+                          <td><strong style={{ color: 'var(--text-main)' }}>{f.student}</strong></td>
+                          <td>{f.class}</td>
+                          <td>₹{f.total?.toLocaleString() || 0}</td>
+                          <td style={{ color: 'var(--success)', fontWeight: '700' }}>₹{f.paid?.toLocaleString() || 0}</td>
+                          <td style={{ color: f.due > 0 ? 'var(--danger)' : 'var(--text-muted)', fontWeight: '700' }}>₹{f.due?.toLocaleString() || 0}</td>
+                          <td>
+                            <span className={`badge ${f.status === 'Paid' ? 'approved' : 'pending'}`}>
+                              {f.status || 'Pending'}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-main)' }}>
+                            👔 {f.updatedBy || 'Super Admin'}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No fee records found.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Sub-Admin User Accounts Table */}
+            <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>👑 Sub-Admin Accounts Directory</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Registered Manager Admin, Student Admin, Teacher Admin & Finance Admin users.</p>
+                </div>
+                <button onClick={() => navigate('/super-admin?tab=admins')} style={{ padding: '8px 16px', backgroundColor: '#6366f1', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                  Add / Manage Accounts →
+                </button>
+              </div>
+
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Admin Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Role</th>
+                      <th>Created Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subAdmins.length > 0 ? (
+                      subAdmins.map((a: any) => (
+                        <tr key={a.id || a._id}>
+                          <td><strong style={{ color: 'var(--text-main)' }}>{a.name}</strong></td>
+                          <td>{a.email}</td>
+                          <td>{a.phone || 'N/A'}</td>
+                          <td>
+                            <span style={{ padding: '3px 10px', borderRadius: '20px', backgroundColor: 'rgba(99,102,241,0.15)', color: '#6366f1', fontWeight: '700', fontSize: '11px' }}>
+                              {a.role}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{a.created || '2026-08-01'}</td>
+                          <td><span className="badge approved">Active</span></td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No sub-admin accounts registered yet.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -709,12 +1948,40 @@ const SuperAdminDashboard = () => {
         <Navbar />
         <div className="dashboard-container" style={{ padding:'20px' }}>
 
-          {/* ── Header ── */}
-          <div style={{ marginBottom:'20px' }}>
-            <h1 style={{ margin:0, display:'flex', alignItems:'center', gap:'10px', fontSize:'21px', fontWeight:'700' }}>
-              <FiShield style={{ color:'var(--primary)' }} /> Super Admin Control Panel
-            </h1>
-            <p style={{ color:'var(--text-muted)', margin:'4px 0 0', fontSize:'13px' }}>Full visibility over Finance Admin, Student Admin, and system operations.</p>
+          {/* ── Main Navigation Tabs ── */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap', backgroundColor: 'var(--panel-bg)', padding: '6px', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+            {[
+              { id: 'overview', label: 'Dashboard Overview', icon: '🏠' },
+              { id: 'teacher-link', label: 'Teacher & Academic Admin', icon: '👩‍🏫', path: '/academic-admin' },
+              { id: 'finance', label: 'Finance Admin', icon: '💰' },
+              { id: 'hierarchy', label: 'Role Hierarchy', icon: '🌳' },
+              { id: 'attendance', label: 'Daily Attendance', icon: '✅' },
+              { id: 'admins', label: 'Sub-Admin Accounts', icon: '🛡️' },
+              { id: 'system', label: 'System Logs', icon: '⚙️' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => t.path ? navigate(t.path) : navigate(`/super-admin?tab=${t.id}`)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: activeTab === t.id ? 'var(--primary)' : 'transparent',
+                  color: activeTab === t.id ? '#ffffff' : 'var(--text-muted)',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: activeTab === t.id ? '0 4px 12px rgba(30,58,138,0.25)' : 'none',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <span>{t.icon}</span>
+                <span>{t.label}</span>
+              </button>
+            ))}
           </div>
 
           {/* ── Status ── */}
@@ -727,109 +1994,214 @@ const SuperAdminDashboard = () => {
             </div>
           )}
 
-
           {/* ═══ SECTION PAGE (when sidebar category heading clicked) ═══════ */}
           {activeSection && renderSectionPage(activeSection)}
+
+          {/* ═══════════════════════════════════════════════════════════════════
+               TAB: ROLE HIERARCHY DIAGRAM
+          ═══════════════════════════════════════════════════════════════════ */}
+          {!activeSection && activeTab === 'hierarchy' && (
+            <div style={{ marginBottom: '28px' }}>
+              <RoleHierarchyMap />
+            </div>
+          )}
 
           {/* ═══════════════════════════════════════════════════════════════════
                TAB 1 — SYSTEM OVERVIEW
           ═══════════════════════════════════════════════════════════════════ */}
           {!activeSection && activeTab === 'overview' && (
             <div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))', gap:'14px', marginBottom:'24px' }}>
-                {[
-                  { label:'Total Students',    value: students.length,                  icon:'🎓', color:'var(--primary)' },
-                  { label:'Active Students',   value: students.filter(s=>s.status==='Active').length, icon:'✅', color:'var(--success)' },
-                  { label:'Sub-Admins',        value: subAdmins.length,                 icon:'🛡️', color:'#6366f1' },
-                  { label:'Total Billed',      value:`₹${totalFees.toLocaleString()}`,  icon:'💵', color:'#f59e0b' },
-                  { label:'Fees Collected',    value:`₹${collectedFees.toLocaleString()}`,icon:'💰',color:'var(--success)' },
-                  { label:'Outstanding Dues',  value:`₹${pendingFees.toLocaleString()}`,icon:'⏳', color:'var(--danger)' },
-                ].map((s,i) => (
-                  <div key={i} className="stat-card" style={{ cursor:'default' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+
+              {/* ── Super Admin Welcome Banner ── */}
+              {(() => {
+                const superAdminName = localStorage.getItem('userName') || 'Super Admin';
+                const hour = new Date().getHours();
+                const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+                const totalPaid = fees.reduce((s: number, f: any) => s + (f.paid || 0), 0);
+                const pendingAdm = students.filter((s: any) => s.status === 'Pending').length;
+                return (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #1e3a5f 100%)',
+                    borderRadius: '20px', padding: '28px 32px', marginBottom: '24px',
+                    position: 'relative', overflow: 'hidden', border: '1px solid rgba(99,102,241,0.3)'
+                  }}>
+                    <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '280px', height: '280px', borderRadius: '50%', background: 'rgba(99,102,241,0.15)', filter: 'blur(70px)', pointerEvents: 'none' }} />
+                    <div style={{ position: 'absolute', bottom: '-40px', left: '30%', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(245,158,11,0.1)', filter: 'blur(50px)', pointerEvents: 'none' }} />
+                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
                       <div>
-                        <span className="stat-title">{s.label}</span>
-                        <div style={{ fontSize:'26px', fontWeight:'700', color:s.color, marginTop:'4px' }}>{s.value}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                          <span style={{ background: 'rgba(99,102,241,0.35)', color: '#a5b4fc', fontSize: '11px', fontWeight: '800', padding: '3px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.08em', border: '1px solid rgba(99,102,241,0.4)' }}>
+                            👑 Super Admin
+                          </span>
+                          <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '12px' }}>• Full System Access</span>
+                        </div>
+                        <h1 style={{ fontSize: '26px', fontWeight: '900', margin: '0 0 6px', color: '#fff', letterSpacing: '-0.02em' }}>
+                          {greeting}, {superAdminName}! 👋
+                        </h1>
+                        <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '13px' }}>
+                          {students.length} Students &nbsp;•&nbsp; {teachers.length} Teachers &nbsp;•&nbsp; {subAdmins.length} Sub-Admins &nbsp;•&nbsp; ₹{totalPaid.toLocaleString()} Collected
+                        </p>
                       </div>
-                      <span style={{ fontSize:'26px' }}>{s.icon}</span>
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button onClick={() => navigate('/super-admin?tab=admins')} style={{ backgroundColor: 'rgba(99,102,241,0.25)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                          🛡️ Manage Admins
+                        </button>
+                        <button onClick={() => navigate('/super-admin?tab=exams')} style={{ backgroundColor: 'rgba(245,158,11,0.25)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                          📅 Exam Timetable
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── Stats Row ── */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:'14px', marginBottom:'24px' }}>
+                {[
+                  { label:'Total Students',     value: students.length,                               icon:'🎓', color:'var(--primary)', bg:'rgba(30,58,138,0.06)' },
+                  { label:'Active Students',    value: students.filter(s=>s.status==='Active').length, icon:'✅', color:'var(--success)', bg:'rgba(16,185,129,0.06)' },
+                  { label:'Sub-Admin Accounts', value: subAdmins.length,                              icon:'🛡️', color:'#6366f1', bg:'rgba(99,102,241,0.06)' },
+                  { label:'Total Billed',       value:`₹${totalFees.toLocaleString()}`,               icon:'💵', color:'#f59e0b', bg:'rgba(245,158,11,0.06)' },
+                  { label:'Fees Collected',     value:`₹${collectedFees.toLocaleString()}`,           icon:'💰', color:'var(--success)', bg:'rgba(16,185,129,0.06)' },
+                  { label:'Outstanding Dues',   value:`₹${pendingFees.toLocaleString()}`,             icon:'⏳', color:'var(--danger)', bg:'rgba(239,68,68,0.06)' },
+                ].map((s,i)=>(
+                  <div key={i} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', transition: 'all 0.2s ease' }}>
+                    <div>
+                      <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>{s.label}</span>
+                      <div style={{ fontSize: '22px', fontWeight: '800', color: s.color, marginTop: '4px' }}>{s.value}</div>
+                    </div>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '10px', backgroundColor: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                      {s.icon}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Export All Data Buttons */}
-              <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignItems: 'flex-end', marginBottom: '15px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '5px', textTransform: 'uppercase' }}>Export Start Date</label>
-                    <input 
-                      type="date" 
-                      value={globalStartDate}
-                      onChange={(e) => setGlobalStartDate(e.target.value)}
-                      onClick={(e) => (e.target as any).showPicker && (e.target as any).showPicker()}
-                      style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '5px', textTransform: 'uppercase' }}>Export End Date</label>
-                    <input 
-                      type="date" 
-                      value={globalEndDate}
-                      onChange={(e) => setGlobalEndDate(e.target.value)}
-                      onClick={(e) => (e.target as any).showPicker && (e.target as any).showPicker()}
-                      style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
-                    />
-                  </div>
+              {/* ── Executive Department Portals ── */}
+              <div style={{ marginBottom: '28px' }}>
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>🏛️ Department Management Portals</span>
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                    Access and manage all key operational branches of the ERP system.
+                  </p>
                 </div>
-                <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
-                  <button onClick={handleExportStudents} style={{ padding:'9px 18px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600', fontSize:'13px', display:'flex', alignItems:'center', gap:'6px' }}>
-                    📥 Export Students
-                  </button>
-                  <button onClick={handleExportFinance} style={{ padding:'9px 18px', backgroundColor:'#f59e0b', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600', fontSize:'13px', display:'flex', alignItems:'center', gap:'6px' }}>
-                    📥 Export Finance
-                  </button>
-                  <button onClick={handleExportSubAdmins} style={{ padding:'9px 18px', backgroundColor:'#6366f1', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600', fontSize:'13px', display:'flex', alignItems:'center', gap:'6px' }}>
-                    📥 Export Admins
-                  </button>
-                  <button onClick={handleExportAttendance} style={{ padding:'9px 18px', backgroundColor:'var(--success)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600', fontSize:'13px', display:'flex', alignItems:'center', gap:'6px' }}>
-                    📥 Export Attendance
-                  </button>
-                  <button onClick={handleExportLogs} style={{ padding:'9px 18px', backgroundColor:'var(--text-main)', color:'var(--card-bg)', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600', fontSize:'13px', display:'flex', alignItems:'center', gap:'6px' }}>
-                    📥 Export Logs
-                  </button>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  {[
+                    {
+                      id: 'academic',
+                      emoji: '👩‍🏫',
+                      title: 'Teacher & Academic Admin',
+                      desc: 'Faculty directory, subject allocations, class teachers, student roster, admissions & promotions.',
+                      path: '/academic-admin',
+                      color: '#8b5cf6',
+                      bg: 'rgba(139,92,246,0.08)'
+                    },
+                    {
+                      id: 'finance',
+                      emoji: '💰',
+                      title: 'Finance Admin',
+                      desc: 'Fee structure, payments tracking, invoices & dues recovery.',
+                      path: '/finance-admin',
+                      color: '#10b981',
+                      bg: 'rgba(16,185,129,0.08)'
+                    },
+                    {
+                      id: 'executive',
+                      emoji: '👔',
+                      title: 'Manager Admin',
+                      desc: 'Executive management across academic & student operations.',
+                      path: '/manager-admin',
+                      color: '#3b82f6',
+                      bg: 'rgba(59,130,246,0.08)'
+                    },
+                  ].map((card) => (
+                    <div
+                      key={card.id}
+                      style={{
+                        backgroundColor: 'var(--card-bg)',
+                        border: `1px solid var(--border-color)`,
+                        borderRadius: '16px',
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        transition: 'transform 0.2s, box-shadow 0.2s'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                          <div style={{ fontSize: '24px', width: '44px', height: '44px', borderRadius: '12px', backgroundColor: card.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {card.emoji}
+                          </div>
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)' }}>{card.title}</h4>
+                          </div>
+                        </div>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px', lineHeight: '1.4' }}>
+                          {card.desc}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => navigate(card.path)}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          backgroundColor: card.color,
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '10px',
+                          fontSize: '13px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: `0 4px 12px ${card.color}35`
+                        }}
+                      >
+                        <span>Open {card.title}</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:'18px' }}>
-                {/* Quick summary — Finance */}
-                <div style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'20px' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-                    <h3 style={{ margin:0, fontSize:'15px', fontWeight:'700' }}>💰 Finance Summary</h3>
-                    <button onClick={()=>goTab('finance')} style={{ padding:'5px 12px', fontSize:'12px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'6px', cursor:'pointer', fontWeight:'600' }}>View All</button>
+              {/* ── Summary Widgets ── */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(240px,1fr))', gap:'14px' }}>
+                {/* Finance Summary */}
+                <div style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'18px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+                    <div style={{ fontSize:'14px', fontWeight:'700', color:'var(--text-main)' }}>💰 Finance Summary</div>
+                    <button onClick={()=>goTab('finance')} style={{ padding:'4px 10px', fontSize:'11px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'5px', cursor:'pointer', fontWeight:'600' }}>View All</button>
                   </div>
                   {[
-                    { label:'Total Billed',  value:`₹${totalFees.toLocaleString()}`,      color:'var(--text-main)' },
-                    { label:'Collected',     value:`₹${collectedFees.toLocaleString()}`,  color:'var(--success)' },
-                    { label:'Pending',       value:`₹${fees.filter(f=>f.status==='Pending').reduce((a,c)=>a+c.due,0).toLocaleString()}`, color:'#d97706' },
-                    { label:'Overdue',       value:`₹${fees.filter(f=>f.status==='Overdue').reduce((a,c)=>a+c.due,0).toLocaleString()}`, color:'var(--danger)' },
-                  ].map((r,i) => (
-                    <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid var(--border-color)' }}>
+                    { label:'Total Billed', val:`₹${totalFees.toLocaleString()}`, color:'var(--text-main)' },
+                    { label:'Collected',    val:`₹${collectedFees.toLocaleString()}`, color:'var(--success)' },
+                    { label:'Outstanding',  val:`₹${pendingFees.toLocaleString()}`, color:'var(--danger)' },
+                  ].map((r,i)=>(
+                    <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid var(--border-color)' }}>
                       <span style={{ fontSize:'13px', color:'var(--text-muted)' }}>{r.label}</span>
-                      <strong style={{ fontSize:'13px', color:r.color }}>{r.value}</strong>
+                      <strong style={{ fontSize:'13px', color:r.color }}>{r.val}</strong>
                     </div>
                   ))}
                 </div>
 
-                {/* Quick summary — Students */}
-                <div style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'20px' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-                    <h3 style={{ margin:0, fontSize:'15px', fontWeight:'700' }}>🎓 Student Summary</h3>
-                    <button onClick={() => navigate('/student-admin?tab=profiles')} style={{ padding:'5px 12px', fontSize:'12px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'6px', cursor:'pointer', fontWeight:'600' }}>View All</button>
+                {/* Student Summary */}
+                <div style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'18px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+                    <div style={{ fontSize:'14px', fontWeight:'700', color:'var(--text-main)' }}>🎓 Student Summary</div>
+                    <button onClick={()=>navigate('/academic-admin?tab=profiles')} style={{ padding:'4px 10px', fontSize:'11px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'5px', cursor:'pointer', fontWeight:'600' }}>View All</button>
                   </div>
-                  {['Class 7','Class 8','Class 9','Class 10'].map(cls => {
+                  {['Class 7','Class 8','Class 9','Class 10'].map(cls=>{
                     const count = students.filter(s=>s.class===cls).length;
                     return (
-                      <div key={cls} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', borderBottom:'1px solid var(--border-color)' }}>
+                      <div key={cls} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 0', borderBottom:'1px solid var(--border-color)' }}>
                         <span style={{ fontSize:'13px', color:'var(--text-muted)' }}>{cls}</span>
                         <span style={{ fontSize:'13px', fontWeight:'700', color:'var(--primary)' }}>{count} students</span>
                       </div>
@@ -837,20 +2209,20 @@ const SuperAdminDashboard = () => {
                   })}
                 </div>
 
-                {/* Sub-admins quick view */}
-                <div style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'20px' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-                    <h3 style={{ margin:0, fontSize:'15px', fontWeight:'700' }}>🛡️ Sub-Admin Accounts</h3>
-                    <button onClick={()=>goTab('admins')} style={{ padding:'5px 12px', fontSize:'12px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'6px', cursor:'pointer', fontWeight:'600' }}>Manage</button>
+                {/* Sub-Admins Quick View */}
+                <div style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'18px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px' }}>
+                    <div style={{ fontSize:'14px', fontWeight:'700', color:'var(--text-main)' }}>🛡️ Sub-Admin Accounts</div>
+                    <button onClick={()=>goTab('admins')} style={{ padding:'4px 10px', fontSize:'11px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'5px', cursor:'pointer', fontWeight:'600' }}>Manage</button>
                   </div>
-                  {subAdmins.map(a => {
+                  {subAdmins.slice(0,4).map(a=>{
                     const info = av(a.name);
                     return (
-                      <div key={a.id} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'8px 0', borderBottom:'1px solid var(--border-color)' }}>
-                        <div style={{ width:'34px', height:'34px', borderRadius:'50%', backgroundColor:info.bg, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:'700', fontSize:'12px', flexShrink:0 }}>{info.initials}</div>
+                      <div key={a.id} style={{ display:'flex', alignItems:'center', gap:'10px', padding:'7px 0', borderBottom:'1px solid var(--border-color)' }}>
+                        <div style={{ width:'30px', height:'30px', borderRadius:'50%', backgroundColor:info.bg, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:'700', fontSize:'11px', flexShrink:0 }}>{info.initials}</div>
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:'13px', fontWeight:'600', color:'var(--text-main)' }}>{a.name}</div>
-                          <div style={{ fontSize:'11px', color:'var(--text-muted)' }}>{a.role.replace('-',' ')}</div>
+                          <div style={{ fontSize:'11px', color:'var(--text-muted)' }}>{a.role.replace(/-/g,' ')}</div>
                         </div>
                         {badge(a.status)}
                       </div>
@@ -858,18 +2230,18 @@ const SuperAdminDashboard = () => {
                   })}
                 </div>
 
-                {/* Upcoming */}
-                <div style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'20px' }}>
-                  <h3 style={{ margin:'0 0 16px', fontSize:'15px', fontWeight:'700' }}>📅 School Calendar</h3>
+                {/* School Calendar */}
+                <div style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'18px' }}>
+                  <div style={{ fontSize:'14px', fontWeight:'700', color:'var(--text-main)', marginBottom:'12px' }}>📅 School Calendar</div>
                   {[
-                    { date:'28 Jun', event:'Annual Sports Day', type:'Event' },
-                    { date:'30 Jun', event:'Parent-Teacher Meet', type:'Meeting' },
-                    { date:'05 Jul', event:'Term 2 Fee Due Date', type:'Finance' },
+                    { date:'28 Jun', event:'Annual Sports Day',    type:'Event' },
+                    { date:'30 Jun', event:'Parent-Teacher Meet',  type:'Meeting' },
+                    { date:'05 Jul', event:'Term 2 Fee Due',       type:'Finance' },
                     { date:'10 Jul', event:'Mid-Term Exams Begin', type:'Exam' },
-                    { date:'15 Jul', event:'Science Exhibition', type:'Event' },
-                  ].map((ev,i) => (
-                    <div key={i} style={{ display:'flex', gap:'12px', alignItems:'center', padding:'8px 0', borderBottom:'1px solid var(--border-color)' }}>
-                      <div style={{ backgroundColor:'var(--primary-bg)', borderRadius:'6px', padding:'5px 8px', textAlign:'center', minWidth:'50px' }}>
+                    { date:'15 Jul', event:'Science Exhibition',   type:'Event' },
+                  ].map((ev,i)=>(
+                    <div key={i} style={{ display:'flex', gap:'10px', alignItems:'center', padding:'7px 0', borderBottom:'1px solid var(--border-color)' }}>
+                      <div style={{ backgroundColor:'var(--primary-bg)', borderRadius:'5px', padding:'3px 7px', textAlign:'center', minWidth:'44px' }}>
                         <div style={{ fontSize:'11px', fontWeight:'700', color:'var(--primary)' }}>{ev.date}</div>
                       </div>
                       <div>
@@ -910,12 +2282,41 @@ const SuperAdminDashboard = () => {
                 ))}
               </div>
 
-              {/* Controls */}
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'12px', marginBottom:'16px' }}>
-                <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
-                  <input placeholder="🔍 Search student..." value={searchFee} onChange={e=>setSearchFee(e.target.value)}
-                    style={{ ...inS, width:'220px' }} />
-                  <select value={feeFilter} onChange={e=>setFeeFilter(e.target.value)} style={{ ...inS, width:'140px' }}>
+              {/* Advanced Multi-Filter Bar for Finance */}
+              <div style={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: '12px', 
+                marginBottom: '20px', 
+                padding: '16px', 
+                backgroundColor: 'var(--panel-bg)', 
+                borderRadius: '12px', 
+                border: '1px solid var(--border-color)',
+                alignItems: 'flex-end'
+              }}>
+                {/* Search */}
+                <div style={{ flex: '1 1 200px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    🔍 Search Student
+                  </label>
+                  <input
+                    placeholder="Search student name..."
+                    value={searchFee}
+                    onChange={e => setSearchFee(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* Status Filter */}
+                <div style={{ width: '140px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    💵 Payment Status
+                  </label>
+                  <select
+                    value={feeFilter}
+                    onChange={e => setFeeFilter(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
                     <option value="all">All Status</option>
                     <option value="Paid">Paid</option>
                     <option value="Pending">Pending</option>
@@ -923,12 +2324,89 @@ const SuperAdminDashboard = () => {
                     <option value="Partial">Partial</option>
                   </select>
                 </div>
-                <div style={{ display:'flex', gap:'10px' }}>
-                  <button onClick={handleExportFinance} style={{ padding:'9px 18px', backgroundColor:'var(--success)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600', fontSize:'13px', display:'flex', alignItems:'center', gap:'6px' }}>
+
+                {/* Class Filter */}
+                <div style={{ width: '140px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    🏫 Class
+                  </label>
+                  <select
+                    value={feeClassFilter}
+                    onChange={e => setFeeClassFilter(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="all">All Classes</option>
+                    {uniqueFeeClasses.map(c => (
+                      <option key={c} value={c}>Class {c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Section Filter */}
+                <div style={{ width: '130px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    🅰️ Section
+                  </label>
+                  <select
+                    value={feeSectionFilter}
+                    onChange={e => setFeeSectionFilter(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="all">All Sections</option>
+                    {uniqueFeeSections.map(s => (
+                      <option key={s} value={s}>Section {s}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date From */}
+                <div style={{ width: '140px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    📅 From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={feeDateFrom}
+                    onChange={e => setFeeDateFrom(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '12px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* Date To */}
+                <div style={{ width: '140px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    📅 To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={feeDateTo}
+                    onChange={e => setFeeDateTo(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '12px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                  {(searchFee || feeFilter !== 'all' || feeClassFilter !== 'all' || feeSectionFilter !== 'all' || feeDateFrom || feeDateTo) && (
+                    <button
+                      onClick={() => {
+                        setSearchFee('');
+                        setFeeFilter('all');
+                        setFeeClassFilter('all');
+                        setFeeSectionFilter('all');
+                        setFeeDateFrom('');
+                        setFeeDateTo('');
+                      }}
+                      style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}
+                    >
+                      🧹 Clear
+                    </button>
+                  )}
+                  <button onClick={handleExportFinance} style={{ padding: '8px 16px', backgroundColor: 'var(--success)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', height: '36px' }}>
                     📥 Export Excel
                   </button>
-                  <button onClick={()=>setShowAddFee(!showAddFee)} style={{ padding:'9px 18px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600', fontSize:'13px', display:'flex', alignItems:'center', gap:'6px' }}>
-                    <FiPlus /> Add Fee Record
+                  <button onClick={() => setShowAddFee(!showAddFee)} style={{ padding: '8px 16px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '12px', height: '36px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <FiPlus /> Add Fee
                   </button>
                 </div>
               </div>
@@ -960,9 +2438,9 @@ const SuperAdminDashboard = () => {
                       <select required value={feeForm.studentId} onChange={e=>setFeeForm({...feeForm, studentId: e.target.value})} style={inS}>
                         <option value="">Select Student...</option>
                         {students
-                          .filter(s => (!feeFormClass || s.class === feeFormClass) && (!feeFormSection || s.section === feeFormSection))
+                          .filter(s => (!feeFormClass || s.class === feeFormClass || normalizeClass(s.class) === normalizeClass(feeFormClass)) && (!feeFormSection || (s.section || '').toUpperCase() === feeFormSection.toUpperCase()))
                           .map(s => (
-                            <option key={s.id} value={s.id}>Roll {s.roll} - {s.name}</option>
+                            <option key={s._id || s.id} value={s._id || s.id}>Roll {s.roll || s.rollNumber || 'N/A'} - {s.name} (Class {s.class || s.className}-{s.section})</option>
                           ))}
                       </select>
                     </div>
@@ -1384,17 +2862,51 @@ const SuperAdminDashboard = () => {
               </div>
 
               {/* Role cards */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:'16px', marginBottom:'24px' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:'16px', marginBottom:'24px' }}>
                 {[
-                  { role:'finance-admin', emoji:'💰', name:'Finance Admin', color:'#f59e0b', desc:'Manages all fee collection, billing, payment records, and financial reports for the school.', count: subAdmins.filter(a=>a.role==='finance-admin').length },
-                  { role:'student-admin', emoji:'🎓', name:'Student Admin', color:'#10b981', desc:'Manages student profiles, class enrollment, admissions, attendance records, and promotions.', count: subAdmins.filter(a=>a.role==='student-admin').length },
+                  {
+                    role:'manager-admin', emoji:'👔', name:'Manager Admin',
+                    color:'#3b82f6', bg:'rgba(59,130,246,0.08)', border:'rgba(59,130,246,0.25)',
+                    desc:'Overall system management access. Can submit and oversee all operational desks.',
+                    path:'/manager-admin',
+                    count: subAdmins.filter(a=>a.role==='manager-admin').length
+                  },
+                  {
+                    role:'academic-admin', emoji:'👩‍🏫', name:'Teacher & Student Admin',
+                    color:'#8b5cf6', bg:'rgba(139,92,246,0.08)', border:'rgba(139,92,246,0.25)',
+                    desc:'Unified portal for teachers, subjects, class assignments, student profiles and admissions.',
+                    path:'/academic-admin',
+                    count: subAdmins.filter(a=>a.role==='academic-admin' || a.role==='teacher-admin' || a.role==='student-admin').length
+                  },
+                  {
+                    role:'finance-admin', emoji:'💰', name:'Finance Admin',
+                    color:'#f59e0b', bg:'rgba(245,158,11,0.08)', border:'rgba(245,158,11,0.25)',
+                    desc:'Manages all fee collection, billing, payment records and financial reports.',
+                    path:'/finance-admin',
+                    count: subAdmins.filter(a=>a.role==='finance-admin').length
+                  },
                 ].map(rc => (
-                  <div key={rc.role} style={{ backgroundColor:'var(--card-bg)', border:'2px solid var(--border-color)', borderRadius:'12px', padding:'22px', textAlign:'center' }}>
-                    <div style={{ fontSize:'40px', marginBottom:'10px' }}>{rc.emoji}</div>
-                    <h3 style={{ margin:'0 0 8px', fontWeight:'700', color:'var(--text-main)' }}>{rc.name}</h3>
-                    <p style={{ fontSize:'13px', color:'var(--text-muted)', margin:'0 0 12px' }}>{rc.desc}</p>
-                    <div style={{ fontSize:'22px', fontWeight:'700', color:rc.color }}>{rc.count}</div>
-                    <div style={{ fontSize:'12px', color:'var(--text-muted)' }}>registered account{rc.count!==1?'s':''}</div>
+                  <div key={rc.role} style={{ backgroundColor:'var(--card-bg)', border:`2px solid ${rc.border}`, borderRadius:'16px', padding:'22px', position:'relative', overflow:'hidden' }}>
+                    <div style={{ position:'absolute', top:'-20px', right:'-20px', width:'80px', height:'80px', borderRadius:'50%', backgroundColor:rc.bg, filter:'blur(20px)', pointerEvents:'none' }} />
+                    <div style={{ position:'relative', display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:'32px', marginBottom:'10px' }}>{rc.emoji}</div>
+                        <h3 style={{ margin:'0 0 6px', fontWeight:'800', color:'var(--text-main)', fontSize:'15px' }}>{rc.name}</h3>
+                        <p style={{ fontSize:'12px', color:'var(--text-muted)', margin:'0 0 14px', lineHeight:'1.5' }}>{rc.desc}</p>
+                        <div style={{ display:'flex', alignItems:'center', gap:'12px' }}>
+                          <div>
+                            <div style={{ fontSize:'28px', fontWeight:'800', color:rc.color, lineHeight:1 }}>{rc.count}</div>
+                            <div style={{ fontSize:'11px', color:'var(--text-muted)', marginTop:'2px' }}>account{rc.count!==1?'s':''} registered</div>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigate(rc.path)}
+                        style={{ flexShrink:0, padding:'8px 14px', backgroundColor:rc.bg, color:rc.color, border:`1px solid ${rc.border}`, borderRadius:'8px', cursor:'pointer', fontWeight:'700', fontSize:'12px', display:'flex', alignItems:'center', gap:'5px', transition:'all 0.2s' }}
+                      >
+                        Open Portal →
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1405,22 +2917,25 @@ const SuperAdminDashboard = () => {
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'14px' }}>
                     <div><label style={lb}>Full Name *</label><input required type="text" value={adminForm.name} onChange={e=>setAdminForm({...adminForm,name:e.target.value})} style={inS} placeholder="Admin full name" /></div>
                     <div><label style={lb}>Email *</label><input required type="email" value={adminForm.email} onChange={e=>setAdminForm({...adminForm,email:e.target.value})} style={inS} placeholder="admin@school.com" /></div>
-                    <div><label style={lb}>Phone</label><input type="tel" value={adminForm.phone} onChange={e=>setAdminForm({...adminForm,phone:e.target.value})} style={inS} placeholder="+919XXXXXXXXX" /></div>
+                    <div><label style={lb}>Phone *</label><input required type="tel" value={adminForm.phone} onChange={e=>setAdminForm({...adminForm,phone:e.target.value})} style={inS} placeholder="+919876543210 or 10 digits" /></div>
                     <div>
                       <label style={lb}>Password *</label>
                       <div style={{ position:'relative' }}>
-                        <input required type={showPassword?'text':'password'} value={adminForm.password} onChange={e=>setAdminForm({...adminForm,password:e.target.value})} style={{ ...inS, paddingRight:'36px' }} placeholder="Min 8 chars" />
+                        <input required type={showPassword?'text':'password'} value={adminForm.password} onChange={e=>setAdminForm({...adminForm,password:e.target.value})} style={{ ...inS, paddingRight:'36px' }} placeholder="e.g. Admin@123 (8+ chars)" />
                         <button type="button" onClick={()=>setShowPassword(!showPassword)} style={{ position:'absolute', right:'10px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)' }}>
                           {showPassword ? <FiEyeOff size={14}/> : <FiEye size={14}/>}
                         </button>
                       </div>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>Must have 1 uppercase, 1 lowercase, 1 number & 1 special char</span>
                     </div>
                     <div>
                       <label style={lb}>Admin Role *</label>
                       <select value={adminForm.role} onChange={e=>setAdminForm({...adminForm,role:e.target.value})} style={inS}>
+                        <option value="academic-admin">📚 Teacher &amp; Student Admin (Academic &amp; Admissions)</option>
+                        <option value="manager-admin">👔 Manager Admin (Executive Overview &amp; Finance Read-Only)</option>
                         <option value="finance-admin">💰 Finance Admin</option>
-                        <option value="student-admin">🎓 Student Admin</option>
                       </select>
+
                     </div>
                     <div style={{ display:'flex', gap:'10px', alignItems:'flex-end' }}>
                       <button type="submit" style={{ flex:1, padding:'10px', backgroundColor:'var(--primary)', color:'white', border:'none', borderRadius:'7px', cursor:'pointer', fontWeight:'600' }}>Create</button>
@@ -1430,22 +2945,146 @@ const SuperAdminDashboard = () => {
                 </form>
               )}
 
+              {/* ── Advanced Manager & Sub-Admin Filter Bar ── */}
+              <div style={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: '12px', 
+                marginBottom: '20px', 
+                padding: '16px', 
+                backgroundColor: 'var(--panel-bg)', 
+                borderRadius: '12px', 
+                border: '1px solid var(--border-color)',
+                alignItems: 'flex-end'
+              }}>
+                {/* Search */}
+                <div style={{ flex: '1 1 220px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    🔍 Search Admin / Email
+                  </label>
+                  <input
+                    placeholder="Search name, email, phone..."
+                    value={searchSubAdmin}
+                    onChange={e => setSearchSubAdmin(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* Role Filter */}
+                <div style={{ width: '170px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    🛡️ Admin Role
+                  </label>
+                  <select
+                    value={subAdminRoleFilter}
+                    onChange={e => setSubAdminRoleFilter(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="manager-admin">👔 Manager Admin</option>
+                    <option value="finance-admin">💰 Finance Admin</option>
+                    <option value="academic-admin">📚 Teacher Admin</option>
+                    <option value="student-admin">🎓 Student Admin</option>
+                  </select>
+                </div>
+
+                {/* Status Filter */}
+                <div style={{ width: '130px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    ⚡ Status
+                  </label>
+                  <select
+                    value={subAdminStatusFilter}
+                    onChange={e => setSubAdminStatusFilter(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="Active">Active</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+
+                {/* Date From */}
+                <div style={{ width: '140px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    📅 From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={subAdminDateFrom}
+                    onChange={e => setSubAdminDateFrom(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '12px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* Date To */}
+                <div style={{ width: '140px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    📅 To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={subAdminDateTo}
+                    onChange={e => setSubAdminDateTo(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '12px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* Clear Button */}
+                {(searchSubAdmin || subAdminRoleFilter !== 'all' || subAdminStatusFilter !== 'all' || subAdminDateFrom || subAdminDateTo) && (
+                  <button
+                    onClick={() => {
+                      setSearchSubAdmin('');
+                      setSubAdminRoleFilter('all');
+                      setSubAdminStatusFilter('all');
+                      setSubAdminDateFrom('');
+                      setSubAdminDateTo('');
+                    }}
+                    style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}
+                  >
+                    🧹 Clear Filters
+                  </button>
+                )}
+              </div>
+
               <div className="table-container">
                 <table className="data-table">
                   <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Created</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
-                    {subAdmins.length > 0 ? subAdmins.map(a => (
+                    {filteredSubAdmins.length > 0 ? filteredSubAdmins.map(a => (
                       <tr key={a.id}>
                         <td><strong>{a.name}</strong></td>
                         <td>{a.email}</td>
                         <td style={{ fontSize:'13px' }}>{a.phone||'N/A'}</td>
-                        <td>{badge(a.role==='finance-admin' ? 'finance' : 'student')}<span style={{ marginLeft:'4px', fontSize:'13px', color:'var(--text-muted)' }}>{a.role.replace('-',' ')}</span></td>
+                        <td>
+                          {badge(a.role === 'finance-admin' ? 'finance' : a.role === 'academic-admin' ? 'academic' : a.role === 'manager-admin' ? 'manager' : 'student')}
+                          <span style={{ marginLeft:'8px', fontSize:'13px', fontWeight: '600', color:'var(--text-main)' }}>
+                            {a.role === 'super-admin' ? 'Super Admin' :
+                             a.role === 'manager-admin' ? 'Manager Admin' :
+                             a.role === 'academic-admin' ? 'Teacher Admin' :
+                             a.role === 'student-admin' ? 'Student Admin' :
+                             a.role === 'finance-admin' ? 'Finance Admin' :
+                             a.role === 'operations-admin' ? 'Operations Admin' :
+                             a.role ? a.role.replace('-',' ') : 'Admin'}
+                          </span>
+                        </td>
                         <td style={{ fontSize:'13px', color:'var(--text-muted)' }}>{a.created}</td>
                         <td>{badge(a.status)}</td>
                         <td>
-                          <button onClick={()=>deleteAdmin(a.id)} style={{ padding:'5px 12px', backgroundColor:'var(--danger-bg)', color:'var(--danger)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:'6px', cursor:'pointer', fontWeight:'600', fontSize:'12px', display:'inline-flex', alignItems:'center', gap:'4px' }}>
-                            <FiTrash2 size={11}/> Remove
-                          </button>
+                          <div style={{ display:'flex', gap:'6px', alignItems:'center' }}>
+                            <button
+                              onClick={() => openEditAdmin(a)}
+                              style={{ padding:'5px 12px', backgroundColor:'rgba(99,102,241,0.12)', color:'#6366f1', border:'1px solid rgba(99,102,241,0.25)', borderRadius:'6px', cursor:'pointer', fontWeight:'600', fontSize:'12px', display:'inline-flex', alignItems:'center', gap:'4px', transition:'all 0.2s' }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor='rgba(99,102,241,0.22)'; }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor='rgba(99,102,241,0.12)'; }}
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button onClick={()=>deleteAdmin(a.id)} style={{ padding:'5px 12px', backgroundColor:'var(--danger-bg)', color:'var(--danger)', border:'1px solid rgba(248,113,113,0.2)', borderRadius:'6px', cursor:'pointer', fontWeight:'600', fontSize:'12px', display:'inline-flex', alignItems:'center', gap:'4px' }}>
+                              <FiTrash2 size={11}/> Remove
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     )) : (
@@ -1454,7 +3093,135 @@ const SuperAdminDashboard = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* ── Edit Sub-Admin Modal ── */}
+              {showEditAdminModal && editingAdmin && (
+                <div
+                  onClick={() => setShowEditAdminModal(false)}
+                  style={{ position:'fixed', inset:0, backgroundColor:'rgba(0,0,0,0.6)', backdropFilter:'blur(8px)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:3000, padding:'16px' }}
+                >
+                  <div
+                    onClick={e => e.stopPropagation()}
+                    style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'20px', width:'100%', maxWidth:'480px', boxShadow:'0 25px 60px -12px rgba(0,0,0,0.4)', overflow:'hidden' }}
+                  >
+                    {/* Modal Header */}
+                    <div style={{ background:'linear-gradient(135deg,#6366f1,#8b5cf6)', padding:'22px 28px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <div>
+                        <h3 style={{ margin:0, color:'white', fontSize:'18px', fontWeight:'800', display:'flex', alignItems:'center', gap:'8px' }}>✏️ Edit Sub-Admin Account</h3>
+                        <p style={{ margin:'4px 0 0', color:'rgba(255,255,255,0.75)', fontSize:'13px' }}>Update account details for <strong>{editingAdmin.name}</strong></p>
+                      </div>
+                      <button
+                        onClick={() => setShowEditAdminModal(false)}
+                        style={{ background:'rgba(255,255,255,0.15)', border:'none', borderRadius:'8px', color:'white', cursor:'pointer', padding:'6px 10px', fontSize:'16px', fontWeight:'700', lineHeight:1 }}
+                      >✕</button>
+                    </div>
+
+                    {/* Modal Body */}
+                    <form onSubmit={handleUpdateAdmin} style={{ padding:'28px' }}>
+                      {/* Current Info badge */}
+                      <div style={{ display:'flex', alignItems:'center', gap:'12px', backgroundColor:'var(--panel-bg)', border:'1px solid var(--border-color)', borderRadius:'12px', padding:'14px 16px', marginBottom:'22px' }}>
+                        <div style={{ width:'42px', height:'42px', borderRadius:'50%', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:'800', fontSize:'16px', flexShrink:0 }}>
+                          {(editingAdmin.name || '?')[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight:'700', color:'var(--text-main)', fontSize:'14px' }}>{editingAdmin.name}</div>
+                          <div style={{ fontSize:'12px', color:'var(--text-muted)' }}>{editingAdmin.email}</div>
+                          <div style={{ fontSize:'11px', color:'#6366f1', fontWeight:'700', marginTop:'2px', textTransform:'uppercase' }}>{editingAdmin.role?.replace(/-/g,' ')}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ display:'grid', gap:'16px' }}>
+                        {/* Full Name */}
+                        <div>
+                          <label style={{ display:'block', fontSize:'11px', fontWeight:'700', color:'var(--text-muted)', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Full Name *</label>
+                          <input
+                            required
+                            type="text"
+                            value={editAdminForm.name}
+                            onChange={e => setEditAdminForm({...editAdminForm, name: e.target.value})}
+                            style={{ width:'100%', padding:'10px 13px', borderRadius:'9px', border:'1px solid var(--border-color)', backgroundColor:'var(--input-bg)', color:'var(--text-main)', fontSize:'13px', boxSizing:'border-box', outline:'none' }}
+                            placeholder="Admin full name"
+                          />
+                        </div>
+
+                        {/* Phone */}
+                        <div>
+                          <label style={{ display:'block', fontSize:'11px', fontWeight:'700', color:'var(--text-muted)', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Phone Number</label>
+                          <input
+                            type="tel"
+                            value={editAdminForm.phone}
+                            onChange={e => setEditAdminForm({...editAdminForm, phone: e.target.value})}
+                            style={{ width:'100%', padding:'10px 13px', borderRadius:'9px', border:'1px solid var(--border-color)', backgroundColor:'var(--input-bg)', color:'var(--text-main)', fontSize:'13px', boxSizing:'border-box', outline:'none' }}
+                            placeholder="+919XXXXXXXXX"
+                          />
+                        </div>
+
+                        {/* Role */}
+                        <div>
+                          <label style={{ display:'block', fontSize:'11px', fontWeight:'700', color:'var(--text-muted)', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>Admin Role *</label>
+                          <select
+                            required
+                            value={editAdminForm.role}
+                            onChange={e => setEditAdminForm({...editAdminForm, role: e.target.value})}
+                            style={{ width:'100%', padding:'10px 13px', borderRadius:'9px', border:'1px solid var(--border-color)', backgroundColor:'var(--input-bg)', color:'var(--text-main)', fontSize:'13px', boxSizing:'border-box', outline:'none', cursor:'pointer' }}
+                          >
+                            <option value="academic-admin">📚 Teacher &amp; Student Admin (Academic &amp; Admissions)</option>
+                            <option value="manager-admin">👔 Manager Admin</option>
+                            <option value="finance-admin">💰 Finance Admin</option>
+                          </select>
+
+                        </div>
+
+                        {/* New Password */}
+                        <div>
+                          <label style={{ display:'block', fontSize:'11px', fontWeight:'700', color:'var(--text-muted)', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>New Password <span style={{ color:'var(--text-muted)', fontWeight:'400', textTransform:'none' }}>(leave blank to keep unchanged)</span></label>
+                          <div style={{ position:'relative' }}>
+                            <input
+                              type={showEditPassword ? 'text' : 'password'}
+                              value={editAdminForm.password}
+                              onChange={e => setEditAdminForm({...editAdminForm, password: e.target.value})}
+                              style={{ width:'100%', padding:'10px 40px 10px 13px', borderRadius:'9px', border:'1px solid var(--border-color)', backgroundColor:'var(--input-bg)', color:'var(--text-main)', fontSize:'13px', boxSizing:'border-box', outline:'none' }}
+                              placeholder="Min 6 characters"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowEditPassword(!showEditPassword)}
+                              style={{ position:'absolute', right:'10px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:'16px', padding:0 }}
+                            >
+                              {showEditPassword ? <FiEyeOff size={15}/> : <FiEye size={15}/>}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display:'flex', gap:'10px', marginTop:'24px' }}>
+                        <button
+                          type="submit"
+                          style={{ flex:1, padding:'12px', background:'linear-gradient(135deg,#6366f1,#8b5cf6)', color:'white', border:'none', borderRadius:'10px', cursor:'pointer', fontWeight:'700', fontSize:'14px', boxShadow:'0 4px 14px rgba(99,102,241,0.35)' }}
+                        >
+                          💾 Save Changes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowEditAdminModal(false)}
+                          style={{ flex:1, padding:'12px', backgroundColor:'var(--panel-bg)', color:'var(--text-main)', border:'1px solid var(--border-color)', borderRadius:'10px', cursor:'pointer', fontWeight:'600', fontSize:'14px' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════
+               TAB — EXAM TIMETABLE
+          ═══════════════════════════════════════════════════════════════════ */}
+          {!activeSection && activeTab === 'exams' && (
+            <ExamTimetableTab />
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════
@@ -1523,6 +3290,273 @@ const SuperAdminDashboard = () => {
               </div>
             </div>
           )}
+
+      {/* VIEW FULL STUDENT DETAILS MODAL */}
+      {selectedViewStudent && (
+        <div onClick={() => setSelectedViewStudent(null)} style={{
+          position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.65)",
+          backdropFilter: "blur(8px)", display: "flex", justifyContent: "center",
+          alignItems: "center", zIndex: 2000, padding: "16px"
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            backgroundColor: "var(--card-bg)", border: "1px solid var(--border-color)",
+            borderRadius: "20px", width: "100%", maxWidth: "800px",
+            maxHeight: "92vh", overflowY: "auto", boxShadow: "0 25px 50px rgba(0,0,0,0.4)",
+            color: "var(--text-main)"
+          }}>
+            {/* Header */}
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ width: "44px", height: "44px", borderRadius: "12px", backgroundColor: "#3b82f6", color: "white", fontWeight: "800", fontSize: "18px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {selectedViewStudent.name ? selectedViewStudent.name.charAt(0).toUpperCase() : 'S'}
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, color: "var(--text-main)", fontSize: "18px", fontWeight: "800" }}>
+                    {selectedViewStudent.name}
+                  </h3>
+                  <p style={{ margin: "2px 0 0", color: "var(--text-muted)", fontSize: "12px", fontWeight: "600" }}>
+                    Roll No: <span style={{ color: "#3b82f6" }}>{selectedViewStudent.roll || 'N/A'}</span> | Class: <span style={{ color: "#3b82f6" }}>Class {selectedViewStudent.class || selectedViewStudent.className} ({selectedViewStudent.section || 'A'})</span>
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedViewStudent(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "var(--text-muted)" }}>×</button>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div style={{ display: "flex", gap: "8px", padding: "12px 24px", borderBottom: "1px solid var(--border-color)", overflowX: "auto" }}>
+              {[
+                { id: 'profile', label: '👤 Profile Details' },
+                { id: 'attendance', label: '📊 Attendance Record' },
+                { id: 'exams', label: '📅 Exam Timetable' },
+                { id: 'results', label: '🏆 Exam Results' },
+                { id: 'fees', label: '💳 Fee Statement' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setViewTab(tab.id as any)}
+                  style={{
+                    padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: "700",
+                    border: "none", cursor: "pointer", transition: "all 0.2s",
+                    backgroundColor: viewTab === tab.id ? "#3b82f6" : "var(--input-bg)",
+                    color: viewTab === tab.id ? "white" : "var(--text-muted)"
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Contents */}
+            <div style={{ padding: "24px" }}>
+              {/* TAB 1: PROFILE DETAILS */}
+              {viewTab === 'profile' && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "15px" }}>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Full Name</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.name}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Email Address</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.email}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Phone Number</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.phone || selectedViewStudent.user?.phone || 'N/A'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Roll Number</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px", color: "#3b82f6" }}>{selectedViewStudent.roll || selectedViewStudent.rollNumber || 'N/A'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Class & Section</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>Class {selectedViewStudent.class || selectedViewStudent.className} - Sec {selectedViewStudent.section || 'A'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Parent / Guardian</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.parentName || 'Registered Parent'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Parent Phone</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.parentPhone || selectedViewStudent.phone || 'N/A'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Blood Group / Gender</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.bloodGroup || 'B+'} / {selectedViewStudent.gender || 'Male'}</div>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1", backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Residential Address</div>
+                    <div style={{ fontSize: "14px", fontWeight: "600", marginTop: "2px" }}>{selectedViewStudent.address || 'No registered address'}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: ATTENDANCE RECORD */}
+              {viewTab === 'attendance' && (
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
+                    <div style={{ backgroundColor: "var(--input-bg)", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)" }}>ATTENDANCE RATE</div>
+                      <div style={{ fontSize: "20px", fontWeight: "800", color: viewStudentAttendance.percentage >= 75 ? "#10b981" : "#f59e0b" }}>
+                        {viewStudentAttendance.percentage}%
+                      </div>
+                    </div>
+                    <div style={{ backgroundColor: "var(--input-bg)", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)" }}>TOTAL RECORDS</div>
+                      <div style={{ fontSize: "20px", fontWeight: "800" }}>{viewStudentAttendance.records?.length || 0}</div>
+                    </div>
+                    <div style={{ backgroundColor: "var(--input-bg)", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)" }}>PRESENT DAYS</div>
+                      <div style={{ fontSize: "20px", fontWeight: "800", color: "#10b981" }}>
+                        {viewStudentAttendance.records?.filter((r: any) => r.status === 'Present').length || 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid var(--border-color)", borderRadius: "12px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                      <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
+                        <tr>
+                          <th style={{ padding: "10px 14px" }}>Date</th>
+                          <th style={{ padding: "10px 14px" }}>Day</th>
+                          <th style={{ padding: "10px 14px" }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {viewStudentAttendance.records?.length > 0 ? (
+                          viewStudentAttendance.records.map((r: any, idx: number) => (
+                            <tr key={idx} style={{ borderTop: "1px solid var(--border-color)" }}>
+                              <td style={{ padding: "10px 14px", fontWeight: "600" }}>{new Date(r.date).toLocaleDateString()}</td>
+                              <td style={{ padding: "10px 14px", color: "var(--text-muted)" }}>{new Date(r.date).toLocaleDateString('en-US', { weekday: 'long' })}</td>
+                              <td style={{ padding: "10px 14px", fontWeight: "700", color: r.status === 'Present' ? '#10b981' : '#ef4444' }}>
+                                {r.status === 'Present' ? '✓ Present' : '✗ Absent'}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr><td colSpan={3} style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No attendance records found for this student.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: EXAM TIMETABLE */}
+              {viewTab === 'exams' && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {viewStudentExams.length > 0 ? (
+                    viewStudentExams.map((exam: any, idx: number) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                        <div>
+                          <div style={{ fontWeight: "800", fontSize: "14px" }}>{exam.title}</div>
+                          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                            📚 {exam.subject} | 📅 {new Date(exam.date).toLocaleDateString('en-GB')} | 🕒 {exam.startTime || '10:00 AM'} - {exam.endTime || '01:00 PM'}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "8px", backgroundColor: "rgba(59,130,246,0.1)", color: "#3b82f6" }}>
+                            🏫 {exam.roomNumber || 'Hall-1'}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: "30px", textAlign: "center", color: "var(--text-muted)", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px dashed var(--border-color)" }}>
+                      No exam timetable scheduled for Class {selectedViewStudent.class || selectedViewStudent.className}.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: EXAM RESULTS */}
+              {viewTab === 'results' && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                  {viewStudentExams.length > 0 ? (
+                    <>
+                      <div style={{ padding: "15px", backgroundColor: "rgba(16,185,129,0.08)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", textTransform: "uppercase" }}>Scheduled Exams for Class {selectedViewStudent.class || selectedViewStudent.className}</div>
+                          <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-main)", marginTop: "2px" }}>Total: {viewStudentExams.length} Exam(s) Scheduled</div>
+                        </div>
+                        <span style={{ padding: "6px 14px", backgroundColor: "#3b82f6", color: "white", borderRadius: "20px", fontWeight: "800", fontSize: "12px" }}>
+                          ACADEMIC YEAR
+                        </span>
+                      </div>
+
+                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", border: "1px solid var(--border-color)", borderRadius: "12px", overflow: "hidden" }}>
+                        <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
+                          <tr>
+                            <th style={{ padding: "10px 14px" }}>Exam Title</th>
+                            <th style={{ padding: "10px 14px" }}>Subject</th>
+                            <th style={{ padding: "10px 14px" }}>Date</th>
+                            <th style={{ padding: "10px 14px" }}>Timing</th>
+                            <th style={{ padding: "10px 14px" }}>Venue</th>
+                            <th style={{ padding: "10px 14px" }}>Max Marks</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {viewStudentExams.map((exam: any, i: number) => (
+                            <tr key={i} style={{ borderTop: "1px solid var(--border-color)" }}>
+                              <td style={{ padding: "10px 14px", fontWeight: "700" }}>{exam.title}</td>
+                              <td style={{ padding: "10px 14px", color: "var(--text-muted)", fontWeight: "600" }}>📚 {exam.subject}</td>
+                              <td style={{ padding: "10px 14px", fontWeight: "600" }}>📅 {new Date(exam.date).toLocaleDateString('en-GB')}</td>
+                              <td style={{ padding: "10px 14px", fontWeight: "600" }}>🕒 {exam.startTime || '10:00 AM'} - {exam.endTime || '01:00 PM'}</td>
+                              <td style={{ padding: "10px 14px" }}>
+                                <span style={{ padding: "3px 10px", borderRadius: "8px", backgroundColor: "rgba(59,130,246,0.1)", color: "#3b82f6", fontWeight: "800", fontSize: "11px" }}>🏫 {exam.roomNumber || 'Hall-1'}</span>
+                              </td>
+                              <td style={{ padding: "10px 14px" }}>
+                                <span style={{ padding: "3px 10px", borderRadius: "8px", backgroundColor: "rgba(139,92,246,0.1)", color: "#8b5cf6", fontWeight: "800", fontSize: "11px" }}>{exam.maxMarks || 100} Marks</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </>
+                  ) : (
+                    <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px dashed var(--border-color)" }}>
+                      <div style={{ fontSize: "36px", marginBottom: "12px" }}>📋</div>
+                      <div style={{ fontSize: "16px", fontWeight: "700", marginBottom: "6px" }}>No Exam Results Available</div>
+                      <div style={{ fontSize: "13px" }}>No exams have been scheduled for Class {selectedViewStudent.class || selectedViewStudent.className} yet.</div>
+                      <div style={{ fontSize: "12px", marginTop: "8px", color: "#f59e0b", fontWeight: "600" }}>👉 First schedule exams from the Exams section, then they will appear here.</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 5: FEE STATEMENT */}
+              {viewTab === 'fees' && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {viewStudentFees.length > 0 ? (
+                    viewStudentFees.map((fee: any, idx: number) => (
+                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                        <div>
+                          <div style={{ fontWeight: "700" }}>Admission & Tuition Fee</div>
+                          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>Due Date: {new Date(fee.dueDate).toLocaleDateString('en-GB')}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: "16px", fontWeight: "800" }}>₹{fee.amount}</div>
+                          <span style={{ fontSize: "10px", fontWeight: "800", color: fee.status === 'Paid' ? '#10b981' : '#ef4444' }}>{fee.status}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: "30px", textAlign: "center", color: "var(--text-muted)", backgroundColor: "var(--input-bg)", borderRadius: "12px" }}>
+                      No fee records found for this student.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-color)", textAlign: "right" }}>
+              <button onClick={() => setSelectedViewStudent(null)} style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer" }}>
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
         </div>
       </main>

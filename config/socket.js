@@ -1,0 +1,40 @@
+const { Server } = require("socket.io");
+
+let io = null;
+
+const initSocket = (server) => {
+  io = new Server(server, {
+    cors: {
+      origin: ["https://sps-school-frontend.onrender.com", "http://localhost:3000", "http://localhost:3001"],
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      credentials: true
+    }
+  });
+
+  io.on("connection", (socket) => {
+    console.log(`⚡ Real-time socket client connected: ${socket.id}`);
+
+    socket.on("disconnect", () => {
+      console.log(`🔌 Socket client disconnected: ${socket.id}`);
+    });
+  });
+
+  return io;
+};
+
+const getIO = () => {
+  if (!io) {
+    console.warn("⚠️ Socket.IO not initialized yet!");
+  }
+  return io;
+};
+
+const notifyChange = (event, data = {}) => {
+  if (io) {
+    io.emit(event, data);
+    io.emit("DATA_CHANGED", { event, data, timestamp: new Date() });
+    console.log(`📡 Broadcasted live update event: [${event}]`);
+  }
+};
+
+module.exports = { initSocket, getIO, notifyChange };

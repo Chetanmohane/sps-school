@@ -2,6 +2,7 @@ const Assignment = require("../models/Assignment");
 const User = require("../models/User");
 const Student = require("../models/Student");
 const Submission = require("../models/Submission");
+const { notifyChange } = require("../config/socket");
 
 exports.createAssignment = async (req, res) => {
    try {
@@ -19,6 +20,7 @@ exports.createAssignment = async (req, res) => {
         });
 
         await newAssignment.save();
+        notifyChange("ASSIGNMENT_CHANGED", { action: "create", assignment: newAssignment });
         res.status(201).json({ message: "Assignment created successfully!", data: newAssignment });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -81,6 +83,7 @@ exports.submitAssignment = async (req, res) => {
         });
 
         await newSubmission.save();
+        notifyChange("ASSIGNMENT_CHANGED", { action: "submit", submission: newSubmission });
         res.status(201).json({ message: "Assignment submitted successfully!" });
     } catch (error) {
         console.error("Submission Error:", error);
@@ -136,6 +139,7 @@ exports.updateMarks = async (req, res) => {
       return res.status(404).json({ message: "Submission not found" });
     }
 
+    notifyChange("ASSIGNMENT_CHANGED", { action: "grade", submission: updatedSubmission });
     res.json(updatedSubmission);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,6 +1,7 @@
 const Application = require("../models/Application");
 const Student = require("../models/Student");
 const User = require("../models/User");
+const { notifyChange } = require("../config/socket");
 
 exports.sendApplication = async (req, res) => {
   try {
@@ -22,6 +23,7 @@ exports.sendApplication = async (req, res) => {
     });
 
     await newApplication.save();
+    notifyChange("APPLICATION_CHANGED", { action: "create", application: newApplication });
     res.status(201).json({ message: "Application submitted successfully!" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -54,6 +56,7 @@ exports.updateStatus = async (req, res) => {
       { new: true }
     );
 
+    notifyChange("APPLICATION_CHANGED", { action: "update", application: updated });
     res.status(200).json({ message: `Application ${status}`, data: updated });
   } catch (error) {
     res.status(500).json({ message: error.message });

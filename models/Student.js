@@ -10,12 +10,13 @@ const studentSchema = new mongoose.Schema({
   section: { type: String, required: true },
   rollNumber: { type: String, required: true, unique: true },
   address: { type: String },
-  dob: { type: Date, required: true },
+  dob: { type: Date, required: false },
 
   parentName: { type: String },
   parentPhone: { type: String },
   bloodGroup: { type: String },
   gender: { type: String },
+  profileImage: { type: String },
 
   // for Student Admin perspective
   allocationDate: { type: Date },
@@ -29,6 +30,10 @@ const studentSchema = new mongoose.Schema({
       promotedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
     }
   ],
+  updatedBy: {
+    type: String,
+    default: "Super Admin"
+  }
 });
 
 module.exports = mongoose.model("Student", studentSchema);

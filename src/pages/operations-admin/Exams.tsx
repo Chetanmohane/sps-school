@@ -10,6 +10,10 @@ const Exams = () => {
   const [formData, setFormData] = useState({
     title: '',
     date: '',
+    startTime: '10:00 AM',
+    endTime: '01:00 PM',
+    roomNumber: 'Hall-1',
+    maxMarks: '100',
     className: '',
     subject: ''
   });
@@ -22,7 +26,7 @@ const Exams = () => {
     try {
       setLoading(true);
       const response = await API.get('/api/exams');
-      setExams(response.data.exams);
+      setExams(response.data.exams || []);
     } catch (error) {
       console.error('Error fetching exams:', error);
     } finally {
@@ -44,7 +48,7 @@ const Exams = () => {
     try {
       await API.post('/api/exams', formData);
       alert('Exam scheduled successfully!');
-      setFormData({ title: '', date: '', className: '', subject: '' });
+      setFormData({ title: '', date: '', startTime: '10:00 AM', endTime: '01:00 PM', roomNumber: 'Hall-1', maxMarks: '100', className: '', subject: '' });
       fetchExams();
     } catch (error) {
       console.error('Error scheduling exam:', error);
@@ -82,7 +86,7 @@ const Exams = () => {
       alert("No data to export for the selected dates.");
       return;
     }
-    const headers = ['Exam Title', 'Date', 'Class', 'Subject'];
+    const headers = ['Exam Title', 'Date', 'Time Slot', 'Room / Venue', 'Class', 'Subject', 'Max Marks'];
     
     const escapeCSV = (val) => {
       if (val === null || val === undefined) return '';
@@ -99,8 +103,11 @@ const Exams = () => {
       const row = [
         e.title,
         new Date(e.date).toLocaleDateString(),
+        `${e.startTime || '10:00 AM'} - ${e.endTime || '01:00 PM'}`,
+        e.roomNumber || 'Hall-1',
         e.className,
-        e.subject
+        e.subject,
+        e.maxMarks || 100
       ];
       csvRows.push(row.map(escapeCSV).join(','));
     }
@@ -122,39 +129,55 @@ const Exams = () => {
       <main className="main-content">
         <Navbar />
         <div className="dashboard-container" style={{ margin: '20px' }}>
-          <h2>Manage Exams</h2>
+          <h2>📅 Manage Exam Timetable</h2>
           <hr style={{ margin: '15px 0', borderColor: 'var(--border-color)' }}/>
           
           <div style={{ padding: '20px', borderRadius: '8px', backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
             <h3>Schedule New Exam</h3>
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '15px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Exam Title:</label>
-                <input type="text" name="title" value={formData.title} onChange={handleChange} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Exam Title:</label>
+                <input type="text" name="title" placeholder="e.g. Mid-Term Examination" value={formData.title} onChange={handleChange} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Date:</label>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Date:</label>
                 <input type="date" name="date" value={formData.date} onChange={handleChange} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Class Name:</label>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Start Time:</label>
+                <input type="text" name="startTime" placeholder="10:00 AM" value={formData.startTime} onChange={handleChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>End Time:</label>
+                <input type="text" name="endTime" placeholder="01:00 PM" value={formData.endTime} onChange={handleChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Room / Venue:</label>
+                <input type="text" name="roomNumber" placeholder="Hall-A / Room 102" value={formData.roomNumber} onChange={handleChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Class Name:</label>
                 <input type="text" name="className" placeholder="e.g. Class 10" value={formData.className} onChange={handleChange} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Subject:</label>
-                <input type="text" name="subject" value={formData.subject} onChange={handleChange} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Subject:</label>
+                <input type="text" name="subject" placeholder="Mathematics" value={formData.subject} onChange={handleChange} required style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
               </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <button type="submit" className="btn-primary">
-                  Schedule Exam
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Max Marks:</label>
+                <input type="number" name="maxMarks" value={formData.maxMarks} onChange={handleChange} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <button type="submit" className="btn-primary" style={{ padding: '10px 24px', fontWeight: 'bold' }}>
+                  ➕ Add to Timetable
                 </button>
               </div>
             </form>
           </div>
 
-          <div className="table-container">
+          <div className="table-container" style={{ marginTop: '25px' }}>
             <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '15px' }}>
-              <h3 style={{ margin: 0 }}>Scheduled Exams</h3>
+              <h3 style={{ margin: 0 }}>📋 Scheduled Exam Timetable</h3>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '5px', textTransform: 'uppercase' }}>Start Date</label>
@@ -162,7 +185,6 @@ const Exams = () => {
                     type="date" 
                     value={startDateFilter}
                     onChange={(e) => setStartDateFilter(e.target.value)}
-                    onClick={(e) => (e.target as any).showPicker && (e.target as any).showPicker()}
                     style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
                   />
                 </div>
@@ -172,7 +194,6 @@ const Exams = () => {
                     type="date" 
                     value={endDateFilter}
                     onChange={(e) => setEndDateFilter(e.target.value)}
-                    onClick={(e) => (e.target as any).showPicker && (e.target as any).showPicker()}
                     style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '14px', outline: 'none' }}
                   />
                 </div>
@@ -180,28 +201,34 @@ const Exams = () => {
                   onClick={downloadCSV}
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-all"
                 >
-                  <FiDownload /> Export Excel
+                  <FiDownload /> Export CSV
                 </button>
               </div>
             </div>
-            {loading ? <p>Loading...</p> : (
-              <table className="data-table" style={{ marginTop: '15px' }}>
+            {loading ? <p>Loading exam timetables...</p> : (
+              <table className="data-table" style={{ marginTop: '15px', width: '100%' }}>
                 <thead>
                   <tr>
                     <th>Title</th>
                     <th>Date</th>
+                    <th>Time Slot</th>
+                    <th>Room / Venue</th>
                     <th>Class</th>
                     <th>Subject</th>
+                    <th>Max Marks</th>
                     <th>Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredExams.length > 0 ? filteredExams.map(exam => (
                     <tr key={exam._id}>
-                      <td>{exam.title}</td>
-                      <td>{new Date(exam.date).toLocaleDateString()}</td>
+                      <td style={{ fontWeight: 'bold' }}>{exam.title}</td>
+                      <td>{new Date(exam.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td><span style={{ padding: '3px 8px', borderRadius: '4px', backgroundColor: 'rgba(79,70,229,0.1)', color: '#4f46e5', fontWeight: 'bold', fontSize: '12px' }}>{exam.startTime || '10:00 AM'} - {exam.endTime || '01:00 PM'}</span></td>
+                      <td>{exam.roomNumber || 'Hall-1'}</td>
                       <td>{exam.className}</td>
                       <td>{exam.subject}</td>
+                      <td>{exam.maxMarks || 100}</td>
                       <td>
                         <button onClick={() => handleDelete(exam._id)} className="action-btn delete">
                           Delete
@@ -209,7 +236,7 @@ const Exams = () => {
                       </td>
                     </tr>
                   )) : (
-                    <tr><td colSpan={5} style={{ padding: '10px', textAlign: 'center', color: 'var(--text-muted)' }}>No exams scheduled.</td></tr>
+                    <tr><td colSpan={8} style={{ padding: '15px', textAlign: 'center', color: 'var(--text-muted)' }}>No exam timetables scheduled.</td></tr>
                   )}
                 </tbody>
               </table>

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FiBell, FiUser, FiLogOut, FiSun, FiMoon, FiCalendar } from 'react-icons/fi';
+import { FiBell, FiUser, FiLogOut, FiSun, FiMoon, FiCalendar, FiType } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { isDark, toggleTheme } = useTheme();
+  const { isDark, toggleTheme, fontSize, cycleFont } = useTheme();
   const [currentDate, setCurrentDate] = useState('');
 
   useEffect(() => {
@@ -13,8 +13,28 @@ const Navbar = () => {
     setCurrentDate(new Date().toLocaleDateString('en-US', options));
   }, []);
 
-  const userName = localStorage.getItem('userName') || 'Admin User';
-  const userRole = localStorage.getItem('role') || 'Super Admin';
+  const formatRoleName = (roleStr: string) => {
+    const roleMap: Record<string, string> = {
+      'super-admin': 'Super Admin',
+      'manager-admin': 'Manager Admin',
+      'student-admin': 'Teacher & Student Admin',
+      'academic-admin': 'Teacher & Student Admin',
+      'finance-admin': 'Finance Admin',
+      'operations-admin': 'Operations Admin',
+      'teacher': 'Teacher',
+      'student': 'Student',
+    };
+    const key = (roleStr || '').toLowerCase();
+    if (roleMap[key]) return roleMap[key];
+    return roleStr
+      ? roleStr.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      : 'Super Admin';
+  };
+
+  const rawRole = localStorage.getItem('role') || 'super-admin';
+  const displayRole = formatRoleName(rawRole);
+  const rawUserName = localStorage.getItem('userName');
+  const userName = rawUserName || displayRole;
   const shortName = userName.split(' ')[0];
 
   const handleLogout = () => {
@@ -34,7 +54,7 @@ const Navbar = () => {
   ];
   const charCode = userName.charCodeAt(0) || 0;
   const gradient = avatarGradients[charCode % avatarGradients.length];
-  const initials = userName ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'A';
+  const initials = userName ? userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'SA';
 
   return (
     <header className="navbar" style={{ 
@@ -64,7 +84,7 @@ const Navbar = () => {
               border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)'
             }}
           >
-            {userRole.replace('-', ' ')}
+            {displayRole}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
@@ -75,6 +95,41 @@ const Navbar = () => {
 
       {/* Action Buttons */}
       <div className="nav-actions flex items-center gap-3">
+        {/* Text Size Toggle */}
+        <button
+          className="font-size-toggle-btn"
+          onClick={cycleFont}
+          title={`Text Size: ${fontSize.toUpperCase()} (Click to toggle)`}
+          style={{
+            height: '40px',
+            padding: '0 10px',
+            borderRadius: '10px',
+            border: '1px solid var(--border-color)',
+            background: 'var(--input-bg)',
+            color: 'var(--text-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            fontWeight: '700',
+            fontSize: '12px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--primary)';
+            e.currentTarget.style.borderColor = 'var(--primary)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-muted)';
+            e.currentTarget.style.borderColor = 'var(--border-color)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          <FiType size={16} />
+          <span style={{ textTransform: 'capitalize', fontSize: '11px' }}>{fontSize}</span>
+        </button>
+
         {/* Dark Mode Toggle */}
         <button
           className="theme-toggle-btn"

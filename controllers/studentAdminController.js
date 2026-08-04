@@ -2,6 +2,8 @@ const User = require("../models/User");
 const Student = require("../models/Student");
 const Application = require("../models/Application");
 const bcrypt = require("bcryptjs");
+const { notifyChange } = require("../config/socket");
+
 
 // ==================== ADMISSIONS MANAGEMENT ====================
 // Get all pending admissions (application requests)
@@ -27,7 +29,7 @@ exports.getPendingAdmissions = async (req, res) => {
 // Get all admissions (including approved/rejected)
 exports.getAllAdmissions = async (req, res) => {
   try {
-    const admissions = await Application.find()
+    const admissions = await Application.find({ $or: [{ type: "Admission" }, { type: { $exists: false } }] })
       .populate({
         path: "student",
         populate: { path: "user", select: "name email phone role" }
@@ -44,11 +46,149 @@ exports.getAllAdmissions = async (req, res) => {
   }
 };
 
+// Create new admission application (Pending)
+exports.createAdmission = async (req, res) => {
+  try {
+    const {
+      studentName, studentEmail, studentPhone, dob, gender,
+      guardianName, guardianPhone, applyingClass, remark, submittedBy
+    } = req.body;
+
+    if (!studentName || !studentEmail) {
+      return res.status(400).json({ message: "Student Name and Email are required" });
+    }
+
+    const application = new Application({
+      type: "Admission",
+      subject: `Admission Request for ${studentName} (${applyingClass || "General"})`,
+      description: remark || `New Student Admission application for Class ${applyingClass}`,
+      studentName,
+      studentEmail,
+      studentPhone,
+      dob,
+      gender,
+      guardianName,
+      guardianPhone,
+      applyingClass: applyingClass || "1st",
+      submittedBy: submittedBy || req.user?.name || "Admin",
+      remark,
+      status: "Pending",
+      appliedDate: new Date(),
+    });
+
+    await application.save();
+    notifyChange("ADMISSION_CHANGED", { action: "create", application });
+
+    res.status(201).json({
+      message: "Admission application submitted successfully",
+      data: application,
+    });
+  } catch (error) {
+    console.error("Error creating admission:", error);
+    res.status(500).json({ message: "Error submitting admission application", error: error.message });
+  }
+};
+
+// Create direct admission (Instant Approval + Create Student Profile)
+exports.createDirectAdmission = async (req, res) => {
+  try {
+    const {
+      name, email, phone, dob, gender, parentName, parentPhone,
+      className, section, rollNumber, address, bloodGroup, password, profileImage, submittedBy
+    } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ message: "Student Name and Email are required" });
+    }
+
+    let formattedPhone = (phone || "").trim();
+    if (!formattedPhone || !/^\+91\d{10}$/.test(formattedPhone)) {
+      if (/^\d{10}$/.test(formattedPhone)) {
+        formattedPhone = `+91${formattedPhone}`;
+      } else {
+        formattedPhone = `+9199999${Math.floor(10000 + Math.random() * 90000)}`;
+      }
+    }
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      const hashedPassword = await bcrypt.hash(password || "Student@123", 10);
+      user = new User({
+        name,
+        email,
+        phone: formattedPhone,
+        password: hashedPassword,
+        role: "student",
+      });
+      await user.save();
+    }
+
+    let student = await Student.findOne({ user: user._id });
+    if (!student) {
+      const finalRoll = rollNumber || `STU-${Date.now().toString().slice(-4)}`;
+      const parsedDob = (dob && !isNaN(new Date(dob).getTime())) ? new Date(dob) : undefined;
+      student = new Student({
+        user: user._id,
+        className: className || "1st",
+        section: section || "A",
+        rollNumber: finalRoll,
+        ...(parsedDob ? { dob: parsedDob } : {}),
+        address: address || "",
+        parentName: parentName || "",
+        parentPhone: parentPhone || "",
+        bloodGroup: bloodGroup || "",
+        gender: gender || "Male",
+        profileImage: profileImage || "",
+        allocationDate: new Date(),
+      });
+      await student.save();
+    } else {
+      if (className) student.className = className;
+      if (section) student.section = section;
+      await student.save();
+    }
+
+    const application = new Application({
+      student: student._id,
+      type: "Admission",
+      subject: `Direct Admission for ${name} (${className || "1st"}-${section || "A"})`,
+      description: `Directly admitted student with Roll No: ${student.rollNumber}`,
+      studentName: name,
+      studentEmail: email,
+      studentPhone: phone,
+      dob,
+      gender,
+      guardianName: parentName,
+      guardianPhone: parentPhone,
+      applyingClass: className || "1st",
+      allocatedClass: className || "1st",
+      allocatedSection: section || "A",
+      submittedBy: submittedBy || req.user?.name || "Admin",
+      approvedBy: submittedBy || req.user?.name || "Admin",
+      processedBy: submittedBy || req.user?.name || "Admin",
+      status: "Approved",
+      approvedAt: new Date(),
+      appliedDate: new Date(),
+    });
+    await application.save();
+    notifyChange("STUDENT_CHANGED", { action: "create", student });
+    notifyChange("ADMISSION_CHANGED", { action: "direct", application });
+
+    res.status(201).json({
+      message: `Student ${name} directly admitted and assigned to Class ${className || "1st"}-${section || "A"}`,
+      data: { application, student, user },
+    });
+  } catch (error) {
+    console.error("Error creating direct admission:", error);
+    res.status(500).json({ message: "Error creating direct admission", error: error.message });
+  }
+};
+
 // Approve an admission
 exports.approveAdmission = async (req, res) => {
   try {
     const { admissionId } = req.params;
-    const { className, section } = req.body;
+    const { className, section, processedBy, approvedBy } = req.body;
 
     // Find the application
     const application = await Application.findById(admissionId);
@@ -56,19 +196,67 @@ exports.approveAdmission = async (req, res) => {
       return res.status(404).json({ message: "Admission not found" });
     }
 
-    // Update application status
-    application.status = "Approved";
-    application.approvedAt = new Date();
-    await application.save();
+    const adminUser = processedBy || approvedBy || "Super Admin";
 
-    // Update student record with class allocation
-    let student = await Student.findById(application.student);
-    if (student) {
+    let student = null;
+    if (application.student) {
+      student = await Student.findById(application.student);
+    }
+
+    // If student record doesn't exist yet for this applicant, create user & student profile
+    if (!student && (application.studentEmail || application.studentName)) {
+      const email = application.studentEmail || `student_${Date.now()}@school.com`;
+      const name = application.studentName || "New Student";
+
+      let user = await User.findOne({ email });
+      if (!user) {
+        const hashedPassword = await bcrypt.hash("Student@123", 10);
+        user = new User({
+          name,
+          email,
+          phone: application.studentPhone || "",
+          password: hashedPassword,
+          role: "student",
+        });
+        await user.save();
+      }
+
+      student = await Student.findOne({ user: user._id });
+      if (!student) {
+        const rollNumber = `STU-${Date.now().toString().slice(-4)}`;
+        const parsedDob = (application.dob && !isNaN(new Date(application.dob).getTime())) ? new Date(application.dob) : undefined;
+        student = new Student({
+          user: user._id,
+          className: className || application.applyingClass || "1st",
+          section: section || "A",
+          rollNumber,
+          ...(parsedDob ? { dob: parsedDob } : {}),
+          parentName: application.guardianName || "",
+          parentPhone: application.guardianPhone || "",
+          gender: application.gender || "Male",
+          allocationDate: new Date(),
+        });
+        await student.save();
+      }
+
+      application.student = student._id;
+    } else if (student) {
       student.className = className || student.className;
       student.section = section || student.section;
       student.allocationDate = new Date();
       await student.save();
     }
+
+    // Update application status
+    application.status = "Approved";
+    application.approvedAt = new Date();
+    application.approvedBy = adminUser;
+    application.processedBy = adminUser;
+    application.allocatedClass = className || application.applyingClass || "";
+    application.allocatedSection = section || "A";
+    await application.save();
+    notifyChange("ADMISSION_CHANGED", { action: "approve", application, student });
+    notifyChange("STUDENT_CHANGED", { action: "create", student });
 
     res.status(200).json({
       message: "Admission approved successfully",
@@ -83,17 +271,21 @@ exports.approveAdmission = async (req, res) => {
 exports.rejectAdmission = async (req, res) => {
   try {
     const { admissionId } = req.params;
-    const { reason } = req.body;
+    const { reason, processedBy } = req.body;
 
     const application = await Application.findById(admissionId);
     if (!application) {
       return res.status(404).json({ message: "Admission not found" });
     }
 
+    const adminUser = processedBy || "Super Admin";
+
     application.status = "Rejected";
     application.rejectionReason = reason || "No reason provided";
     application.rejectedAt = new Date();
+    application.processedBy = adminUser;
     await application.save();
+    notifyChange("ADMISSION_CHANGED", { action: "reject", application });
 
     res.status(200).json({
       message: "Admission rejected successfully",
@@ -108,7 +300,7 @@ exports.rejectAdmission = async (req, res) => {
 
 exports.createStudent = async (req, res) => {
   try {
-    const { name, email, phone, password, className, section, rollNumber, address, dob, parentName, parentPhone, bloodGroup, gender } = req.body;
+    const { name, email, phone, password, className, section, rollNumber, address, dob, parentName, parentPhone, bloodGroup, gender, profileImage } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -120,14 +312,23 @@ exports.createStudent = async (req, res) => {
       return res.status(400).json({ message: "Student profile already exists for this user." });
     }
     
+    let formattedPhone = (phone || "").trim();
+    if (!formattedPhone || !/^\+91\d{10}$/.test(formattedPhone)) {
+      if (/^\d{10}$/.test(formattedPhone)) {
+        formattedPhone = `+91${formattedPhone}`;
+      } else {
+        formattedPhone = `+9199999${Math.floor(10000 + Math.random() * 90000)}`;
+      }
+    }
+
     // Hash Password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password || "Student@123", 10);
 
     // Create normal user
     const newUser = new User({
       name,
       email,
-      phone,
+      phone: formattedPhone,
       password: hashedPassword,
       role: 'student'
     });
@@ -144,9 +345,11 @@ exports.createStudent = async (req, res) => {
       parentName,
       parentPhone,
       bloodGroup,
-      gender
+      gender,
+      profileImage: profileImage || ""
     });
     await newProfile.save();
+    notifyChange("STUDENT_CHANGED", { action: "create", student: newProfile });
     
     res.status(201).json({
       success: true,
@@ -202,7 +405,7 @@ exports.getStudentProfile = async (req, res) => {
 exports.updateStudentProfile = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { name, email, phone, address, dob, className, section, rollNumber, parentName, parentPhone, bloodGroup, gender } = req.body;
+    const { name, email, phone, address, dob, className, section, rollNumber, parentName, parentPhone, bloodGroup, gender, profileImage } = req.body;
 
     // Update student record
     const student = await Student.findById(studentId);
@@ -219,6 +422,7 @@ exports.updateStudentProfile = async (req, res) => {
     if (parentPhone !== undefined) student.parentPhone = parentPhone;
     if (bloodGroup !== undefined) student.bloodGroup = bloodGroup;
     if (gender !== undefined) student.gender = gender;
+    if (profileImage !== undefined) student.profileImage = profileImage;
 
     await student.save();
 
@@ -238,6 +442,7 @@ exports.updateStudentProfile = async (req, res) => {
       "name email phone"
     );
 
+    notifyChange("STUDENT_CHANGED", { action: "update", student: updatedStudent });
     res.status(200).json({
       message: "Student profile updated successfully",
       data: updatedStudent,
@@ -260,6 +465,7 @@ exports.deleteStudent = async (req, res) => {
     // Delete from User collection as well
     await User.findByIdAndDelete(student.user);
     await Student.findByIdAndDelete(studentId);
+    notifyChange("STUDENT_CHANGED", { action: "delete", id: studentId });
 
     res.status(200).json({
       message: "Student deleted successfully",

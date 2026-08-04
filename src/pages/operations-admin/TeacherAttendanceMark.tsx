@@ -4,8 +4,10 @@ import Navbar from '../../components/Navbar';
 import AcademicTabs from '../../components/AcademicTabs';
 import { FiSave, FiSearch, FiCheck, FiX, FiLoader, FiDownload, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import API from '../../api/axios';
+import { useSocket } from '../../context/SocketContext';
 
 const TeacherAttendanceMark = () => {
+  const { onEvent } = useSocket();
   const [attendanceSubTab, setAttendanceSubTab] = useState('view');
   
   // States
@@ -21,8 +23,8 @@ const TeacherAttendanceMark = () => {
   const [endDateFilter, setEndDateFilter] = useState('');
 
   // Filters for Mark Attendance
-  const [markClass, setMarkClass] = useState('');
-  const [markSection, setMarkSection] = useState('');
+  const [markClass, setMarkClass] = useState('10');
+  const [markSection, setMarkSection] = useState('A');
   const [markDate, setMarkDate] = useState(new Date().toISOString().split('T')[0]);
   const [markNameSearch, setMarkNameSearch] = useState('');
   
@@ -31,14 +33,42 @@ const TeacherAttendanceMark = () => {
   const [markAttendanceList, setMarkAttendanceList] = useState<Record<string, string>>({});
   const [markSaving, setMarkSaving] = useState(false);
 
+  // Final Submission Lock state
+  const [lockedKeys, setLockedKeys] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('attendance_locked_keys') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
+
+  // Subject Teacher's Assigned Timetable Classes
+  const assignedTimetableClasses = [
+    { className: '10', section: 'A' },
+    { className: '10', section: 'B' },
+    { className: '9', section: 'A' },
+    { className: '12', section: 'A' },
+    { className: '8', section: 'A' }
+  ];
+
+  // Admin / Manager Override Privilege
+  const currentUserRole = (localStorage.getItem('role') || '').toLowerCase();
+  const currentUserName = localStorage.getItem('userName') || (currentUserRole === 'super-admin' ? 'Super Admin' : currentUserRole === 'academic-admin' ? 'Academic Admin / Manager' : 'Subject Teacher');
+  const canAdminOverride = currentUserRole === 'super-admin' || currentUserRole === 'academic-admin' || currentUserRole.includes('admin') || currentUserRole.includes('manager');
+
+  const [adminOverrideActive, setAdminOverrideActive] = useState(false);
+  const [auditRemarkInput, setAuditRemarkInput] = useState('');
+
   // Normalization helper
   const normalizeClass = (cls: any) => {
     if (!cls) return '';
     return cls.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
   };
 
-  const predefinedClasses = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-  const predefinedSections = ['A', 'B', 'C', 'D', 'E'];
+  const isTeacherRole = (localStorage.getItem('role') || '').toLowerCase().includes('teacher');
+  const predefinedClasses = isTeacherRole ? ['8', '9', '10', '12'] : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const predefinedSections = isTeacherRole ? ['A', 'B'] : ['A', 'B', 'C', 'D', 'E'];
   const uniqueClasses = Array.from(new Set([...predefinedClasses, ...attendanceRecords.map(r => r.student?.className).filter(Boolean)]));
   const uniqueSections = Array.from(new Set([...predefinedSections, ...attendanceRecords.map(r => r.student?.section).filter(Boolean)]));
 
@@ -55,11 +85,15 @@ const TeacherAttendanceMark = () => {
     }
   };
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
-    if (attendanceSubTab === 'view') {
+    fetchAllAttendance();
+    const cleanup = onEvent('ATTENDANCE_CHANGED', () => {
       fetchAllAttendance();
-    }
-  }, [attendanceSubTab]);
+    });
+    return () => cleanup();
+  }, [attendanceSubTab, onEvent]);
 
   // CSV Export Utility
   const downloadCSV = (data: any[][], filename: string, headers: string[]) => {
@@ -89,20 +123,6 @@ const TeacherAttendanceMark = () => {
     document.body.removeChild(link);
   };
 
-  const handleExportAttendance = () => {
-    const headers = ['Roll Number', 'Student Name', 'Email', 'Class', 'Section', 'Date', 'Status'];
-    const data = filteredAttendance.map(r => [
-      r.student?.rollNumber || 'N/A',
-      r.student?.user?.name || 'N/A',
-      r.student?.user?.email || 'N/A',
-      r.student?.className || 'N/A',
-      r.student?.section || 'N/A',
-      r.date ? new Date(r.date).toLocaleDateString() : 'N/A',
-      r.status || 'N/A'
-    ]);
-    downloadCSV(data, 'teacher_attendance_report.csv', headers);
-  };
-
   // Filter attendance records
   const filteredAttendance = attendanceRecords.filter(r => {
     const studentName = r.student?.user?.name || '';
@@ -111,6 +131,14 @@ const TeacherAttendanceMark = () => {
     const className = r.student?.className || '';
     const section = r.student?.section || '';
     const dateStr = r.date ? new Date(r.date).toISOString().slice(0, 10) : '';
+
+    // If user is a teacher, restrict view strictly to assigned timetable classes
+    if (isTeacherRole) {
+      const isAssigned = assignedTimetableClasses.some(
+        tc => normalizeClass(tc.className) === normalizeClass(className) && tc.section.toUpperCase() === section.toUpperCase()
+      );
+      if (!isAssigned) return false;
+    }
 
     const matchesSearch = !searchAttendance || 
       studentName.toLowerCase().includes(searchAttendance.toLowerCase()) ||
@@ -132,12 +160,36 @@ const TeacherAttendanceMark = () => {
     return matchesSearch && matchesClass && matchesSection && matchesStatus && matchesDate;
   });
 
+  const handleExportAttendance = () => {
+    const headers = ['Roll Number', 'Student Name', 'Email', 'Class', 'Section', 'Date', 'Status'];
+    const data = filteredAttendance.map(r => [
+      r.student?.rollNumber || 'N/A',
+      r.student?.user?.name || 'N/A',
+      r.student?.user?.email || 'N/A',
+      r.student?.className || 'N/A',
+      r.student?.section || 'N/A',
+      r.date ? new Date(r.date).toLocaleDateString() : 'N/A',
+      r.status || 'N/A'
+    ]);
+    downloadCSV(data, 'teacher_attendance_report.csv', headers);
+  };
+
   // Fetch student list for marking
   const fetchMarkStudents = async () => {
     if (!markClass || !markSection) {
-      alert('Please provide both Class and Section');
+      alert('Please select both Class and Section from your assigned schedule');
       return;
     }
+    if (markDate > todayStr) {
+      alert('⚠️ Future Date Lock: You cannot mark attendance for future dates!');
+      return;
+    }
+
+    const isPastDate = markDate < todayStr;
+    const lockKey = `${normalizeClass(markClass)}-${markSection.toUpperCase()}-${markDate}`;
+    const isLocked = (isPastDate || lockedKeys.includes(lockKey)) && !adminOverrideActive;
+    setIsAlreadySubmitted(isLocked);
+
     setLoadingStudents(true);
     try {
       const response = await API.get(`/api/attendance/list?className=${encodeURIComponent(markClass)}&section=${encodeURIComponent(markSection)}`);
@@ -149,10 +201,14 @@ const TeacherAttendanceMark = () => {
       
       setMarkStudents(students);
       
-      // Default all to Present
+      // Populate with saved record status if viewing past/existing date, else default to Present
       const initialStatus: Record<string, string> = {};
       students.forEach((s: any) => {
-        initialStatus[s._id] = 'Present';
+        const existingRecord = attendanceRecords.find(
+          r => (r.student?._id === s._id || r.student?.user?._id === s.user?._id) && 
+               r.date && new Date(r.date).toISOString().slice(0, 10) === markDate
+        );
+        initialStatus[s._id] = existingRecord ? existingRecord.status : 'Present';
       });
       setMarkAttendanceList(initialStatus);
       
@@ -166,6 +222,18 @@ const TeacherAttendanceMark = () => {
 
   // Submit attendance
   const submitMarkAttendance = async () => {
+    if ((markDate < todayStr || isAlreadySubmitted) && !canAdminOverride) {
+      alert('🔒 Access Denied: Subject Teacher cannot modify locked/past attendance. Only Manager / Teacher Admin / Super Admin can edit.');
+      return;
+    }
+    if (isAlreadySubmitted && !adminOverrideActive) {
+      alert('🔒 Attendance is locked! Use "Unlock & Override Attendance" if you are a Manager/Admin.');
+      return;
+    }
+    if (markDate > todayStr) {
+      alert('⚠️ Future Date Lock: You cannot mark attendance for future dates!');
+      return;
+    }
     if (Object.keys(markAttendanceList).length === 0) {
       alert('No attendance data to save!');
       return;
@@ -182,15 +250,29 @@ const TeacherAttendanceMark = () => {
         status: markAttendanceList[studentId]
       }));
 
+      const actionBy = adminOverrideActive || canAdminOverride
+        ? `${currentUserName} (${currentUserRole.toUpperCase()})` 
+        : 'Subject Teacher';
+      
+      const auditRemark = auditRemarkInput.trim() || (adminOverrideActive ? `Admin Audit Override by ${currentUserName}` : `Daily Roll Call Register`);
+
       await API.post('/api/attendance/bulkSubmit', {
         attendanceData,
-        date: markDate
+        date: markDate,
+        updatedBy: actionBy,
+        remark: auditRemark
       });
 
-      alert('Attendance marked successfully!');
-      setMarkStudents([]);
-      setMarkAttendanceList({});
-      setAttendanceSubTab('view');
+      const lockKey = `${normalizeClass(markClass)}-${markSection.toUpperCase()}-${markDate}`;
+      const updatedLocks = Array.from(new Set([...lockedKeys, lockKey]));
+      setLockedKeys(updatedLocks);
+      localStorage.setItem('attendance_locked_keys', JSON.stringify(updatedLocks));
+      
+      if (!adminOverrideActive) {
+        setIsAlreadySubmitted(true);
+      }
+
+      alert(`✅ Attendance updated successfully by ${actionBy}! Remark logged: "${auditRemark}"`);
     } catch (err) {
       console.error(err);
       alert('Error saving attendance');
@@ -385,6 +467,7 @@ const TeacherAttendanceMark = () => {
                           <th className="px-6 py-4 font-semibold border-b border-slate-100">Roll No</th>
                           <th className="px-6 py-4 font-semibold border-b border-slate-100">Student Name</th>
                           <th className="px-6 py-4 font-semibold border-b border-slate-100">Status</th>
+                          <th className="px-6 py-4 font-semibold border-b border-slate-100">Action By / Audit Remark</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-sm">
@@ -414,11 +497,19 @@ const TeacherAttendanceMark = () => {
                                   {r.status}
                                 </span>
                               </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-xs">
+                                <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                                  👔 {r.updatedBy || 'Class Teacher In-Charge'}
+                                </div>
+                                <div className="text-[11px] text-slate-500 font-medium mt-0.5">
+                                  {r.remark || 'Daily Period Roll Call'}
+                                </div>
+                              </td>
                             </tr>
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={6} className="px-6 py-16 text-center text-slate-400">
+                            <td colSpan={7} className="px-6 py-16 text-center text-slate-400">
                               <div className="flex flex-col items-center">
                                 <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
                                   <FiSearch size={24} className="text-slate-400" />
@@ -445,11 +536,19 @@ const TeacherAttendanceMark = () => {
                 <h2 className="text-lg font-bold text-slate-800 mb-5">Select Class for Attendance</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-5 items-end">
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--text-muted)] mb-2 uppercase tracking-wider">Date</label>
+                    <label className="block text-xs font-semibold text-[var(--text-muted)] mb-2 uppercase tracking-wider">Date (Max Today)</label>
                     <input 
                       type="date" 
                       value={markDate} 
-                      onChange={e => setMarkDate(e.target.value)} 
+                      max={todayStr}
+                      onChange={e => {
+                        if (e.target.value > todayStr) {
+                          alert('⚠️ Future Date Lock: You cannot mark attendance for future dates!');
+                          setMarkDate(todayStr);
+                          return;
+                        }
+                        setMarkDate(e.target.value);
+                      }} 
                       onClick={(e) => (e.target as any).showPicker && (e.target as any).showPicker()}
                       className="w-full px-4 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all font-medium" 
                       required 
@@ -511,6 +610,58 @@ const TeacherAttendanceMark = () => {
               {/* Attendance Table */}
               {markStudents.length > 0 && (
                 <div className="bg-[var(--card-bg)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden animate-in fade-in duration-300">
+                  {isAlreadySubmitted && (
+                    <div className="bg-amber-500/10 border-b border-amber-500/30 p-4 px-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">🔒</span>
+                          <div>
+                            <div className="font-extrabold text-amber-700 dark:text-amber-400 text-sm">
+                              {markDate < todayStr ? '🔒 HISTORICAL ATTENDANCE RECORD (READ ONLY)' : '🔒 FINAL SUBMISSION LOCKED — Edits Disabled for Subject Teachers'}
+                            </div>
+                            <div className="text-xs text-amber-800/80 dark:text-amber-300/80 font-medium">
+                              {markDate < todayStr 
+                                ? `Past attendance records for Class ${markClass}-${markSection} on ${new Date(markDate).toLocaleDateString()} are locked. Only Manager, Teacher Admin, or Super Admin can edit.` 
+                                : `Attendance for Class ${markClass}-${markSection} on ${markDate} has been final submitted. Subject teacher cannot edit once submitted.`}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="bg-amber-600 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-xs">
+                          🔒 Read Only
+                        </span>
+                      </div>
+
+                      {canAdminOverride && (
+                        <div className="mt-3 pt-3 border-t border-amber-500/20 flex flex-wrap items-center gap-3">
+                          <button
+                            onClick={() => {
+                              const newMode = !adminOverrideActive;
+                              setAdminOverrideActive(newMode);
+                              setIsAlreadySubmitted(!newMode);
+                            }}
+                            className={`px-4 py-2 text-xs font-black rounded-xl flex items-center gap-2 transition-all shadow-sm ${
+                              adminOverrideActive
+                                ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-400'
+                                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                            }`}
+                          >
+                            {adminOverrideActive ? '🔓 Admin Override Mode: ACTIVE (Editing Enabled)' : '🔑 Manager / Admin: Unlock & Edit Attendance'}
+                          </button>
+                          {adminOverrideActive && (
+                            <input
+                              type="text"
+                              placeholder="Enter mandatory Audit Remark / Reason for update (e.g. Approved by Principal)..."
+                              value={auditRemarkInput}
+                              onChange={e => setAuditRemarkInput(e.target.value)}
+                              className="flex-1 min-w-[280px] px-3 py-1.5 text-xs border border-amber-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-amber-500 font-medium text-slate-800"
+                              required
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50/50">
                     <div className="text-sm font-semibold text-slate-700">
                       <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md mr-2">{markStudents.length} Students</span> 
@@ -519,23 +670,25 @@ const TeacherAttendanceMark = () => {
                     <div className="flex flex-wrap gap-2">
                       <button 
                         onClick={markAllPresent} 
-                        className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm rounded-xl border border-emerald-200 transition-colors"
+                        disabled={isAlreadySubmitted}
+                        className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-sm rounded-xl border border-emerald-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         ✓ Mark All Present
                       </button>
                       <button 
                         onClick={markAllAbsent} 
-                        className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-sm rounded-xl border border-rose-200 transition-colors"
+                        disabled={isAlreadySubmitted}
+                        className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-sm rounded-xl border border-rose-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         ✗ Mark All Absent
                       </button>
                       <button 
                         onClick={submitMarkAttendance} 
-                        disabled={markSaving}
-                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md shadow-indigo-200 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-70 disabled:active:scale-100"
+                        disabled={markSaving || isAlreadySubmitted}
+                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-xl shadow-md shadow-indigo-200 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {markSaving ? <FiLoader className="animate-spin" size={16} /> : <FiSave size={16} />}
-                        {markSaving ? 'Saving...' : 'Submit Attendance'}
+                        {markSaving ? <FiLoader className="animate-spin" size={16} /> : (isAlreadySubmitted ? '🔒 Final Submitted & Locked' : <FiSave size={16} />)}
+                        {markSaving ? 'Saving...' : (isAlreadySubmitted ? '' : 'Final Submit Attendance')}
                       </button>
                     </div>
                   </div>
@@ -562,23 +715,25 @@ const TeacherAttendanceMark = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex justify-center bg-slate-100 p-1 rounded-xl w-fit mx-auto">
                                 <button 
-                                  onClick={() => handleMarkStatusChange(student._id, 'Present')}
+                                  onClick={() => !isAlreadySubmitted && handleMarkStatusChange(student._id, 'Present')}
+                                  disabled={isAlreadySubmitted}
                                   className={`px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${
                                     markAttendanceList[student._id] === 'Present' 
                                       ? 'bg-emerald-500 text-white shadow-md' 
                                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
-                                  }`}
+                                  } ${isAlreadySubmitted ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
                                   {markAttendanceList[student._id] === 'Present' && <FiCheck size={14} />}
                                   Present
                                 </button>
                                 <button 
-                                  onClick={() => handleMarkStatusChange(student._id, 'Absent')}
+                                  onClick={() => !isAlreadySubmitted && handleMarkStatusChange(student._id, 'Absent')}
+                                  disabled={isAlreadySubmitted}
                                   className={`px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${
                                     markAttendanceList[student._id] === 'Absent' 
                                       ? 'bg-rose-500 text-white shadow-md' 
                                       : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200'
-                                  }`}
+                                  } ${isAlreadySubmitted ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
                                   {markAttendanceList[student._id] === 'Absent' && <FiX size={14} />}
                                   Absent

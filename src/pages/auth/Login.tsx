@@ -27,14 +27,22 @@ const Login = () => {
       localStorage.setItem("userEmail", response.data.email);
 
       const userRole = response.data.role;
+      const userEmail = response.data.email || "";
+      const userName = response.data.name || "";
+
+      if (userRole === "teacher" && (userEmail === "classteacher@sps.edu" || userName.toLowerCase().includes("class teacher"))) {
+        navigate("/class-teacher");
+        return;
+      }
+
       const rolePaths = {
         admin: "/admin",
         teacher: "/teacher",
         student: "/student",
         "finance-admin": "/finance-admin",
         "super-admin": "/super-admin",
+        "manager-admin": "/super-admin",
         "academic-admin": "/academic-admin",
-        "student-admin": "/student-admin",
         "operations-admin": "/operations-admin",
       };
 

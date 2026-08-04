@@ -6,11 +6,13 @@ const role = require("../middleware/roleMiddleware");
 
 const financeController = require("../controllers/financeController");
 
-router.post("/create-fee", auth, role(["finance-admin", "super-admin"]), financeController.createFee);
-router.get("/all", auth, role(["finance-admin", "super-admin"]), financeController. getAllFees);
+const allowedFinanceRoles = ["finance-admin", "super-admin", "manager-admin", "operations-admin"];
+
+router.post("/create-fee", auth, role(allowedFinanceRoles), financeController.createFee);
+router.get("/all", auth, role(allowedFinanceRoles), financeController.getAllFees);
 router.get("/my-fees", auth, role("student"), financeController.getMyFees);
 router.post("/pay/:feeId", auth, role("student"), financeController.payFee);
-router.put("/update/:feeId", auth, role(["finance-admin", "super-admin"]), financeController.updateFee);
-router.delete("/delete/:feeId", auth, role(["finance-admin", "super-admin"]), financeController.deleteFee);
+router.put("/update/:feeId", auth, role(allowedFinanceRoles), financeController.updateFee);
+router.delete("/delete/:feeId", auth, role(allowedFinanceRoles), financeController.deleteFee);
 
 module.exports = router;

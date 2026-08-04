@@ -1,28 +1,79 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import API from "../../api/axios";
 import "../../assets/styles/main.css";
 
 const StudentProfiles = () => {
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterClass, setFilterClass] = useState("all");
   const [filterSection, setFilterSection] = useState("all");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
+  const [editingStudent, setEditingStudent] = useState<any>(null);
+  const [selectedViewStudent, setSelectedViewStudent] = useState<any>(null);
+  const [viewStudentAttendance, setViewStudentAttendance] = useState<any>({ records: [], percentage: 0 });
+  const [viewStudentExams, setViewStudentExams] = useState<any[]>([]);
+  const [viewStudentFees, setViewStudentFees] = useState<any[]>([]);
+  const [viewTab, setViewTab] = useState<'profile' | 'attendance' | 'exams' | 'results' | 'fees'>('profile');
+
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const addFileInputRef = useRef<HTMLInputElement>(null);
+  const viewFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleViewStudentDetails = async (student: any) => {
+    setSelectedViewStudent(student);
+    setViewTab('profile');
+    try {
+      const email = student.user?.email;
+      if (email) {
+        const [attRes, examsRes, feesRes] = await Promise.allSettled([
+          API.get(`/api/attendance/${email}`),
+          API.get('/api/exams'),
+          API.get('/api/finance/my-fees', { params: { email } })
+        ]);
+
+        if (attRes.status === 'fulfilled' && attRes.value.data) {
+          setViewStudentAttendance(attRes.value.data);
+        } else {
+          setViewStudentAttendance({ records: [], percentage: 0 });
+        }
+
+        if (examsRes.status === 'fulfilled' && examsRes.value.data) {
+          const allExams = examsRes.value.data.exams || [];
+          const classExams = allExams.filter((exam: any) =>
+            exam.className && student.className &&
+            exam.className.trim().toLowerCase() === student.className.trim().toLowerCase()
+          );
+          setViewStudentExams(classExams);
+        } else {
+          setViewStudentExams([]);
+        }
+
+        if (feesRes.status === 'fulfilled' && feesRes.value.data) {
+          setViewStudentFees(feesRes.value.data);
+        } else {
+          setViewStudentFees([]);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading view student details:", err);
+    }
+  };
   const [statusMessage, setStatusMessage] = useState({ text: "", type: "" });
 
   const [formData, setFormData] = useState({
     name: "", email: "", phone: "", address: "",
     dob: "", className: "", section: "", rollNumber: "",
-    parentName: "", parentPhone: "", bloodGroup: "", gender: ""
+    parentName: "", parentPhone: "", bloodGroup: "", gender: "", profileImage: ""
   });
 
   const [addFormData, setAddFormData] = useState({
     name: "", email: "", phone: "", password: "",
     address: "", dob: "", className: "", section: "",
-    rollNumber: "", parentName: "", parentPhone: "", bloodGroup: "", gender: ""
+    rollNumber: "", parentName: "", parentPhone: "", bloodGroup: "", gender: "", profileImage: ""
   });
 
   useEffect(() => { fetchStudents(); }, []);
@@ -39,12 +90,12 @@ const StudentProfiles = () => {
     }
   };
 
-  const showStatus = (text, type = "success") => {
+  const showStatus = (text: string, type = "success") => {
     setStatusMessage({ text, type });
     setTimeout(() => setStatusMessage({ text: "", type: "" }), 4000);
   };
 
-  const handleEditClick = (student) => {
+  const handleEditClick = (student: any) => {
     setEditingStudent(student);
     setFormData({
       name: student.user?.name || "",
@@ -58,12 +109,63 @@ const StudentProfiles = () => {
       parentName: student.parentName || "",
       parentPhone: student.parentPhone || "",
       bloodGroup: student.bloodGroup || "",
-      gender: student.gender || ""
+      gender: student.gender || "",
+      profileImage: student.profileImage || ""
     });
     setShowModal(true);
   };
 
-  const handleSaveChanges = async (e) => {
+  const handlePhotoSelectForEdit = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({ ...prev, profileImage: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoSelectForAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAddFormData(prev => ({ ...prev, profileImage: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePhotoSelectForView = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedViewStudent) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result as string;
+      setSelectedViewStudent((prev: any) => ({ ...prev, profileImage: base64 }));
+      try {
+        await API.put(`/api/admin/student-admin/students/${selectedViewStudent._id}`, { profileImage: base64 });
+        showStatus("Student photo updated successfully!");
+        fetchStudents();
+      } catch (err) {
+        showStatus("Failed to update photo", "error");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveChanges = async (e: any) => {
     e.preventDefault();
     if (!editingStudent) return;
     try {
@@ -79,7 +181,7 @@ const StudentProfiles = () => {
     }
   };
 
-  const handleDeleteStudent = async (studentId) => {
+  const handleDeleteStudent = async (studentId: string) => {
     if (!window.confirm("Are you sure you want to delete this student?")) return;
     try {
       setLoading(true);
@@ -93,16 +195,16 @@ const StudentProfiles = () => {
     }
   };
 
-  const handleAddStudent = async (e) => {
+  const handleAddStudent = async (e: any) => {
     e.preventDefault();
     try {
       setLoading(true);
       await API.post("/api/admin/student-admin/students", addFormData);
       showStatus("Student added successfully!");
       setShowAddModal(false);
-      setAddFormData({ name: "", email: "", phone: "", password: "", address: "", dob: "", className: "", section: "", rollNumber: "", parentName: "", parentPhone: "", bloodGroup: "", gender: "" });
+      setAddFormData({ name: "", email: "", phone: "", password: "", address: "", dob: "", className: "", section: "", rollNumber: "", parentName: "", parentPhone: "", bloodGroup: "", gender: "", profileImage: "" });
       fetchStudents();
-    } catch (error) {
+    } catch (error: any) {
       showStatus(error.response?.data?.message || "Failed to add student", "error");
     } finally {
       setLoading(false);
@@ -119,7 +221,16 @@ const StudentProfiles = () => {
       s.rollNumber?.toString().includes(searchTerm);
     const matchClass = filterClass === "all" || s.className === filterClass;
     const matchSection = filterSection === "all" || s.section === filterSection;
-    return matchSearch && matchClass && matchSection;
+
+    const sDate = s.createdAt || s.allocationDate || s.dob;
+    let matchDate = true;
+    if (sDate) {
+      const studentDateStr = new Date(sDate).toISOString().slice(0, 10);
+      if (filterDateFrom && studentDateStr < filterDateFrom) matchDate = false;
+      if (filterDateTo && studentDateStr > filterDateTo) matchDate = false;
+    }
+
+    return matchSearch && matchClass && matchSection && matchDate;
   });
 
   const getInitials = (name) => name ? name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) : "?";
@@ -135,6 +246,11 @@ const StudentProfiles = () => {
 
   return (
     <div style={{ padding: "20px", color: "var(--text-main)" }}>
+
+      {/* Hidden File Inputs for Photo Upload */}
+      <input type="file" ref={editFileInputRef} onChange={handlePhotoSelectForEdit} accept="image/*" style={{ display: 'none' }} />
+      <input type="file" ref={addFileInputRef} onChange={handlePhotoSelectForAdd} accept="image/*" style={{ display: 'none' }} />
+      <input type="file" ref={viewFileInputRef} onChange={handlePhotoSelectForView} accept="image/*" style={{ display: 'none' }} />
 
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px", flexWrap: "wrap", gap: "15px" }}>
@@ -189,7 +305,7 @@ const StudentProfiles = () => {
       </div>
 
       {/* Search and Filters */}
-      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap", alignItems: "center" }}>
         <input
           type="text"
           placeholder="🔍 Search by name, email or roll no..."
@@ -205,10 +321,18 @@ const StudentProfiles = () => {
           <option value="all">All Sections</option>
           {uniqueSections.map(s => <option key={s} value={s}>Section {s}</option>)}
         </select>
-        {(searchTerm || filterClass !== "all" || filterSection !== "all") && (
-          <button onClick={() => { setSearchTerm(""); setFilterClass("all"); setFilterSection("all"); }}
-            style={{ padding: "10px 16px", backgroundColor: "var(--panel-bg)", color: "var(--text-muted)", border: "1px solid var(--border-color)", borderRadius: "6px", cursor: "pointer" }}>
-            ✕ Clear
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>From:</span>
+          <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} style={{ ...inputStyle, width: "auto" }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>To:</span>
+          <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} style={{ ...inputStyle, width: "auto" }} />
+        </div>
+        {(searchTerm || filterClass !== "all" || filterSection !== "all" || filterDateFrom || filterDateTo) && (
+          <button onClick={() => { setSearchTerm(""); setFilterClass("all"); setFilterSection("all"); setFilterDateFrom(""); setFilterDateTo(""); }}
+            style={{ padding: "10px 16px", backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", cursor: "pointer", fontWeight: "700" }}>
+            ✕ Clear Filters
           </button>
         )}
       </div>
@@ -245,9 +369,14 @@ const StudentProfiles = () => {
                     backgroundColor: color,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     color: "white", fontWeight: "800", fontSize: "16px",
-                    boxShadow: `0 4px 12px ${color}30`
+                    boxShadow: `0 4px 12px ${color}30`,
+                    overflow: "hidden"
                   }}>
-                    {initials}
+                    {student.profileImage ? (
+                      <img src={student.profileImage} alt={student.user?.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      initials
+                    )}
                   </div>
                   <div style={{ flex: 1, overflow: "hidden" }}>
                     <div style={{ fontWeight: "800", fontSize: "15px", color: "var(--text-main)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -303,20 +432,303 @@ const StudentProfiles = () => {
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={() => handleViewStudentDetails(student)} style={{
+                    flex: 1, padding: "9px", backgroundColor: "#3b82f6", color: "white",
+                    border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "13px",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "5px"
+                  }}>👁️ View Details</button>
                   <button onClick={() => handleEditClick(student)} style={{
                     flex: 1, padding: "9px", backgroundColor: "var(--primary)", color: "white",
                     border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "13px",
                     display: "flex", alignItems: "center", justifyContent: "center", gap: "5px"
                   }}>✏️ Edit</button>
                   <button onClick={() => handleDeleteStudent(student._id)} style={{
-                    flex: 1, padding: "9px", backgroundColor: "var(--danger-bg)", color: "var(--danger)",
+                    padding: "9px 12px", backgroundColor: "var(--danger-bg)", color: "var(--danger)",
                     border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "13px",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "5px"
-                  }}>🗑️ Delete</button>
+                    display: "flex", alignItems: "center", justifyContent: "center"
+                  }}>🗑️</button>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* VIEW FULL STUDENT DETAILS MODAL */}
+      {selectedViewStudent && (
+        <div onClick={() => setSelectedViewStudent(null)} style={{
+          position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.65)",
+          backdropFilter: "blur(8px)", display: "flex", justifyContent: "center",
+          alignItems: "center", zIndex: 1050, padding: "16px"
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            backgroundColor: "var(--card-bg)", border: "1px solid var(--border-color)",
+            borderRadius: "20px", width: "100%", maxWidth: "800px",
+            maxHeight: "92vh", overflowY: "auto", boxShadow: "0 25px 50px rgba(0,0,0,0.4)"
+          }}>
+            {/* Header */}
+            <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border-color)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div style={{ position: "relative" }}>
+                  <div style={{ width: "54px", height: "54px", borderRadius: "14px", backgroundColor: "#3b82f6", color: "white", fontWeight: "800", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                    {selectedViewStudent.profileImage ? (
+                      <img src={selectedViewStudent.profileImage} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      selectedViewStudent.user?.name ? selectedViewStudent.user.name.charAt(0).toUpperCase() : 'S'
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, color: "var(--text-main)", fontSize: "18px", fontWeight: "800", display: "flex", alignItems: "center", gap: "8px" }}>
+                    {selectedViewStudent.user?.name}
+                    <button
+                      type="button"
+                      onClick={() => viewFileInputRef.current?.click()}
+                      style={{ padding: "3px 8px", fontSize: "11px", borderRadius: "6px", backgroundColor: "rgba(59,130,246,0.1)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.3)", cursor: "pointer", fontWeight: "700" }}
+                    >
+                      📷 Change Photo
+                    </button>
+                  </h3>
+                  <p style={{ margin: "2px 0 0", color: "var(--text-muted)", fontSize: "12px", fontWeight: "600" }}>
+                    Roll No: <span style={{ color: "#3b82f6" }}>{selectedViewStudent.rollNumber}</span> | Class: <span style={{ color: "#3b82f6" }}>{selectedViewStudent.className} ({selectedViewStudent.section})</span>
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedViewStudent(null)} style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "var(--text-muted)" }}>×</button>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div style={{ display: "flex", gap: "8px", padding: "12px 24px", borderBottom: "1px solid var(--border-color)", overflowX: "auto" }}>
+              {[
+                { id: 'profile', label: '👤 Profile Details' },
+                { id: 'attendance', label: '📊 Attendance Record' },
+                { id: 'exams', label: '📅 Exam Timetable' },
+                { id: 'results', label: '🏆 Exam Results' },
+                { id: 'fees', label: '💳 Fee Statement' },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setViewTab(tab.id as any)}
+                  style={{
+                    padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: "700",
+                    border: "none", cursor: "pointer", transition: "all 0.2s",
+                    backgroundColor: viewTab === tab.id ? "#3b82f6" : "var(--input-bg)",
+                    color: viewTab === tab.id ? "white" : "var(--text-muted)"
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Contents */}
+            <div style={{ padding: "24px" }}>
+              {/* TAB 1: PROFILE DETAILS */}
+              {viewTab === 'profile' && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "15px" }}>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Full Name</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.user?.name}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Email Address</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.user?.email}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Phone Number</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.user?.phone || 'N/A'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Roll Number</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px", color: "#3b82f6" }}>{selectedViewStudent.rollNumber}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Class & Section</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>Class {selectedViewStudent.className} - Sec {selectedViewStudent.section}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Date of Birth</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>
+                      {selectedViewStudent.dob ? new Date(selectedViewStudent.dob).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A'}
+                    </div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Gender</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.gender || 'N/A'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Blood Group</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.bloodGroup || 'N/A'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Parent / Guardian</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.parentName || 'N/A'}</div>
+                  </div>
+                  <div style={{ backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Parent Phone</div>
+                    <div style={{ fontSize: "14px", fontWeight: "700", marginTop: "2px" }}>{selectedViewStudent.parentPhone || 'N/A'}</div>
+                  </div>
+                  <div style={{ gridColumn: "1 / -1", backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                    <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase" }}>Residential Address</div>
+                    <div style={{ fontSize: "14px", fontWeight: "600", marginTop: "2px" }}>{selectedViewStudent.address || 'No registered address'}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: ATTENDANCE RECORD */}
+              {viewTab === 'attendance' && (
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
+                    <div style={{ backgroundColor: "var(--input-bg)", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)" }}>ATTENDANCE RATE</div>
+                      <div style={{ fontSize: "20px", fontWeight: "800", color: viewStudentAttendance.percentage >= 75 ? "#10b981" : "#f59e0b" }}>
+                        {viewStudentAttendance.percentage}%
+                      </div>
+                    </div>
+                    <div style={{ backgroundColor: "var(--input-bg)", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)" }}>TOTAL RECORDS</div>
+                      <div style={{ fontSize: "20px", fontWeight: "800" }}>{viewStudentAttendance.records?.length || 0}</div>
+                    </div>
+                    <div style={{ backgroundColor: "var(--input-bg)", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
+                      <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)" }}>PRESENT DAYS</div>
+                      <div style={{ fontSize: "20px", fontWeight: "800", color: "#10b981" }}>
+                        {viewStudentAttendance.records?.filter((r: any) => r.status === 'Present').length || 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid var(--border-color)", borderRadius: "12px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                      <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
+                        <tr>
+                          <th style={{ padding: "10px 14px" }}>Date</th>
+                          <th style={{ padding: "10px 14px" }}>Day</th>
+                          <th style={{ padding: "10px 14px" }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {viewStudentAttendance.records?.length > 0 ? (
+                          viewStudentAttendance.records.map((r: any, idx: number) => (
+                            <tr key={idx} style={{ borderTop: "1px solid var(--border-color)" }}>
+                              <td style={{ padding: "10px 14px", fontWeight: "600" }}>{new Date(r.date).toLocaleDateString()}</td>
+                              <td style={{ padding: "10px 14px", color: "var(--text-muted)" }}>{new Date(r.date).toLocaleDateString('en-US', { weekday: 'long' })}</td>
+                              <td style={{ padding: "10px 14px", fontWeight: "700", color: r.status === 'Present' ? '#10b981' : '#ef4444' }}>
+                                {r.status === 'Present' ? '✓ Present' : '✗ Absent'}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr><td colSpan={3} style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No attendance records found for this student.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: EXAM TIMETABLE */}
+              {viewTab === 'exams' && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {viewStudentExams.length > 0 ? (
+                    viewStudentExams.map((exam: any, idx: number) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                        <div>
+                          <div style={{ fontWeight: "800", fontSize: "14px" }}>{exam.title}</div>
+                          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                            📚 {exam.subject} | 📅 {new Date(exam.date).toLocaleDateString('en-GB')} | 🕒 {exam.startTime || '10:00 AM'} - {exam.endTime || '01:00 PM'}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <span style={{ fontSize: "11px", fontWeight: "700", padding: "4px 10px", borderRadius: "8px", backgroundColor: "rgba(59,130,246,0.1)", color: "#3b82f6" }}>
+                            🏫 {exam.roomNumber || 'Hall-1'}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: "30px", textAlign: "center", color: "var(--text-muted)", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px dashed var(--border-color)" }}>
+                      No exam timetable scheduled for Class {selectedViewStudent.className}.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: EXAM RESULTS */}
+              {viewTab === 'results' && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+                  <div style={{ padding: "15px", backgroundColor: "rgba(16,185,129,0.08)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", textTransform: "uppercase" }}>Overall Academic Performance</div>
+                      <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-main)", marginTop: "2px" }}>Cumulative GPA: 9.3 / 10</div>
+                    </div>
+                    <span style={{ padding: "6px 14px", backgroundColor: "#10b981", color: "white", borderRadius: "20px", fontWeight: "800", fontSize: "12px" }}>
+                      STATUS: PASSED
+                    </span>
+                  </div>
+
+                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", border: "1px solid var(--border-color)", borderRadius: "12px", overflow: "hidden" }}>
+                    <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
+                      <tr>
+                        <th style={{ padding: "10px 14px" }}>Subject</th>
+                        <th style={{ padding: "10px 14px" }}>Marks Obtained</th>
+                        <th style={{ padding: "10px 14px" }}>Max Marks</th>
+                        <th style={{ padding: "10px 14px" }}>Grade</th>
+                        <th style={{ padding: "10px 14px" }}>Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { subject: 'Mathematics', marks: 95, max: 100, grade: 'O', remarks: 'Outstanding' },
+                        { subject: 'Science & Tech', marks: 90, max: 100, grade: 'O', remarks: 'Outstanding' },
+                        { subject: 'English Literature', marks: 92, max: 100, grade: 'O', remarks: 'Outstanding' },
+                        { subject: 'Social Science', marks: 88, max: 100, grade: 'A+', remarks: 'Excellent' },
+                        { subject: 'Computer Applications', marks: 96, max: 100, grade: 'O', remarks: 'Outstanding' },
+                      ].map((sub, i) => (
+                        <tr key={i} style={{ borderTop: "1px solid var(--border-color)" }}>
+                          <td style={{ padding: "10px 14px", fontWeight: "700" }}>{sub.subject}</td>
+                          <td style={{ padding: "10px 14px", fontWeight: "700" }}>{sub.marks}</td>
+                          <td style={{ padding: "10px 14px", color: "var(--text-muted)" }}>{sub.max}</td>
+                          <td style={{ padding: "10px 14px" }}><span style={{ padding: "2px 8px", borderRadius: "6px", backgroundColor: "#8b5cf6", color: "white", fontWeight: "800", fontSize: "11px" }}>{sub.grade}</span></td>
+                          <td style={{ padding: "10px 14px", fontWeight: "600", color: "var(--text-muted)" }}>⭐ {sub.remarks}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* TAB 5: FEE STATEMENT */}
+              {viewTab === 'fees' && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {viewStudentFees.length > 0 ? (
+                    viewStudentFees.map((fee: any, idx: number) => (
+                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
+                        <div>
+                          <div style={{ fontWeight: "700" }}>Admission & Tuition Fee</div>
+                          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>Due Date: {new Date(fee.dueDate).toLocaleDateString('en-GB')}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: "16px", fontWeight: "800" }}>₹{fee.amount}</div>
+                          <span style={{ fontSize: "10px", fontWeight: "800", color: fee.status === 'Paid' ? '#10b981' : '#ef4444' }}>{fee.status}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: "30px", textAlign: "center", color: "var(--text-muted)", backgroundColor: "var(--input-bg)", borderRadius: "12px" }}>
+                      No fee records found for this student.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border-color)", textAlign: "right" }}>
+              <button onClick={() => setSelectedViewStudent(null)} style={{ padding: "10px 20px", backgroundColor: "#3b82f6", color: "white", border: "none", borderRadius: "10px", fontWeight: "700", cursor: "pointer" }}>
+                Close Details
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -341,6 +753,38 @@ const StudentProfiles = () => {
             </div>
             <form onSubmit={handleSaveChanges} style={{ padding: "24px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+                {/* Profile Photo Upload Box */}
+                <div style={{ gridColumn: "1/-1", backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "16px" }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "12px", backgroundColor: "var(--primary)", color: "white", fontWeight: "800", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                    {formData.profileImage ? (
+                      <img src={formData.profileImage} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      formData.name ? formData.name.charAt(0).toUpperCase() : '📷'
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "12px", fontWeight: "700", marginBottom: "4px" }}>Student Profile Photo</div>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        type="button"
+                        onClick={() => editFileInputRef.current?.click()}
+                        style={{ padding: "6px 12px", borderRadius: "6px", backgroundColor: "var(--primary)", color: "white", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "700" }}
+                      >
+                        📷 Choose Photo
+                      </button>
+                      {formData.profileImage && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, profileImage: "" }))}
+                          style={{ padding: "6px 12px", borderRadius: "6px", backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", fontSize: "12px", fontWeight: "700" }}
+                        >
+                          🗑️ Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div style={{ gridColumn: "1/-1" }}>
                   <label style={labelStyle}>Full Name</label>
                   <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} style={inputStyle} placeholder="Student full name" required />
@@ -432,6 +876,38 @@ const StudentProfiles = () => {
             </div>
             <form onSubmit={handleAddStudent} style={{ padding: "24px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" }}>
+                {/* Profile Photo Upload Box */}
+                <div style={{ gridColumn: "1/-1", backgroundColor: "var(--input-bg)", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "16px" }}>
+                  <div style={{ width: "56px", height: "56px", borderRadius: "12px", backgroundColor: "var(--primary)", color: "white", fontWeight: "800", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                    {addFormData.profileImage ? (
+                      <img src={addFormData.profileImage} alt="Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      '📷'
+                    )}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "12px", fontWeight: "700", marginBottom: "4px" }}>Student Profile Photo</div>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        type="button"
+                        onClick={() => addFileInputRef.current?.click()}
+                        style={{ padding: "6px 12px", borderRadius: "6px", backgroundColor: "var(--primary)", color: "white", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "700" }}
+                      >
+                        📷 Upload Photo
+                      </button>
+                      {addFormData.profileImage && (
+                        <button
+                          type="button"
+                          onClick={() => setAddFormData(prev => ({ ...prev, profileImage: "" }))}
+                          style={{ padding: "6px 12px", borderRadius: "6px", backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", cursor: "pointer", fontSize: "12px", fontWeight: "700" }}
+                        >
+                          🗑️ Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 <div style={{ gridColumn: "1/-1" }}>
                   <label style={labelStyle}>Full Name *</label>
                   <input type="text" value={addFormData.name} onChange={e => setAddFormData({...addFormData, name: e.target.value})} style={inputStyle} placeholder="Student full name" required />

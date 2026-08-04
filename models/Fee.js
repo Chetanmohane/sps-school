@@ -10,9 +10,13 @@ const feeSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  paidAmount: {
+    type: Number,
+    default: 0
+  },
   status: {
     type: String,
-    enum: ["Pending", "Paid"],
+    enum: ["Pending", "Partial", "Paid", "Overdue"],
     default: "Pending"
   },
   dueDate: {
@@ -21,6 +25,10 @@ const feeSchema = new mongoose.Schema({
   },
   paymentDate: {
     type: Date
+  },
+  updatedBy: {
+    type: String,
+    default: "Super Admin"
   }
 }, { timestamps: true });
 
