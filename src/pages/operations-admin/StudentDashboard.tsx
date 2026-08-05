@@ -117,7 +117,7 @@ const StudentDashboard = () => {
         API.get('/api/exams'),
         email ? API.get(`/api/assignment/all?email=${email}`) : Promise.reject('No email'),
         email ? API.get(`/api/assignment/my-submissions?email=${email}`) : Promise.reject('No email'),
-        API.get('/api/events/all')
+        API.get('/api/notifications')
       ]);
 
       // 1. Process Profile
@@ -146,12 +146,17 @@ const StudentDashboard = () => {
         setAttendancePercent(85);
       }
 
+      const normalizeClass = (cls: any) => {
+        if (!cls) return '';
+        return cls.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
+      };
+
       // 4. Process Exams
       if (examsRes.status === 'fulfilled' && examsRes.value?.data) {
         const allExams = examsRes.value.data.exams || [];
         const classExams = allExams.filter((exam: any) => 
           exam.className && profileClass && 
-          exam.className.trim().toLowerCase() === profileClass.trim().toLowerCase()
+          normalizeClass(exam.className) === normalizeClass(profileClass)
         );
         setExams(classExams);
       }
@@ -169,9 +174,16 @@ const StudentDashboard = () => {
         setPendingAssignmentsCount(pending.length);
       }
 
-      // 6. Process Events
+      // 6. Process Notices / Notifications
       if (eventsRes.status === 'fulfilled' && eventsRes.value?.data) {
-        setEvents(eventsRes.value.data);
+        const notices = eventsRes.value.data.data || [];
+        const formattedNotices = notices.map((n: any) => ({
+          title: n.title,
+          description: n.message,
+          type: n.targetRole === 'all' ? 'Announcement' : `Notice for ${n.targetRole.toUpperCase()}`,
+          date: n.createdAt
+        }));
+        setEvents(formattedNotices);
       }
 
     } catch (err: any) {
@@ -233,14 +245,36 @@ const StudentDashboard = () => {
     }
   };
 
-  // Mock Class Timetable with start/end fields for dynamic classification
-  const timetable = [
-    { period: "1", startTime: "08:30", endTime: "09:30", time: "08:30 AM - 09:30 AM", subject: "Mathematics", teacher: "Prof. Rajesh Kumar", room: "Room 102" },
-    { period: "2", startTime: "09:30", endTime: "10:30", time: "09:30 AM - 10:30 AM", subject: "Science & Tech", teacher: "Dr. Ananya Sen", room: "Physics Lab" },
-    { period: "Break", startTime: "10:30", endTime: "11:00", time: "10:30 AM - 11:00 AM", subject: "Recess Break", teacher: "", room: "Cafeteria", isBreak: true },
-    { period: "3", startTime: "11:00", endTime: "12:00", time: "11:00 AM - 12:00 PM", subject: "English Literature", teacher: "Mrs. Sarah Smith", room: "Room 102" },
-    { period: "4", startTime: "12:00", endTime: "13:00", time: "12:00 PM - 01:00 PM", subject: "Computer Apps", teacher: "Prof. Vikas Gupta", room: "Computer Lab" },
-  ];
+  const getTimetableForClass = (clsName: string) => {
+    const normalized = clsName ? clsName.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim() : '10';
+    if (normalized === '9') {
+      return [
+        { period: "1", startTime: "08:30", endTime: "09:30", time: "08:30 AM - 09:30 AM", subject: "Science & Tech", teacher: "Dr. Ananya Sen", room: "Physics Lab" },
+        { period: "2", startTime: "09:30", endTime: "10:30", time: "09:30 AM - 10:30 AM", subject: "Mathematics", teacher: "Prof. Rajesh Kumar", room: "Room 102" },
+        { period: "Break", startTime: "10:30", endTime: "11:00", time: "10:30 AM - 11:00 AM", subject: "Recess Break", teacher: "", room: "Cafeteria", isBreak: true },
+        { period: "3", startTime: "11:00", endTime: "12:00", time: "11:00 AM - 12:00 PM", subject: "Computer Apps", teacher: "Prof. Vikas Gupta", room: "Computer Lab" },
+        { period: "4", startTime: "12:00", endTime: "13:00", time: "12:00 PM - 01:00 PM", subject: "English Literature", teacher: "Mrs. Sarah Smith", room: "Room 102" },
+      ];
+    }
+    if (normalized === '10') {
+      return [
+        { period: "1", startTime: "08:30", endTime: "09:30", time: "08:30 AM - 09:30 AM", subject: "Mathematics", teacher: "Prof. Rajesh Kumar", room: "Room 102" },
+        { period: "2", startTime: "09:30", endTime: "10:30", time: "09:30 AM - 10:30 AM", subject: "Science & Tech", teacher: "Dr. Ananya Sen", room: "Physics Lab" },
+        { period: "Break", startTime: "10:30", endTime: "11:00", time: "10:30 AM - 11:00 AM", subject: "Recess Break", teacher: "", room: "Cafeteria", isBreak: true },
+        { period: "3", startTime: "11:00", endTime: "12:00", time: "11:00 AM - 12:00 PM", subject: "English Literature", teacher: "Mrs. Sarah Smith", room: "Room 102" },
+        { period: "4", startTime: "12:00", endTime: "13:00", time: "12:00 PM - 01:00 PM", subject: "Computer Apps", teacher: "Prof. Vikas Gupta", room: "Computer Lab" },
+      ];
+    }
+    return [
+      { period: "1", startTime: "08:30", endTime: "09:30", time: "08:30 AM - 09:30 AM", subject: "Morning Assembly", teacher: "Class Teacher", room: "Assembly Hall" },
+      { period: "2", startTime: "09:30", endTime: "10:30", time: "09:30 AM - 10:30 AM", subject: "Language & Grammar", teacher: "Subject Instructor", room: "Room 103" },
+      { period: "Break", startTime: "10:30", endTime: "11:00", time: "10:30 AM - 11:00 AM", subject: "Recess Break", teacher: "", room: "Cafeteria", isBreak: true },
+      { period: "3", startTime: "11:00", endTime: "12:00", time: "11:00 AM - 12:00 PM", subject: "General Study", teacher: "Subject Instructor", room: "Room 103" },
+      { period: "4", startTime: "12:00", endTime: "13:00", time: "12:00 PM - 01:00 PM", subject: "Arts & Sports Period", teacher: "Instructor", room: "Playground" },
+    ];
+  };
+
+  const timetable = getTimetableForClass(student?.className || '10');
 
   // Define stats structure
   const stats = [

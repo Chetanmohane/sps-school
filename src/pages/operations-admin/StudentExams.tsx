@@ -24,10 +24,15 @@ const StudentExams = () => {
         const examsRes = await API.get('/api/exams');
         const allExams = examsRes.data.exams || [];
 
-        // Filter exams for student's class (case-insensitive trim matching)
+        const normalizeClass = (cls: any) => {
+          if (!cls) return '';
+          return cls.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
+        };
+
+        // Filter exams for student's class (normalized matching)
         const classExams = allExams.filter(exam => 
           exam.className && studentClass && 
-          exam.className.trim().toLowerCase() === studentClass.trim().toLowerCase()
+          normalizeClass(exam.className) === normalizeClass(studentClass)
         );
 
         // Sort by date (nearest first)

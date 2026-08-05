@@ -56,7 +56,11 @@ exports.updateStudentProfile = async (req, res) => {
     }
 
     if (phone) {
-      user.phone = phone;
+      let formattedPhone = phone.trim();
+      if (/^\d{10}$/.test(formattedPhone)) {
+        formattedPhone = `+91${formattedPhone}`;
+      }
+      user.phone = formattedPhone;
     }
     await user.save();
 

@@ -2,15 +2,43 @@ import React, { useState, useEffect } from 'react';
 import { FiBell, FiUser, FiLogOut, FiSun, FiMoon, FiCalendar, FiType } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import API from '../api/axios';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme, fontSize, cycleFont } = useTheme();
   const [currentDate, setCurrentDate] = useState('');
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await API.get('/api/notifications');
+      const data = response.data?.data || [];
+      setNotifications(data);
+      
+      const readIds = JSON.parse(localStorage.getItem('read_notification_ids') || '[]');
+      const unread = data.filter((n: any) => !readIds.includes(n._id)).length;
+      setUnreadCount(unread);
+    } catch (err) {
+      console.warn("Could not fetch notifications", err);
+    }
+  };
+
+  const markAllAsRead = () => {
+    const allIds = notifications.map((n: any) => n._id);
+    localStorage.setItem('read_notification_ids', JSON.stringify(allIds));
+    setUnreadCount(0);
+  };
 
   useEffect(() => {
     const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
     setCurrentDate(new Date().toLocaleDateString('en-US', options));
+    
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const formatRoleName = (roleStr: string) => {
@@ -163,47 +191,107 @@ const Navbar = () => {
         </button>
 
         {/* Notifications Button */}
-        <button 
-          className="icon-btn" 
-          title="Notifications" 
-          style={{ 
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
-            border: '1px solid var(--border-color)',
-            background: 'var(--input-bg)',
-            color: 'var(--text-muted)',
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            cursor: 'pointer',
-            position: 'relative',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--primary)';
-            e.currentTarget.style.borderColor = 'var(--primary)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.borderColor = 'var(--border-color)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          <FiBell size={18} />
-          {/* Pulsing indicator */}
-          <span style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: 'var(--danger)',
-            boxShadow: '0 0 0 2px var(--navbar-bg)'
-          }} />
-        </button>
+        <div style={{ position: 'relative' }}>
+          <button 
+            className="icon-btn" 
+            title="Notifications" 
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              if (!showNotifications) {
+                markAllAsRead();
+              }
+            }}
+            style={{ 
+              width: '40px',
+              height: '40px',
+              borderRadius: '10px',
+              border: '1px solid var(--border-color)',
+              background: 'var(--input-bg)',
+              color: 'var(--text-muted)',
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--primary)';
+              e.currentTarget.style.borderColor = 'var(--primary)';
+              e.currentTarget.style.transform = 'scale(1.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.borderColor = 'var(--border-color)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <FiBell size={18} />
+            {/* Pulsing indicator */}
+            {unreadCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: 'var(--danger)',
+                boxShadow: '0 0 0 2px var(--navbar-bg)'
+              }} />
+            )}
+          </button>
+
+          {showNotifications && (
+            <>
+              <div 
+                onClick={() => setShowNotifications(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: '50px',
+                right: 0,
+                width: '320px',
+                background: 'var(--card-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '16px',
+                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                zIndex: 1000,
+                padding: '16px',
+                maxHeight: '360px',
+                overflowY: 'auto'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
+                  <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-main)' }}>Notifications</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{notifications.length} total</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {notifications.length === 0 ? (
+                    <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                      No announcements yet.
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div key={n._id} style={{ padding: '10px', borderRadius: '10px', background: 'var(--input-bg)', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '4px' }}>
+                          <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block' }}>{n.title}</strong>
+                          <span style={{ fontSize: '9px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            {new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '4px 0 0 0', lineHeight: '1.4' }}>{n.message}</p>
+                        <span style={{ fontSize: '9px', color: 'var(--primary)', fontWeight: 'bold', display: 'block', marginTop: '6px' }}>
+                          📢 By: {n.createdBy}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
         
         {/* User Card */}
         <div 

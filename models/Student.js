@@ -30,6 +30,10 @@ const studentSchema = new mongoose.Schema({
       promotedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
     }
   ],
+  results: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
   updatedBy: {
     type: String,
     default: "Super Admin"

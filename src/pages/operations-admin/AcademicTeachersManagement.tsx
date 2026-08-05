@@ -85,12 +85,18 @@ const TeacherDirectory = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const [subjectsList, setSubjectsList] = useState<any[]>([]);
+
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', password: '',
-    specialization: '', qualifications: '', experience: 0, department: ''
+    specialization: '', qualifications: '', experience: 0, department: '',
+    subjects: [] as string[]
   });
 
-  useEffect(() => { fetchTeachers(); }, []);
+  useEffect(() => { 
+    fetchTeachers(); 
+    fetchSubjects();
+  }, []);
 
   const fetchTeachers = async () => {
     try {
@@ -99,6 +105,13 @@ const TeacherDirectory = () => {
       setTeachers(res.data.data);
     } catch (e) { console.error(e); showToast('Failed to fetch teachers', 'error'); }
     finally { setLoading(false); }
+  };
+
+  const fetchSubjects = async () => {
+    try {
+      const res = await API.get('/api/academic-admin/subjects');
+      setSubjectsList(res.data.data || []);
+    } catch (e) { console.error(e); }
   };
 
   const handleInputChange = (e) => {
@@ -131,7 +144,7 @@ const TeacherDirectory = () => {
       }
       setShowModal(false);
       setEditingTeacher(null);
-      setFormData({ name: '', email: '', phone: '', password: '', specialization: '', qualifications: '', experience: 0, department: '' });
+      setFormData({ name: '', email: '', phone: '', password: '', specialization: '', qualifications: '', experience: 0, department: '', subjects: [] });
       fetchTeachers();
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Error saving teacher', 'error');
@@ -143,7 +156,8 @@ const TeacherDirectory = () => {
     setFormData({
       name: teacher.user.name, email: teacher.user.email, phone: teacher.user.phone,
       password: '', specialization: teacher.specialization, qualifications: teacher.qualifications,
-      experience: teacher.experience, department: teacher.department
+      experience: teacher.experience, department: teacher.department,
+      subjects: teacher.subjects ? teacher.subjects.map((sub: any) => typeof sub === 'string' ? sub : sub._id) : []
     });
     setShowModal(true);
   };
@@ -231,7 +245,7 @@ const TeacherDirectory = () => {
           </p>
         </div>
         <button type="button" className="btn-primary flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-          onClick={() => { setEditingTeacher(null); setFormData({ name: '', email: '', phone: '', password: '', specialization: '', qualifications: '', experience: 0, department: '' }); setShowModal(true); }}>
+          onClick={() => { setEditingTeacher(null); setFormData({ name: '', email: '', phone: '', password: '', specialization: '', qualifications: '', experience: 0, department: '', subjects: [] }); setShowModal(true); }}>
           <FiPlus /><span>Add New Teacher</span>
         </button>
       </div>
@@ -372,9 +386,20 @@ const TeacherDirectory = () => {
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{teacher.user?.phone || 'N/A'}</div>
                   </td>
                   <td>
-                    <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', backgroundColor: 'rgba(99,102,241,0.1)', color: 'var(--primary)' }}>
-                      {teacher.specialization || 'General'}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', backgroundColor: 'rgba(99,102,241,0.1)', color: 'var(--primary)', alignSelf: 'flex-start' }}>
+                        {teacher.specialization || 'General'}
+                      </span>
+                      {teacher.subjects && teacher.subjects.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
+                          {teacher.subjects.map((sub: any) => (
+                            <span key={sub._id || sub} style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', fontWeight: '500' }}>
+                              {sub.name || sub}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td><strong style={{ fontSize: '13px' }}>{teacher.experience || 0} yrs</strong></td>
                   <td>{teacher.department || 'Academic'}</td>
@@ -457,6 +482,37 @@ const TeacherDirectory = () => {
                 <div className="flex flex-col">
                   <label className="text-sm font-medium mb-1">Qualifications</label>
                   <input type="text" name="qualifications" className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.qualifications} onChange={handleInputChange} placeholder="e.g., B.Sc, M.Ed" />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium mb-1">Assign Subjects *</label>
+                <div className="grid grid-cols-2 gap-2 p-3 border border-[var(--border-color)] rounded-md bg-[var(--input-bg)] max-h-36 overflow-y-auto" style={{ width: '100%', minWidth: '100%', boxSizing: 'border-box' }}>
+                  {subjectsList.map((sub: any) => {
+                    const isChecked = formData.subjects.includes(sub._id);
+                    return (
+                      <label key={sub._id} className="flex items-center gap-2 text-xs font-semibold cursor-pointer p-1.5 hover:bg-[var(--card-bg)] rounded transition-colors" style={{ color: 'var(--text-main)' }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            const updatedSubjects = e.target.checked
+                              ? [...formData.subjects, sub._id]
+                              : formData.subjects.filter(id => id !== sub._id);
+                            setFormData({ ...formData, subjects: updatedSubjects });
+                          }}
+                          className="w-4 h-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                        />
+                        <span className="truncate" title={`${sub.name} (${sub.code})`}>
+                          {sub.name} <span className="opacity-60 font-normal">({sub.code})</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                  {subjectsList.length === 0 && (
+                    <div className="col-span-full text-center text-xs text-[var(--text-muted)] py-4">
+                      No subjects available. Please add subjects first.
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="form-buttons space-x-4">

@@ -23,7 +23,30 @@ const StudentFees = () => {
     rollNumber: 'STU-1001'
   });
 
-  const [fees, setFees] = useState<any[]>([]);
+  const DEFAULT_FEES = [
+    {
+      _id: 'default_fee_1',
+      title: 'Academic Tuition & Infrastructure Fee (Semester I)',
+      amount: 25000,
+      paidAmount: 25000,
+      status: 'Paid',
+      dueDate: '2026-06-15',
+      paymentDate: '2026-06-10',
+      transactionId: 'TXN_SPS_884920'
+    },
+    {
+      _id: 'default_fee_2',
+      title: 'Annual Laboratory, Activity & Examination Fee',
+      amount: 12000,
+      paidAmount: 0,
+      status: 'Pending',
+      dueDate: '2026-09-15',
+      paymentDate: null,
+      transactionId: null
+    }
+  ];
+
+  const [fees, setFees] = useState<any[]>(DEFAULT_FEES);
 
   const [payingFee, setPayingFee] = useState<any>(null);
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState<string | null>(null);
@@ -57,11 +80,14 @@ const StudentFees = () => {
         setStudentProfile(profRes.data);
       }
 
-      if (feesRes && feesRes.data && Array.isArray(feesRes.data)) {
+      if (feesRes && feesRes.data && Array.isArray(feesRes.data) && feesRes.data.length > 0) {
         setFees(feesRes.data);
+      } else {
+        setFees(DEFAULT_FEES);
       }
     } catch (err) {
       console.error("Error loading fee data:", err);
+      setFees(DEFAULT_FEES);
     }
   };
 

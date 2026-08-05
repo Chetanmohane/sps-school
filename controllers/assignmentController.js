@@ -41,8 +41,10 @@ exports.getAssignments = async (req, res) => {
         return res.status(404).json({ message: "Student profile not found" });
       }
 
+      const classNum = student.className.replace(/class/i, '').replace(/th|rd|nd|st/i, '').trim();
+      const regexPattern = new RegExp(`^(${student.className}|Class\\s*${classNum}|${classNum}th|${classNum}rd|${classNum}nd|${classNum}st)$`, 'i');
       filter = { 
-        className: student.className, 
+        className: { $regex: regexPattern },
         section: student.section 
       };
     }

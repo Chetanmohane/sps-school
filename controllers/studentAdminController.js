@@ -620,24 +620,34 @@ exports.getPromotionHistory = async (req, res) => {
 // Promote students (bulk promotion by class)
 exports.promoteStudents = async (req, res) => {
   try {
-    const { currentClass, currentSection, newClass, newSection } = req.body;
+    const { currentClass, currentSection, newClass, newSection, studentIds } = req.body;
 
-    if (!currentClass || !newClass) {
+    if (!newClass) {
       return res
         .status(400)
-        .json({ message: "Current class and new class are required" });
+        .json({ message: "New class is required" });
     }
 
-    // Find all students in current class
-    const query = { className: currentClass };
-    if (currentSection) query.section = currentSection;
+    // Find all students or by studentIds
+    const query = {};
+    if (studentIds && Array.isArray(studentIds) && studentIds.length > 0) {
+      query._id = { $in: studentIds };
+    } else {
+      if (!currentClass) {
+        return res
+          .status(400)
+          .json({ message: "Current class is required when studentIds is not provided" });
+      }
+      query.className = currentClass;
+      if (currentSection) query.section = currentSection;
+    }
 
     const students = await Student.find(query);
 
     if (students.length === 0) {
       return res
         .status(404)
-        .json({ message: "No students found in the specified class" });
+        .json({ message: "No students found matching selection criteria" });
     }
 
     // Update each student
@@ -773,5 +783,37 @@ exports.getDashboardStats = async (req, res) => {
       message: "Error retrieving dashboard stats",
       error: error.message,
     });
+  }
+};
+
+// Get student results
+exports.getStudentResults = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const student = await Student.findById(studentId).select("results");
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+    res.status(200).json({ data: student.results || {} });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching student results", error: error.message });
+  }
+};
+
+// Update student results
+exports.updateStudentResults = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { results } = req.body;
+    const student = await Student.findById(studentId);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+    student.results = results || {};
+    student.markModified('results');
+    await student.save();
+    res.status(200).json({ message: "Results updated successfully", data: student.results });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating student results", error: error.message });
   }
 };

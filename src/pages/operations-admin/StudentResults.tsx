@@ -73,7 +73,7 @@ const StudentResults = () => {
 
   const getStudentExamTerms = () => {
     if (!studentProfile || !(studentProfile as any)._id) return defaultExamTerms;
-    const studentGrades = resultsData[(studentProfile as any)._id];
+    const studentGrades = (studentProfile as any).results || resultsData[(studentProfile as any)._id];
     if (!studentGrades) return defaultExamTerms;
 
     const terms = [];

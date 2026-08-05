@@ -94,13 +94,23 @@ exports.createTeacher = async (req, res) => {
     }
 
     // Create user with teacher role
+    let creatorName = "Super Admin";
+    if (req.user && req.user.id) {
+      const creator = await User.findById(req.user.id);
+      if (creator) {
+        creatorName = `${creator.name} (${creator.role.toUpperCase()})`;
+      }
+    }
+
     const hashedPassword = require("bcryptjs").hashSync(password, 10);
     const user = new User({
       name,
       email,
       phone: formattedPhone,
       password: hashedPassword,
-      role: "teacher"
+      role: "teacher",
+      createdBy: creatorName,
+      remarks: "Teacher Account Registered"
     });
 
     const savedUser = await user.save();

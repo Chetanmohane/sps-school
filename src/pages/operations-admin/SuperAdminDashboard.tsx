@@ -285,6 +285,58 @@ const SuperAdminDashboard = () => {
 
   const activeTab = new URLSearchParams(location.search).get('tab') || 'overview';
 
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', message: '', targetRole: 'all', targetClass: 'all' });
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
+
+  const fetchAnnouncements = async () => {
+    try {
+      setLoadingAnnouncements(true);
+      const res = await API.get('/api/notifications');
+      setAnnouncements(res.data?.data || []);
+    } catch (err) {
+      console.warn("Error fetching announcements", err);
+    } finally {
+      setLoadingAnnouncements(false);
+    }
+  };
+
+  const publishAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAnnouncement.title || !newAnnouncement.message) return;
+    try {
+      setPublishing(true);
+      await API.post('/api/notifications', newAnnouncement);
+      setNewAnnouncement({ title: '', message: '', targetRole: 'all', targetClass: 'all' });
+      fetchAnnouncements();
+      if (window.showToast) {
+        window.showToast("Notice published successfully!", "success");
+      }
+    } catch (err: any) {
+      alert("Failed to publish notice: " + (err.response?.data?.message || err.message));
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const deleteAnnouncement = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this notice?")) return;
+    try {
+      await API.delete(`/api/notifications/${id}`);
+      fetchAnnouncements();
+      if (window.showToast) {
+        window.showToast("Notice deleted successfully!", "info");
+      }
+    } catch (err: any) {
+      alert("Failed to delete notice: " + (err.response?.data?.message || err.message));
+    }
+  };
+
 
   // ── MONGO DB STATE ─────────────────────────────────────────────────────────────
   const [students, setStudents] = useState<any[]>([]);
@@ -1983,6 +2035,7 @@ const SuperAdminDashboard = () => {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap', backgroundColor: 'var(--panel-bg)', padding: '6px', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
             {[
               { id: 'overview', label: 'Dashboard Overview', icon: '🏠' },
+              { id: 'announcements', label: 'Global Notice Board', icon: '📢' },
               { id: 'teacher-link', label: 'Teacher & Academic Admin', icon: '👩‍🏫', path: '/academic-admin' },
               { id: 'finance', label: 'Finance Admin', icon: '💰' },
               { id: 'hierarchy', label: 'Role Hierarchy', icon: '🌳' },
@@ -2027,6 +2080,121 @@ const SuperAdminDashboard = () => {
 
           {/* ═══ SECTION PAGE (when sidebar category heading clicked) ═══════ */}
           {activeSection && renderSectionPage(activeSection)}
+
+          {/* ═══════════════════════════════════════════════════════════════════
+               TAB: GLOBAL ANNOUNCEMENTS & NOTICE BOARD
+          ═══════════════════════════════════════════════════════════════════ */}
+          {!activeSection && activeTab === 'announcements' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px', marginBottom: '28px' }}>
+              {/* Left Column: Publish Notice Form */}
+              <div style={{ backgroundColor: 'var(--panel-bg)', p: '24px', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+                <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
+                  📢 Publish Global Notice
+                </h3>
+                <form onSubmit={publishAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Notice Title *</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={newAnnouncement.title}
+                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                      placeholder="e.g. Independence Day Holiday"
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Target Audience *</label>
+                    <select 
+                      value={newAnnouncement.targetRole}
+                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, targetRole: e.target.value, targetClass: e.target.value !== 'student' ? 'all' : newAnnouncement.targetClass })}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                    >
+                      <option value="all">All Roles (Students & Teachers)</option>
+                      <option value="teacher">Teachers Only</option>
+                      <option value="student">Students Only</option>
+                      <option value="manager-admin">Managers Only</option>
+                    </select>
+                  </div>
+                  {newAnnouncement.targetRole === 'student' && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Target Class *</label>
+                      <select 
+                        value={newAnnouncement.targetClass}
+                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, targetClass: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                      >
+                        <option value="all">All Classes</option>
+                        {CLASSES.map(c => <option key={c} value={c}>Class {c}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Detailed Message *</label>
+                    <textarea 
+                      required
+                      rows={5}
+                      value={newAnnouncement.message}
+                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
+                      placeholder="Enter announcement description..."
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    disabled={publishing}
+                    style={{ padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', alignSelf: 'flex-start' }}
+                  >
+                    {publishing ? 'Publishing...' : '📢 Publish Announcement'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Right Column: Published Notices Directory */}
+              <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
+                  📖 Active Announcements ({announcements.length})
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '420px' }}>
+                  {loadingAnnouncements ? (
+                    <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>Loading announcements...</div>
+                  ) : announcements.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>No announcements published yet.</div>
+                  ) : (
+                    announcements.map((a) => (
+                      <div key={a._id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--border-color)' }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                            <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{a.title}</strong>
+                            <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase', backgroundColor: 'var(--primary-bg)', color: 'var(--primary)', border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)' }}>
+                              Target: {a.targetRole}
+                            </span>
+                            {a.targetClass && a.targetClass !== 'all' && (
+                              <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase', backgroundColor: 'var(--success-bg)', color: 'var(--success)', border: '1px solid color-mix(in srgb, var(--success) 20%, transparent)' }}>
+                                Class: {a.targetClass}
+                              </span>
+                            )}
+                          </div>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5' }}>{a.message}</p>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                            <span>By: {a.createdBy}</span>
+                            <span>{new Date(a.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => deleteAnnouncement(a._id)}
+                          style={{ border: 'none', background: 'none', color: 'var(--danger)', fontSize: '18px', cursor: 'pointer', alignSelf: 'flex-start', padding: '4px' }}
+                          title="Delete Notice"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ═══════════════════════════════════════════════════════════════════
                TAB: ROLE HIERARCHY DIAGRAM

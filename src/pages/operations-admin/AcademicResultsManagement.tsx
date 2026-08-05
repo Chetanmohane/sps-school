@@ -38,6 +38,15 @@ const AcademicResultsManagement = () => {
       setLoading(true);
       const response = await API.get('/api/admin/student-admin/students');
       const dbStudents = response.data.data || [];
+      
+      const loadedResults: Record<string, any> = {};
+      dbStudents.forEach((s: any) => {
+        if (s.results) {
+          loadedResults[s._id] = s.results;
+        }
+      });
+      setResultsData(loadedResults);
+
       let mappedStudents = dbStudents.map((s: any) => ({
         id: s._id,
         _id: s._id,
@@ -198,7 +207,7 @@ const AcademicResultsManagement = () => {
     return { grade: "F", remarks: "Needs Improvement" };
   };
 
-  const handleSaveGrades = (e: React.FormEvent) => {
+  const handleSaveGrades = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedStudent) return;
 
@@ -223,17 +232,29 @@ const AcademicResultsManagement = () => {
       ]
     };
 
-    const updatedResults = {
-      ...resultsData,
-      [selectedStudent.id]: {
-        ...(resultsData[selectedStudent.id] || {}),
-        [selectedTerm]: termResults
-      }
+    const studentCurrentResults = resultsData[selectedStudent.id] || {};
+    const updatedStudentResults = {
+      ...studentCurrentResults,
+      [selectedTerm]: termResults
     };
 
-    setResultsData(updatedResults);
-    alert(`Exam grades saved successfully for ${selectedStudent.name}!`);
-    setShowModal(false);
+    try {
+      await API.post(`/api/admin/student-admin/results/${selectedStudent.id}`, {
+        results: updatedStudentResults
+      });
+
+      const updatedResults = {
+        ...resultsData,
+        [selectedStudent.id]: updatedStudentResults
+      };
+
+      setResultsData(updatedResults);
+      alert(`Exam grades saved successfully for ${selectedStudent.name}!`);
+      setShowModal(false);
+    } catch (err: any) {
+      console.error("Error saving grades:", err);
+      alert(err.response?.data?.message || "Failed to save grades in database");
+    }
   };
 
   // Helper stats for overview cards

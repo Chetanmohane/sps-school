@@ -15,6 +15,8 @@ const Promotions = () => {
   const [statusMessage, setStatusMessage] = useState("");
   const [classes, setClasses] = useState([]); // Dynamic classes from database
   const [sections] = useState(["A", "B", "C", "D"]);
+  const [studentsList, setStudentsList] = useState([]);
+  const [selectedStudents, setSelectedStudents] = useState([]);
 
   useEffect(() => {
     fetchClassNames(); // Fetch available classes on component mount
@@ -26,12 +28,41 @@ const Promotions = () => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (bulkPromotionData.currentClass) {
+      fetchClassStudents();
+    } else {
+      setStudentsList([]);
+      setSelectedStudents([]);
+    }
+  }, [bulkPromotionData.currentClass, bulkPromotionData.currentSection]);
+
   const fetchClassNames = async () => {
     try {
       const response = await API.get("/api/admin/student-admin/classes");
       setClasses(response.data.data || []);
     } catch (error) {
       console.error("Error fetching class names:", error);
+    }
+  };
+
+  const fetchClassStudents = async () => {
+    try {
+      setLoading(true);
+      const res = await API.get(`/api/admin/student-admin/classes/${bulkPromotionData.currentClass}/students`);
+      let allStudents = res.data.data || [];
+      if (bulkPromotionData.currentSection) {
+        allStudents = allStudents.filter((s) => s.section === bulkPromotionData.currentSection);
+      }
+      setStudentsList(allStudents);
+      // Select all by default
+      setSelectedStudents(allStudents.map((s) => s._id));
+    } catch (e) {
+      console.error("Error fetching class students:", e);
+      setStudentsList([]);
+      setSelectedStudents([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,7 +107,12 @@ const Promotions = () => {
       return;
     }
 
-    if (!window.confirm("Are you sure you want to promote these students? This action cannot be undone.")) {
+    if (selectedStudents.length === 0) {
+      setStatusMessage("Please select at least one student to promote");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to promote ${selectedStudents.length} selected students? This action cannot be undone.`)) {
       return;
     }
 
@@ -84,7 +120,10 @@ const Promotions = () => {
       setLoading(true);
       const response = await API.post(
         "/api/admin/student-admin/promotions/bulk",
-        bulkPromotionData
+        {
+          ...bulkPromotionData,
+          studentIds: selectedStudents
+        }
       );
       setStatusMessage(
         `Promotion successful! ${response.data.count} students promoted.`
@@ -95,6 +134,8 @@ const Promotions = () => {
         newClass: "",
         newSection: "",
       });
+      setStudentsList([]);
+      setSelectedStudents([]);
       // Optionally refresh history
       setTimeout(() => {
         fetchPromotionHistory();
@@ -242,12 +283,10 @@ const Promotions = () => {
                   <label style={{ display: "block", marginBottom: "5px", fontWeight: "bold" }}>
                     Current Class: <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     name="currentClass"
                     value={bulkPromotionData.currentClass}
                     onChange={handleBulkPromotionChange}
-                    placeholder="e.g., Class 9, 9th Grade, etc."
                     required
                     style={{
                       width: "100%",
@@ -257,9 +296,17 @@ const Promotions = () => {
                       boxSizing: "border-box",
                       backgroundColor: 'var(--input-bg)',
                       color: 'var(--text-main)',
-                      outline: 'none'
+                      outline: 'none',
+                      cursor: 'pointer'
                     }}
-                  />
+                  >
+                    <option value="">-- Select Class --</option>
+                    {classes.map((clsName) => (
+                      <option key={clsName} value={clsName}>
+                        {clsName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div style={{ marginBottom: "15px" }}>
@@ -291,6 +338,65 @@ const Promotions = () => {
                   </select>
                 </div>
               </div>
+
+              {studentsList.length > 0 && (
+                <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: "6px" }}>
+                  <h4 style={{ marginTop: 0, marginBottom: '10px' }}>Select Students to Promote</h4>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "15px" }}>
+                    Uncheck any student who has failed or should not be promoted.
+                  </p>
+
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", alignItems: "center" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "6px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedStudents.length === studentsList.length && studentsList.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedStudents(studentsList.map(s => s._id));
+                          } else {
+                            setSelectedStudents([]);
+                          }
+                        }}
+                      />
+                      Promote All Class ({studentsList.length})
+                    </label>
+                    <span style={{ fontSize: "13px", fontWeight: "bold" }}>
+                      Selected: <span style={{ color: "var(--success)" }}>{selectedStudents.length}</span> / {studentsList.length}
+                    </span>
+                  </div>
+
+                  <div style={{ maxHeight: "250px", overflowY: "auto", border: "1px solid var(--border-color)", borderRadius: "6px", padding: "10px", backgroundColor: "var(--input-bg)" }}>
+                    {studentsList.map((student) => {
+                      const isChecked = selectedStudents.includes(student._id);
+                      return (
+                        <div key={student._id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px", borderBottom: "1px solid var(--border-color)" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", flex: 1, fontSize: "13px" }}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedStudents([...selectedStudents, student._id]);
+                                } else {
+                                  setSelectedStudents(selectedStudents.filter(id => id !== student._id));
+                                }
+                              }}
+                            />
+                            <div>
+                              <strong>{student.user?.name || "N/A"}</strong>
+                              <span style={{ marginLeft: "8px", fontSize: "11px", color: "var(--text-muted)" }}>
+                                Roll No: {student.rollNumber || "N/A"} | Sec: {student.section}
+                              </span>
+                            </div>
+                          </label>
+                          <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{student.user?.email}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div style={{ marginBottom: "20px", padding: "15px", backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: "6px" }}>
                 <h4 style={{ marginTop: 0, marginBottom: '15px' }}>⬆️ New Class Details</h4>
