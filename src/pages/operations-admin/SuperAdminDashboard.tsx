@@ -287,6 +287,7 @@ const SuperAdminDashboard = () => {
 
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [newAnnouncement, setNewAnnouncement] = useState({ title: '', message: '', targetRole: 'all', targetClass: 'all' });
+  const [editingNotice, setEditingNotice] = useState<any>(null);
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
@@ -311,17 +312,40 @@ const SuperAdminDashboard = () => {
     if (!newAnnouncement.title || !newAnnouncement.message) return;
     try {
       setPublishing(true);
-      await API.post('/api/notifications', newAnnouncement);
+      if (editingNotice) {
+        await API.put(`/api/notifications/${editingNotice._id}`, newAnnouncement);
+        setEditingNotice(null);
+        if (window.showToast) {
+          window.showToast("Notice updated successfully!", "success");
+        }
+      } else {
+        await API.post('/api/notifications', newAnnouncement);
+        if (window.showToast) {
+          window.showToast("Notice published successfully!", "success");
+        }
+      }
       setNewAnnouncement({ title: '', message: '', targetRole: 'all', targetClass: 'all' });
       fetchAnnouncements();
-      if (window.showToast) {
-        window.showToast("Notice published successfully!", "success");
-      }
     } catch (err: any) {
-      window.alert("Failed to publish notice: " + (err.response?.data?.message || err.message));
+      window.alert("Failed to save notice: " + (err.response?.data?.message || err.message));
     } finally {
       setPublishing(false);
     }
+  };
+
+  const handleStartEdit = (notice: any) => {
+    setEditingNotice(notice);
+    setNewAnnouncement({
+      title: notice.title,
+      message: notice.message,
+      targetRole: notice.targetRole || 'all',
+      targetClass: notice.targetClass || 'all'
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingNotice(null);
+    setNewAnnouncement({ title: '', message: '', targetRole: 'all', targetClass: 'all' });
   };
 
   const deleteAnnouncement = async (id: string) => {
@@ -2089,7 +2113,7 @@ const SuperAdminDashboard = () => {
               {/* Left Column: Publish Notice Form */}
               <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
                 <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
-                  📢 Publish Global Notice
+                  📢 {editingNotice ? 'Edit Announcement' : 'Publish Global Notice'}
                 </h3>
                 <form onSubmit={publishAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div>
@@ -2140,13 +2164,24 @@ const SuperAdminDashboard = () => {
                       style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
                     />
                   </div>
-                  <button 
-                    type="submit" 
-                    disabled={publishing}
-                    style={{ padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s', alignSelf: 'flex-start' }}
-                  >
-                    {publishing ? 'Publishing...' : '📢 Publish Announcement'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      type="submit" 
+                      disabled={publishing}
+                      style={{ padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
+                    >
+                      {publishing ? 'Saving...' : editingNotice ? '💾 Save Changes' : '📢 Publish Announcement'}
+                    </button>
+                    {editingNotice && (
+                      <button 
+                        type="button"
+                        onClick={handleCancelEdit}
+                        style={{ padding: '12px 20px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', color: 'var(--text-muted)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
+                      >
+                        ❌ Cancel
+                      </button>
+                    )}
+                  </div>
                 </form>
               </div>
 
@@ -2181,13 +2216,22 @@ const SuperAdminDashboard = () => {
                             <span>{new Date(a.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                           </div>
                         </div>
-                        <button 
-                          onClick={() => deleteAnnouncement(a._id)}
-                          style={{ border: 'none', background: 'none', color: 'var(--danger)', fontSize: '18px', cursor: 'pointer', alignSelf: 'flex-start', padding: '4px' }}
-                          title="Delete Notice"
-                        >
-                          🗑️
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-start' }}>
+                          <button 
+                            onClick={() => handleStartEdit(a)}
+                            style={{ border: 'none', background: 'none', color: 'var(--primary)', fontSize: '16px', cursor: 'pointer', padding: '4px' }}
+                            title="Edit Notice"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            onClick={() => deleteAnnouncement(a._id)}
+                            style={{ border: 'none', background: 'none', color: 'var(--danger)', fontSize: '16px', cursor: 'pointer', padding: '4px' }}
+                            title="Delete Notice"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}

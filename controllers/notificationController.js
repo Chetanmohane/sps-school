@@ -5,14 +5,20 @@ const Student = require("../models/Student");
 exports.getNotifications = async (req, res) => {
   try {
     const userRole = req.user?.role || "student";
+    let query = {};
     
-    // Fetch notifications targetting "all" or specific user role
-    const notifications = await Notification.find({
-      $or: [
-        { targetRole: "all" },
-        { targetRole: userRole }
-      ]
-    }).sort({ createdAt: -1 });
+    // Admins and managers should see ALL notifications in history.
+    // Others only see notices targeted to their role or "all".
+    if (userRole !== "super-admin" && userRole !== "manager-admin") {
+      query = {
+        $or: [
+          { targetRole: "all" },
+          { targetRole: userRole }
+        ]
+      };
+    }
+
+    const notifications = await Notification.find(query).sort({ createdAt: -1 });
 
     let filtered = notifications;
 
@@ -74,6 +80,33 @@ exports.createNotification = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error publishing notification",
+      error: error.message
+    });
+  }
+};
+
+exports.updateNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, message, targetRole, targetClass } = req.body;
+
+    const updated = await Notification.findByIdAndUpdate(
+      id,
+      { title, message, targetRole: targetRole || "all", targetClass: targetClass || "all" },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Notification not found" });
+    }
+
+    res.status(200).json({
+      message: "Notification updated successfully",
+      data: updated
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating notification",
       error: error.message
     });
   }
