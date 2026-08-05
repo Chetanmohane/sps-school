@@ -2087,7 +2087,7 @@ const SuperAdminDashboard = () => {
           {!activeSection && activeTab === 'announcements' && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px', marginBottom: '28px' }}>
               {/* Left Column: Publish Notice Form */}
-              <div style={{ backgroundColor: 'var(--panel-bg)', p: '24px', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+              <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
                 <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
                   📢 Publish Global Notice
                 </h3>
