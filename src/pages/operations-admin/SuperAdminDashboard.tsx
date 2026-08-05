@@ -318,14 +318,14 @@ const SuperAdminDashboard = () => {
         window.showToast("Notice published successfully!", "success");
       }
     } catch (err: any) {
-      alert("Failed to publish notice: " + (err.response?.data?.message || err.message));
+      window.alert("Failed to publish notice: " + (err.response?.data?.message || err.message));
     } finally {
       setPublishing(false);
     }
   };
 
   const deleteAnnouncement = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this notice?")) return;
+    if (!window.confirm("Are you sure you want to delete this notice?")) return;
     try {
       await API.delete(`/api/notifications/${id}`);
       fetchAnnouncements();
@@ -333,7 +333,7 @@ const SuperAdminDashboard = () => {
         window.showToast("Notice deleted successfully!", "info");
       }
     } catch (err: any) {
-      alert("Failed to delete notice: " + (err.response?.data?.message || err.message));
+      window.alert("Failed to delete notice: " + (err.response?.data?.message || err.message));
     }
   };
 
