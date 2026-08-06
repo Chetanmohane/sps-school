@@ -38,6 +38,7 @@ const Admissions = () => {
     remark: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Current admin info
   const currentUserName = localStorage.getItem("userName") || "Admin";
@@ -102,7 +103,7 @@ const Admissions = () => {
         dob: "", gender: "Male", guardianName: "", guardianPhone: "",
         applyingClass: "1st", section: "A", password: "", remark: "",
       });
-      setActiveSubTab("queue");
+      setActiveSubTab("approved");
       await fetchAdmissions();
     } catch (error: any) {
       console.error("Error submitting admission:", error);
@@ -441,9 +442,18 @@ const Admissions = () => {
                 {/* Initial Password */}
                 <div>
                   <label style={labelStyle}><FiShield style={{ marginRight: 4 }} />Student Account Password</label>
-                  <input style={inputStyle} type="text" placeholder="Default: Student@123"
-                    value={newAdmForm.password}
-                    onChange={e => setNewAdmForm(f => ({ ...f, password: e.target.value }))} />
+                  <div style={{ position: "relative" }}>
+                    <input style={{...inputStyle, paddingRight: "40px"}} type={showPassword ? "text" : "password"} placeholder="Default: Student@123"
+                      value={newAdmForm.password}
+                      onChange={e => setNewAdmForm(f => ({ ...f, password: e.target.value }))} />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "14px" }}
+                    >
+                      {showPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

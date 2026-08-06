@@ -86,7 +86,21 @@ const TeacherApplicationReview = () => {
                       </span>
                     </div>
 
-                    <h3 className="font-bold text-blue-600">{app.student?.user?.name || app.studentName || "Student"}</h3>
+                    {(() => {
+                      const classNameVal = app.student?.className 
+                        ? `${app.student.className}${app.student.section ? `-${app.student.section}` : ''}`
+                        : (app.applyingClass || app.allocatedClass || '');
+                      return (
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <h3 className="font-bold text-blue-600 text-base">{app.student?.user?.name || app.studentName || "Student"}</h3>
+                          {classNameVal && (
+                            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-0.5 rounded-full border border-blue-200">
+                              Class: {classNameVal}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <p className="text-[var(--text-muted)] text-sm mb-3">Application type: ({app.type})</p>
                     <h3 className="font-bold text-lg text-[var(--text-main)]">{app.subject}</h3>
                     <p className="bg-[var(--input-bg)] p-4 rounded-2xl text-[var(--text-muted)] text-sm italic">"{app.description}"</p>

@@ -7,6 +7,9 @@ interface ThemeContextType {
   toggleTheme: () => void;
   fontSize: FontSize;
   cycleFont: () => void;
+  isSidebarOpen: boolean;
+  toggleSidebar: () => void;
+  closeSidebar: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -25,6 +28,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [fontSize, setFontSize] = useState<FontSize>(() => {
     return (localStorage.getItem('fontSize') as FontSize) || 'medium';
   });
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -56,8 +61,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const toggleSidebar = () => setIsSidebarOpen(prev => !prev);
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, fontSize, cycleFont }}>
+    <ThemeContext.Provider value={{ isDark, toggleTheme, fontSize, cycleFont, isSidebarOpen, toggleSidebar, closeSidebar }}>
       {children}
     </ThemeContext.Provider>
   );

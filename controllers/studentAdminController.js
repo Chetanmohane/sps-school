@@ -111,17 +111,20 @@ exports.createDirectAdmission = async (req, res) => {
     }
 
     let user = await User.findOne({ email });
-    if (!user) {
-      const hashedPassword = await bcrypt.hash(password || "Student@123", 10);
-      user = new User({
-        name,
-        email,
-        phone: formattedPhone,
-        password: hashedPassword,
-        role: "student",
-      });
-      await user.save();
+    if (user) {
+      return res.status(400).json({ message: "Account with this email already exists" });
     }
+
+    const hashedPassword = await bcrypt.hash(password || "Student@123", 10);
+    user = new User({
+      name,
+      email,
+      phone: formattedPhone,
+      password: hashedPassword,
+      role: "student",
+    });
+    await user.save();
+
 
     let student = await Student.findOne({ user: user._id });
     if (!student) {
@@ -209,17 +212,20 @@ exports.approveAdmission = async (req, res) => {
       const name = application.studentName || "New Student";
 
       let user = await User.findOne({ email });
-      if (!user) {
-        const hashedPassword = await bcrypt.hash("Student@123", 10);
-        user = new User({
-          name,
-          email,
-          phone: application.studentPhone || "",
-          password: hashedPassword,
-          role: "student",
-        });
-        await user.save();
+      if (user) {
+        return res.status(400).json({ message: "Account with this email already exists" });
       }
+
+      const hashedPassword = await bcrypt.hash("Student@123", 10);
+      user = new User({
+        name,
+        email,
+        phone: application.studentPhone || "",
+        password: hashedPassword,
+        role: "student",
+      });
+      await user.save();
+
 
       student = await Student.findOne({ user: user._id });
       if (!student) {
@@ -410,7 +416,7 @@ exports.getStudentProfile = async (req, res) => {
 exports.updateStudentProfile = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { name, email, phone, address, dob, className, section, rollNumber, parentName, parentPhone, bloodGroup, gender, profileImage } = req.body;
+    const { name, email, phone, password, address, dob, className, section, rollNumber, parentName, parentPhone, bloodGroup, gender, profileImage } = req.body;
 
     // Update student record
     const student = await Student.findById(studentId);
@@ -432,7 +438,7 @@ exports.updateStudentProfile = async (req, res) => {
     await student.save();
 
     // Update user record if provided
-    if (name || email || phone) {
+    if (name || email || phone || password) {
       const user = await User.findById(student.user);
       if (user) {
         if (name) user.name = name;
@@ -447,6 +453,9 @@ exports.updateStudentProfile = async (req, res) => {
             }
           }
           user.phone = formattedPhone;
+        }
+        if (password) {
+          user.password = await bcrypt.hash(password, 10);
         }
         await user.save();
       }

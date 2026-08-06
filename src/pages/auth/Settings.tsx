@@ -58,10 +58,6 @@ const Settings = () => {
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    if (userRole === 'student') {
-      alert('Students are not allowed to update their profile information.');
-      return;
-    }
     setLoadingProfile(true);
     try {
       // Replicate saving local storage values
@@ -179,8 +175,7 @@ const Settings = () => {
               <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 
                 {/* Photo Upload Box */}
-                {userRole !== 'student' && (
-                  <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "16px" }}>
+                <div style={{ padding: "14px", borderRadius: "12px", backgroundColor: "var(--input-bg)", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "16px" }}>
                     <div style={{ width: "64px", height: "64px", borderRadius: "16px", backgroundColor: "var(--primary)", color: "white", fontWeight: "800", fontSize: "24px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                       {profileImage ? (
                         <img src={profileImage} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -214,7 +209,6 @@ const Settings = () => {
                       </div>
                     </div>
                   </div>
-                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)' }}>Full Name</label>
                   <input
@@ -279,14 +273,12 @@ const Settings = () => {
                   />
                 </div>
 
-                {userRole === 'student' ? (
-                  <div style={{ padding: "12px", borderRadius: "8px", backgroundColor: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)", fontSize: "13px", fontWeight: "600", marginTop: "10px" }}>
-                    ⚠️ Students are not allowed to edit their profile details. Please contact the administration department for any changes.
-                  </div>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={loadingProfile}
+                <div style={{ marginTop: "10px", fontSize: "12px", color: "var(--text-muted)" }}>
+                  {userRole === 'student' && "Note: Name and Phone Number cannot be changed. Please contact administration for those updates."}
+                </div>
+                <button
+                  type="submit"
+                  disabled={loadingProfile}
                     className="login-btn"
                     style={{
                       marginTop: '8px',
@@ -299,9 +291,8 @@ const Settings = () => {
                       fontSize: '14px'
                     }}
                   >
-                    <FiSave /> {loadingProfile ? 'Saving...' : 'Save Changes'}
+                      {loadingProfile ? 'Saving...' : 'Save Profile Changes'}
                   </button>
-                )}
               </form>
             </div>
           )}

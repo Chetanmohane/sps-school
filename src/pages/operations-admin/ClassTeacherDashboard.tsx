@@ -661,12 +661,24 @@ const ClassTeacherDashboard = () => {
                   {classApplications.map((app: any) => (
                     <div key={app._id} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                          <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>{app.studentName || 'Student Application'}</strong>
-                          <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: app.status === 'Approved' ? 'rgba(16,185,129,0.15)' : app.status === 'Rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: app.status === 'Approved' ? '#10b981' : app.status === 'Rejected' ? '#ef4444' : '#d97706', fontWeight: '700' }}>
-                            {app.status || 'Pending'}
-                          </span>
-                        </div>
+                        {(() => {
+                          const classNameVal = app.student?.className 
+                            ? `${app.student.className}${app.student.section ? `-${app.student.section}` : ''}`
+                            : (app.applyingClass || app.allocatedClass || (classInfo ? `${classInfo.className}-${classInfo.section}` : ''));
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                              <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>{app.student?.user?.name || app.studentName || 'Student Application'}</strong>
+                              {classNameVal && (
+                                <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', fontWeight: '700', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                                  Class: {classNameVal}
+                                </span>
+                              )}
+                              <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: app.status === 'Approved' ? 'rgba(16,185,129,0.15)' : app.status === 'Rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: app.status === 'Approved' ? '#10b981' : app.status === 'Rejected' ? '#ef4444' : '#d97706', fontWeight: '700' }}>
+                                {app.status || 'Pending'}
+                              </span>
+                            </div>
+                          );
+                        })()}
                         <p style={{ margin: '0 0 6px', fontSize: '14px', color: 'var(--text-main)', fontWeight: '500' }}>Reason: {app.reason || 'Medical Leave Request'}</p>
                         <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Applied Date: {app.date ? new Date(app.date).toLocaleDateString('en-GB') : '2026-08-01'}</span>
                       </div>

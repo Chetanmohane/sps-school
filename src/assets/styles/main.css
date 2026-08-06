@@ -1307,47 +1307,118 @@ html.dark-mode .theme-toggle-btn:hover {
   color: var(--text-muted);
 }
 
+/* ===== SIDEBAR OVERLAY ===== */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 99;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+.sidebar-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ===== MODAL OVERRIDES FOR MOBILE ===== */
+.modal-overlay {
+  padding: 10px; /* Prevent touching edges on small screens */
+}
+.modal-content {
+  max-width: 100% !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
+
 /* ===== GLOBAL MOBILE & TABLET RESPONSIVE OVERRIDES ===== */
 @media (max-width: 768px) {
+  /* Layout reset */
   .app-layout {
     flex-direction: column;
-    height: auto;
-    overflow-x: hidden;
+    height: 100vh;
+    overflow: hidden;
   }
 
   .main-content {
-    height: auto;
-    min-height: 100vh;
-    overflow-x: hidden;
+    height: 100%;
+    overflow-y: auto;
   }
 
+  /* Sidebar Drawer */
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -280px;
+    width: 280px !important;
+    height: 100vh !important;
+    z-index: 100 !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.2);
+  }
+  
+  .sidebar.open {
+    transform: translateX(280px);
+  }
+
+  /* Navbar adjustments */
+  .navbar {
+    padding: 0 12px !important;
+  }
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+  .hide-on-mobile {
+    display: none !important;
+  }
+  .nav-left-section {
+    gap: 8px !important;
+  }
+  .nav-actions {
+    gap: 10px !important;
+  }
+
+  /* Dashboard and Cards */
   .dashboard-container {
-    padding: 12px !important;
-    gap: 14px !important;
-    overflow-x: hidden !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
+    padding: 16px !important;
+    gap: 16px !important;
+  }
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .dashboard-header-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
   }
 
   .cards-grid {
     grid-template-columns: 1fr !important;
-    gap: 14px !important;
+    gap: 16px !important;
   }
 
+  /* Form and Grid Overrides */
+  .form-row, .grid-2-cols {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* Tables */
   .table-container {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    border-radius: 12px !important;
     width: 100% !important;
-    box-sizing: border-box !important;
   }
-
   .data-table {
-    min-width: 600px;
+    min-width: 700px;
   }
-
   .data-table th, .data-table td {
     padding: 10px 12px !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
   }
 }

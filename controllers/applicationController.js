@@ -20,6 +20,8 @@ exports.sendApplication = async (req, res) => {
       description,
       startDate: startDate || null,
       endDate: endDate || null,
+      studentName: user.name || "",
+      applyingClass: studentProfile.className ? `${studentProfile.className}${studentProfile.section ? `-${studentProfile.section}` : ''}` : ""
     });
 
     await newApplication.save();

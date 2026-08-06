@@ -65,7 +65,7 @@ const StudentProfiles = () => {
   const [statusMessage, setStatusMessage] = useState({ text: "", type: "" });
 
   const [formData, setFormData] = useState({
-    name: "", email: "", phone: "", address: "",
+    name: "", email: "", phone: "", password: "", address: "",
     dob: "", className: "", section: "", rollNumber: "",
     parentName: "", parentPhone: "", bloodGroup: "", gender: "", profileImage: ""
   });
@@ -75,6 +75,9 @@ const StudentProfiles = () => {
     address: "", dob: "", className: "", section: "",
     rollNumber: "", parentName: "", parentPhone: "", bloodGroup: "", gender: "", profileImage: ""
   });
+
+  const [showAddPassword, setShowAddPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   useEffect(() => { fetchStudents(); }, []);
 
@@ -101,6 +104,7 @@ const StudentProfiles = () => {
       name: student.user?.name || "",
       email: student.user?.email || "",
       phone: student.user?.phone || "",
+      password: "",
       address: student.address || "",
       dob: student.dob ? student.dob.slice(0, 10) : "",
       className: student.className || "",
@@ -798,6 +802,19 @@ const StudentProfiles = () => {
                   <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} style={inputStyle} placeholder="+91XXXXXXXXXX" />
                 </div>
                 <div>
+                  <label style={labelStyle}>New Password</label>
+                  <div style={{ position: "relative" }}>
+                    <input type={showEditPassword ? "text" : "password"} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} style={{...inputStyle, paddingRight: "40px"}} placeholder="Leave blank to keep current" />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "14px" }}
+                    >
+                      {showEditPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
+                </div>
+                <div>
                   <label style={labelStyle}>Date of Birth</label>
                   <input type="date" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} style={inputStyle} />
                 </div>
@@ -918,7 +935,16 @@ const StudentProfiles = () => {
                 </div>
                 <div>
                   <label style={labelStyle}>Password *</label>
-                  <input type="password" value={addFormData.password} onChange={e => setAddFormData({...addFormData, password: e.target.value})} style={inputStyle} placeholder="Min 8 characters" required />
+                  <div style={{ position: "relative" }}>
+                    <input type={showAddPassword ? "text" : "password"} value={addFormData.password} onChange={e => setAddFormData({...addFormData, password: e.target.value})} style={{...inputStyle, paddingRight: "40px"}} placeholder="Min 8 characters" required />
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPassword(!showAddPassword)}
+                      style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "14px" }}
+                    >
+                      {showAddPassword ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label style={labelStyle}>Phone</label>

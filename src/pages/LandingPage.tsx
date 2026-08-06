@@ -109,9 +109,35 @@ const LandingNavbar = () => {
 // ==========================================
 const LandingPage = () => {
   const navigate = useNavigate();
-  const form = useRef(null); 
+  const form = useRef<HTMLFormElement>(null); 
   const [loading, setLoading] = useState(false);
   const { isDark } = useTheme();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.current) return;
+    setLoading(true);
+    try {
+      const formData = new FormData(form.current);
+      const response = await fetch("https://formspree.io/f/xgonbben", {
+        method: "POST",
+        body: formData,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      if (response.ok) {
+        alert("Thank you! Your message has been sent.");
+        form.current.reset();
+      } else {
+        alert("Oops! There was a problem submitting your form");
+      }
+    } catch (error) {
+      alert("Error sending message. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className={`scroll-smooth font-sans antialiased pt-20 ${isDark ? "bg-[#0a192f] text-slate-200" : "bg-[var(--card-bg)] text-[var(--text-main)] text-[var(--text-main)]"}`}>
@@ -350,7 +376,7 @@ const LandingPage = () => {
           {/* Right Side: modern contact form */}
           <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className={`p-8 md:p-12 rounded-[40px] shadow-2xl border ${isDark ? "bg-slate-900 shadow-slate-950/30 border-slate-800" : "bg-[var(--card-bg)] text-[var(--text-main)] shadow-slate-200/50 border-[var(--border-color)]"}`}>
             <h3 className={`text-2xl font-black mb-8 italic ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>Send a Message</h3>
-            <form ref={form} action="https://formspree.io/f/xgonbben" method="POST" className="space-y-6">
+            <form ref={form} onSubmit={handleSubmit} className="space-y-6">
               <input type="text" name="full_name" placeholder="Full Name" className={`w-full p-4 border rounded-2xl outline-none focus:ring-2 ring-blue-500 font-medium ${isDark ? "bg-[#0a192f] border-slate-800 text-white" : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"}`} required/>
               <input type="email" name="email" placeholder="Email Address" className={`w-full p-4 border rounded-2xl outline-none focus:ring-2 ring-blue-500 font-medium ${isDark ? "bg-[#0a192f] border-slate-800 text-white" : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"}`} required/>
               <textarea name="message" placeholder="Your Message" className={`w-full p-4 border rounded-2xl outline-none focus:ring-2 ring-blue-500 font-medium h-32 resize-none ${isDark ? "bg-[#0a192f] border-slate-800 text-white" : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"}`} required></textarea>

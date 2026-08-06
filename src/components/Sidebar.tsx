@@ -11,6 +11,7 @@ const Sidebar = () => {
   const userRole = localStorage.getItem('role') || 'super-admin';
   const location = useLocation();
   const navigate = useNavigate();
+  const { isSidebarOpen, closeSidebar } = useTheme();
 
   // ── Super Admin & Manager: Hierarchy categories ──────────────────────────
   const superAdminCategories = [
@@ -232,13 +233,15 @@ const Sidebar = () => {
   const fontColors: Record<string, string> = { small: '#94a3b8', medium: '#60a5fa', large: '#a78bfa' };
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center' }}>
-        <div className="logo-icon" style={{ background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '8px', marginRight: '8px', display: 'inline-flex' }}>
-          <FiShield size={18} />
+    <>
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} onClick={closeSidebar}></div>
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center' }}>
+          <div className="logo-icon" style={{ background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '8px', marginRight: '8px', display: 'inline-flex' }}>
+            <FiShield size={18} />
+          </div>
+          SPS School ERP
         </div>
-        SPS School ERP
-      </div>
 
       <ul className="sidebar-menu">
         <li style={{ padding: '15px 24px 10px', fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
@@ -405,6 +408,7 @@ const Sidebar = () => {
         </button>
       </div>
     </aside>
+    </>
   );
 };
 

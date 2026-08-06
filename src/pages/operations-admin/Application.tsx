@@ -208,9 +208,23 @@ const Application = () => {
                         <div key={app._id} className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--input-bg)] space-y-3 relative hover:shadow-sm transition-shadow">
                           <div className="flex justify-between items-start">
                             <div>
-                              <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 border border-indigo-100">
-                                {app.type}
-                              </span>
+                              {(() => {
+                                const classNameVal = app.student?.className 
+                                  ? `${app.student.className}${app.student.section ? `-${app.student.section}` : ''}`
+                                  : (app.applyingClass || app.allocatedClass || '');
+                                return (
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 border border-indigo-100">
+                                      {app.type}
+                                    </span>
+                                    {classNameVal && (
+                                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100">
+                                        Class: {classNameVal}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                               <h4 className="font-bold text-sm text-[var(--text-main)] mt-1.5">{app.subject}</h4>
                               <p className="text-[10px] text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                                 <FiCalendar /> Filed on {appliedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}

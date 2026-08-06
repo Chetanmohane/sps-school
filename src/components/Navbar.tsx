@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FiBell, FiUser, FiLogOut, FiSun, FiMoon, FiCalendar, FiType } from 'react-icons/fi';
+import { FiBell, FiUser, FiLogOut, FiSun, FiMoon, FiCalendar, FiType, FiMenu } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import API from '../api/axios';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { isDark, toggleTheme, fontSize, cycleFont } = useTheme();
+  const { isDark, toggleTheme, fontSize, cycleFont, toggleSidebar } = useTheme();
   const [currentDate, setCurrentDate] = useState('');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -62,8 +62,11 @@ const Navbar = () => {
   const rawRole = localStorage.getItem('role') || 'super-admin';
   const displayRole = formatRoleName(rawRole);
   const rawUserName = localStorage.getItem('userName');
+  const userEmail = localStorage.getItem('userEmail') || '';
   const userName = rawUserName || displayRole;
   const shortName = userName.split(' ')[0];
+  
+  const savedProfileImage = userEmail ? localStorage.getItem(`student_photo_${userEmail}`) : '';
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -95,10 +98,29 @@ const Navbar = () => {
       padding: '0 28px'
     }}>
       {/* Welcome & Date Section */}
-      <div className="flex flex-col justify-center">
-        <div className="nav-welcome" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
-          <span style={{ color: 'var(--text-muted)' }}>Hello,</span> 
-          <span className="font-semibold" style={{ color: 'var(--text-main)' }}>{userName}</span>
+      <div className="nav-left-section" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          className="mobile-menu-btn" 
+          onClick={toggleSidebar}
+          style={{
+            display: 'none', // Overridden in media queries
+            background: 'var(--input-bg)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-main)',
+            fontSize: '20px',
+            cursor: 'pointer',
+            padding: '8px',
+            borderRadius: '8px',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          <FiMenu />
+        </button>
+        <div className="flex flex-col justify-center">
+          <div className="nav-welcome" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
+            <span style={{ color: 'var(--text-muted)' }} className="hide-on-mobile">Hello,</span> 
+            <span className="font-semibold" style={{ color: 'var(--text-main)' }}>{userName}</span>
           <span 
             style={{ 
               fontSize: '11px', 
@@ -115,9 +137,10 @@ const Navbar = () => {
             {displayRole}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-          <FiCalendar size={13} style={{ color: 'var(--primary)' }} />
-          <span>{currentDate}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <FiCalendar size={13} style={{ color: 'var(--primary)' }} />
+            <span className="hide-on-mobile">{currentDate}</span>
+          </div>
         </div>
       </div>
 
@@ -309,16 +332,21 @@ const Navbar = () => {
               width: '32px', 
               height: '32px', 
               borderRadius: '8px', 
-              background: gradient, 
+              background: savedProfileImage ? 'transparent' : gradient, 
               color: '#ffffff', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
               fontSize: '12px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+              overflow: 'hidden'
             }}
           >
-            {initials}
+            {savedProfileImage ? (
+              <img src={savedProfileImage} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              initials
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             <span className="font-semibold text-xs" style={{ color: 'var(--text-main)', lineHeight: '1.2' }}>{shortName}</span>
