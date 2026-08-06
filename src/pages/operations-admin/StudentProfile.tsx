@@ -136,7 +136,20 @@ const StudentProfile = () => {
       }
       if (examsRes.status === 'fulfilled' && examsRes.value.data) {
         const allExams = examsRes.value.data.exams || [];
-        if (allExams.length > 0) setExams(allExams);
+        // Get student's class from profile response or current student state
+        const studentClass = student?.className || initialProfile.className;
+        const normalizeClass = (cls: any) => {
+          if (!cls) return '';
+          return cls.toString().toLowerCase()
+            .replace('class', '').replace('th', '').replace('rd', '')
+            .replace('nd', '').replace('st', '').trim();
+        };
+        const classExams = allExams.filter((exam: any) =>
+          exam.className && studentClass &&
+          normalizeClass(exam.className) === normalizeClass(studentClass)
+        );
+        classExams.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        if (classExams.length > 0) setExams(classExams);
       }
       if (asgRes.status === 'fulfilled' && subRes.status === 'fulfilled') {
         const assignmentsList = asgRes.value.data || [];
