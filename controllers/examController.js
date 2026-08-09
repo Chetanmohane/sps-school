@@ -3,7 +3,11 @@ const { notifyChange } = require("../config/socket");
 
 exports.createExam = async (req, res) => {
   try {
-    const { title, date, startTime, endTime, roomNumber, maxMarks, className, subject } = req.body;
+    const { title, date, startTime, endTime, roomNumber, maxMarks, className, section, subject, invigilator, createdBy } = req.body;
+    
+    // Determine creator based on request
+    const creatorName = createdBy || (req.user ? req.user.name || (req.user.role + " Admin") : "Admin");
+
     const newExam = new Exam({ 
       title, 
       date, 
@@ -11,8 +15,11 @@ exports.createExam = async (req, res) => {
       endTime: endTime || "01:00 PM", 
       roomNumber: roomNumber || "Hall-1", 
       maxMarks: maxMarks ? Number(maxMarks) : 100, 
-      className, 
-      subject 
+      className,
+      section: section || "A", 
+      subject,
+      invigilator: invigilator || "TBD",
+      createdBy: creatorName
     });
     await newExam.save();
     notifyChange("EXAM_CHANGED", { action: "create", exam: newExam });
@@ -39,5 +46,38 @@ exports.deleteExam = async (req, res) => {
     res.status(200).json({ success: true, message: "Exam deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting exam", error: error.message });
+  }
+};
+
+exports.updateExam = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, date, startTime, endTime, roomNumber, maxMarks, className, section, subject, invigilator } = req.body;
+    
+    const updatedExam = await Exam.findByIdAndUpdate(
+      id,
+      { 
+        title, 
+        date, 
+        startTime: startTime || "10:00 AM", 
+        endTime: endTime || "01:00 PM", 
+        roomNumber: roomNumber || "Hall-1", 
+        maxMarks: maxMarks ? Number(maxMarks) : 100, 
+        className,
+        section: section || "A", 
+        subject,
+        invigilator: invigilator || "TBD"
+      },
+      { new: true }
+    );
+    
+    if (!updatedExam) {
+      return res.status(404).json({ message: "Exam not found" });
+    }
+    
+    notifyChange("EXAM_CHANGED", { action: "update", exam: updatedExam });
+    res.status(200).json({ success: true, message: "Exam updated successfully", exam: updatedExam });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating exam", error: error.message });
   }
 };

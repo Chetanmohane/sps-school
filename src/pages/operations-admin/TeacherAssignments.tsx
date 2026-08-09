@@ -2,317 +2,410 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
 import API from '../../api/axios';
-import { FiPlus, FiBookOpen, FiCalendar, FiLoader, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
+import {
+  FiPlus, FiBookOpen, FiCalendar, FiLoader, FiAlertCircle,
+  FiCheckCircle, FiX, FiAward, FiFileText, FiSave,
+  FiUser, FiHash, FiLink, FiEye, FiLayers
+} from 'react-icons/fi';
 
 const TeacherAssignments = () => {
-    const [open, setOpen] = useState(false);
-    const [assignments, setAssignments] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [fetching, setFetching] = useState(true);
-    const [viewSubModal, setViewSubModal] = useState(false);
-    const [currentSubmissions, setCurrentSubmissions] = useState([]);
-    
-    const [form, setForm] = useState({title: "", className: "", section: "", dueDate: "", instructions: ""});
+  const [open, setOpen] = useState(false);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [viewSubModal, setViewSubModal] = useState(false);
+  const [currentSubmissions, setCurrentSubmissions] = useState<any[]>([]);
+  const [currentAsg, setCurrentAsg] = useState<any>(null);
+  const [marksMap, setMarksMap] = useState<Record<string, string>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
-    useEffect(() => {
-        fetchAssignments();
-    }, []);
+  const [form, setForm] = useState({ title: '', className: '', section: '', dueDate: '', instructions: '' });
 
-    const fetchAssignments = async () => {
-        setFetching(true);
-        try {
-            const userEmail = localStorage.getItem('userEmail');
-            const res = await API.get(`/api/assignment/all?email=${userEmail}`);
-            setAssignments(res.data);
-        } catch (err) {
-            console.error("Error fetching assignments:", err);
-        } finally {
-            setFetching(false);
-        }
-    };
+  useEffect(() => { fetchAssignments(); }, []);
 
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
+  const fetchAssignments = async () => {
+    setFetching(true);
+    try {
+      const userEmail = localStorage.getItem('userEmail');
+      const res = await API.get(`/api/assignment/all?email=${userEmail}`);
+      setAssignments(res.data || []);
+    } catch (err) {
+      console.error('Error fetching assignments:', err);
+    } finally {
+      setFetching(false);
+    }
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            const userEmail = localStorage.getItem('userEmail');
-            await API.post('/api/assignment/create', { ...form, userEmail });
-            
-            setOpen(false);
-            setForm({ title: "", className: "", section: "", dueDate: "", instructions: "" });
-            fetchAssignments(); 
-            alert("Assignment Created Successfully!");
-        } catch (err) {
-            console.error(err);
-            alert("Failed to create assignment. Check backend connection.");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-    const handleViewSubmissions = async (asgId) => {
-      try {
-        const res = await API.get('/api/assignment/submit', { params: { asgId: asgId } });
-        setCurrentSubmissions(res.data);
-        setViewSubModal(true);
-      } catch (err) {
-        alert("Error fetching submissions");
-      }
-    }; 
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const userEmail = localStorage.getItem('userEmail');
+      await API.post('/api/assignment/create', { ...form, userEmail });
+      setOpen(false);
+      setForm({ title: '', className: '', section: '', dueDate: '', instructions: '' });
+      fetchAssignments();
+      alert('Assignment created successfully!');
+    } catch (err) {
+      alert('Failed to create assignment.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleUpdateMarks = async (subId, newMarks) => {
-      try {
-        await API.put(`/api/assignment/update-marks/${subId}`, { marks: newMarks });
-        alert("Marks updated successfully");
-      } catch (err) {
-        console.error("Failed to update marks", err);
-        alert("Could not save marks. Try again.");
-      }
-    };
+  const handleViewSubmissions = async (asg: any) => {
+    try {
+      const res = await API.get('/api/assignment/submit', { params: { asgId: asg._id } });
+      setCurrentSubmissions(res.data || []);
+      setCurrentAsg(asg);
+      const map: Record<string, string> = {};
+      res.data.forEach((sub: any) => { map[sub._id] = String(sub.marks ?? ''); });
+      setMarksMap(map);
+      setSavedIds(new Set(res.data.filter((s: any) => s.status === 'Graded').map((s: any) => s._id)));
+      setViewSubModal(true);
+    } catch {
+      alert('Error fetching submissions');
+    }
+  };
 
-    return (
-        <div className="app-layout">
-            <Sidebar />
-            <main className="main-content">
-                <Navbar />
-                
-                <div className="p-8">
-                    <div className="flex justify-between items-center mb-8">
-                        <div>
-                            <h1 className="text-2xl font-bold text-[var(--text-main)]">Assignments</h1>
-                            <p className="text-[var(--text-muted)] text-sm font-medium">Create and track homework for your classes.</p>
+  const handleSaveMarks = async (subId: string) => {
+    const val = Number(marksMap[subId]);
+    if (isNaN(val) || val < 0 || val > 100) {
+      alert('Please enter marks between 0 and 100.');
+      return;
+    }
+    setSavingId(subId);
+    try {
+      await API.put(`/api/assignment/update-marks/${subId}`, { marks: val });
+      setCurrentSubmissions(prev =>
+        prev.map(s => s._id === subId ? { ...s, marks: val, status: 'Graded' } : s)
+      );
+      setSavedIds(prev => new Set([...prev, subId]));
+      alert(`✅ Marks saved! Student will now see ${val}/100.`);
+    } catch {
+      alert('Could not save marks. Try again.');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  return (
+    <div className="app-layout">
+      <Sidebar />
+      <main className="main-content">
+        <Navbar />
+        <div className="p-8">
+
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-bold text-[var(--text-main)]">Assignments</h1>
+              <p className="text-[var(--text-muted)] text-sm font-medium">Create assignments and grade student submissions.</p>
+            </div>
+            <button onClick={() => setOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+            >
+              <FiPlus /> Create Assignment
+            </button>
+          </div>
+
+          {/* Assignments Table */}
+          <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-[32px] shadow-sm border border-[var(--border-color)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[var(--input-bg)]/50 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest">
+                    <th className="px-8 py-5">Assignment Details</th>
+                    <th className="px-8 py-5">Class & Section</th>
+                    <th className="px-8 py-5">Due Date</th>
+                    <th className="px-8 py-5 text-center">Status</th>
+                    <th className="px-8 py-5 text-center">Submissions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-color)]">
+                  {fetching ? (
+                    <tr><td colSpan={5} className="py-16 text-center">
+                      <FiLoader className="animate-spin mx-auto text-blue-600 text-2xl mb-2" />
+                      <p className="text-slate-400">Loading...</p>
+                    </td></tr>
+                  ) : assignments.length === 0 ? (
+                    <tr><td colSpan={5} className="py-16 text-center">
+                      <FiAlertCircle className="mx-auto text-slate-300 text-3xl mb-2" />
+                      <p className="text-slate-400">No assignments yet.</p>
+                    </td></tr>
+                  ) : assignments.map((asg: any) => (
+                    <tr key={asg._id} className="hover:bg-[var(--input-bg)]/30 transition-colors">
+                      <td className="px-8 py-5">
+                        <p className="font-bold text-[var(--text-main)]">{asg.title}</p>
+                        <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{asg.instructions}</p>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-lg text-xs font-bold">
+                            Class {asg.className}
+                          </span>
+                          <span className="bg-violet-50 text-violet-700 border border-violet-100 px-2.5 py-1 rounded-lg text-xs font-bold">
+                            Sec {asg.section}
+                          </span>
                         </div>
-                        <button 
-                            onClick={() => setOpen(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm">
+                          <FiCalendar className="text-blue-500" />
+                          {new Date(asg.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 text-center">
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase border border-green-100">
+                          <FiCheckCircle size={11} /> Active
+                        </span>
+                      </td>
+                      <td className="px-8 py-5 text-center">
+                        <button onClick={() => handleViewSubmissions(asg)}
+                          className="inline-flex items-center gap-1.5 text-blue-600 font-bold hover:underline text-sm"
                         >
-                            <FiPlus /> Create Assignment
+                          <FiEye size={14} /> View
                         </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── CREATE MODAL ── */}
+          {open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+              <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-md rounded-[40px] shadow-2xl p-10">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                      <FiBookOpen size={24} />
                     </div>
-
-                    {/* ASSIGNMENTS TABLE */}
-                    <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-[32px] shadow-sm border border-[var(--border-color)] overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-[var(--input-bg)]/50 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest">
-                                        <th className="px-8 py-5">Assignment Details</th>
-                                        <th className="px-8 py-5">Class & Section</th>
-                                        <th className="px-8 py-5">Due Date</th>
-                                        <th className="px-8 py-5 text-center">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {fetching ? (
-                                        <tr>
-                                            <td colSpan={4} className="px-8 py-20 text-center">
-                                                <FiLoader className="animate-spin mx-auto text-blue-600 text-2xl" />
-                                                <p className="mt-2 text-slate-400 font-medium">Loading assignments...</p>
-                                            </td>
-                                        </tr>
-                                    ) : assignments.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={4} className="px-8 py-20 text-center">
-                                                <FiAlertCircle className="mx-auto text-slate-300 text-3xl mb-2" />
-                                                <p className="text-slate-400 font-medium">No assignments created yet.</p>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        assignments.map((asg) => (
-                                            <tr key={asg._id} className="hover:bg-[var(--input-bg)]/30 transition-colors group">
-                                                <td className="px-8 py-5">
-                                                    <p className="font-bold text-[var(--text-main)] text-base">{asg.title}</p>
-                                                    <p className="text-xs text-slate-400 line-clamp-1">{asg.instructions}</p>
-                                                </td>
-                                                <td className="px-8 py-5 text-[var(--text-muted)] font-semibold">
-                                                    <span className="bg-slate-100 px-2 py-1 rounded-lg text-[var(--text-main)]">{asg.className} - {asg.section}</span>
-                                                </td>
-                                                <td className="px-8 py-5">
-                                                    <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm">
-                                                        <FiCalendar className="text-blue-500" />
-                                                        {new Date(asg.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-5 text-center">
-                                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase border border-green-100">
-                                                        <FiCheckCircle /> Active
-                                                    </span>
-                                                </td>
-                                                <td className="px-8 py-5 text-center">
-                                                    <button onClick={() => handleViewSubmissions(asg._id)} className="text-blue-600 font-bold hover:underline text-sm">
-                                                       View Submissions
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                    <h3 className="text-xl font-black">New Assignment</h3>
+                  </div>
+                  <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-[var(--input-bg)] text-[var(--text-muted)] transition-colors">
+                    <FiX size={18} />
+                  </button>
+                </div>
+                <form onSubmit={handleCreate} className="space-y-5">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Title</label>
+                    <input name="title" required value={form.title} placeholder="Assignment Title" onChange={handleChange}
+                      className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Class</label>
+                      <input name="className" required value={form.className} placeholder="e.g. 8th" onChange={handleChange}
+                        className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
+                      />
                     </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Section</label>
+                      <input name="section" required value={form.section} placeholder="e.g. A" onChange={handleChange}
+                        className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Due Date</label>
+                    <input type="date" name="dueDate" required value={form.dueDate} onChange={handleChange}
+                      className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Instructions</label>
+                    <textarea name="instructions" value={form.instructions} rows={3} placeholder="Assignment details..." onChange={handleChange}
+                      className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] resize-none focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div className="flex gap-4 pt-2">
+                    <button type="button" onClick={() => setOpen(false)}
+                      className="flex-1 py-4 bg-slate-100 text-[var(--text-muted)] rounded-2xl font-bold hover:bg-slate-200 transition-all"
+                    >Cancel</button>
+                    <button type="submit" disabled={loading}
+                      className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg flex items-center justify-center gap-2"
+                    >
+                      {loading ? <FiLoader className="animate-spin" /> : 'Create Assignment'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
-                    {/* CREATE MODAL */}
-                    {open && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                            <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-md rounded-[40px] shadow-2xl p-10 animate-in zoom-in-95 duration-200">
-                                <div className="flex items-center gap-3 mb-8">
-                                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                                        <FiBookOpen size={24} />
-                                    </div>
-                                    <h3 className="text-xl font-black text-[var(--text-main)] tracking-tight">New Assignment</h3>
-                                </div>
+          {/* ── SUBMISSIONS MODAL ── */}
+          {viewSubModal && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+              <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-4xl rounded-[40px] shadow-2xl flex flex-col max-h-[88vh]">
 
-                                <form onSubmit={handleSubmit} className="space-y-5">
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Title</label>
-                                        <input
-                                            name="title"
-                                            required
-                                            value={form.title}
-                                            placeholder="Assignment Title"
-                                            onChange={handleChange}
-                                            className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl focus:ring-4 ring-blue-500/10 focus:border-blue-500 focus:bg-[var(--card-bg)] text-[var(--text-main)] outline-none transition-all"
-                                        />
-                                    </div>
+                {/* Modal header */}
+                <div className="flex justify-between items-start p-8 pb-4 flex-shrink-0 border-b border-[var(--border-color)]">
+                  <div>
+                    <h3 className="text-2xl font-black text-[var(--text-main)]">Student Submissions</h3>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <p className="text-sm text-[var(--text-muted)] font-medium">{currentAsg?.title}</p>
+                      {currentAsg && (
+                        <>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            Class {currentAsg.className}
+                          </span>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                            Section {currentAsg.section}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+                    <span className="bg-[var(--input-bg)] border border-[var(--border-color)] px-3 py-1.5 rounded-xl text-xs font-bold text-[var(--text-muted)]">
+                      <FiLayers className="inline mr-1" size={11} />{currentSubmissions.length} submission{currentSubmissions.length !== 1 ? 's' : ''}
+                    </span>
+                    <button onClick={() => setViewSubModal(false)}
+                      className="p-2 bg-[var(--input-bg)] rounded-full hover:bg-[var(--border-color)] transition-colors"
+                    >
+                      <FiX size={16} />
+                    </button>
+                  </div>
+                </div>
 
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Class</label>
-                                            <input
-                                                name="className"
-                                                required
-                                                value={form.className}
-                                                placeholder="e.g. 8th"
-                                                onChange={handleChange}
-                                                className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl focus:ring-4 ring-blue-500/10 focus:border-blue-500 focus:bg-[var(--card-bg)] text-[var(--text-main)] outline-none transition-all"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Section</label>
-                                            <input
-                                                name="section"
-                                                required
-                                                value={form.section}
-                                                placeholder="e.g. A"
-                                                onChange={handleChange}
-                                                className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl focus:ring-4 ring-blue-500/10 focus:border-blue-500 focus:bg-[var(--card-bg)] text-[var(--text-main)] outline-none transition-all"
-                                            />
-                                        </div>
-                                    </div>
+                {/* Submissions list */}
+                <div className="overflow-y-auto flex-1 p-8 pt-5 space-y-4">
+                  {currentSubmissions.length === 0 ? (
+                    <div className="text-center py-14 text-slate-400">
+                      <FiFileText className="mx-auto mb-3 text-slate-300" size={40} />
+                      <p className="font-medium">No submissions yet.</p>
+                    </div>
+                  ) : currentSubmissions.map((sub: any) => {
+                    const isPdf = sub.fileUrl?.startsWith('data:application/pdf');
+                    const isGraded = savedIds.has(sub._id) || sub.status === 'Graded';
+                    const studentName = sub.student?.user?.name || 'Unknown';
+                    const rollNo = sub.student?.rollNumber || 'N/A';
+                    const cls = sub.student?.className;
+                    const sec = sub.student?.section;
 
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Due Date</label>
-                                        <input
-                                            type="date"
-                                            name="dueDate"
-                                            required
-                                            value={form.dueDate}
-                                            onChange={handleChange}
-                                            className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl focus:ring-4 ring-blue-500/10 focus:border-blue-500 focus:bg-[var(--card-bg)] text-[var(--text-main)] outline-none transition-all"
-                                        />
-                                    </div>
+                    return (
+                      <div key={sub._id} className="p-6 bg-[var(--input-bg)] rounded-3xl border border-[var(--border-color)]">
 
-                                    <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Instructions</label>
-                                        <textarea
-                                            name="instructions"
-                                            value={form.instructions}
-                                            placeholder="Enter assignment details..."
-                                            rows={3}
-                                            onChange={handleChange}
-                                            className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl focus:ring-4 ring-blue-500/10 focus:border-blue-500 focus:bg-[var(--card-bg)] text-[var(--text-main)] outline-none resize-none transition-all"
-                                        />
-                                    </div>
-
-                                    <div className="flex gap-4 pt-4">
-                                        <button 
-                                            type="button"
-                                            onClick={() => setOpen(false)}
-                                            className="flex-1 py-4 bg-slate-100 text-[var(--text-muted)] rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-95"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button 
-                                            type="submit"
-                                            disabled={loading}
-                                            className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 flex items-center justify-center gap-2"
-                                        >
-                                            {loading ? <FiLoader className="animate-spin" /> : "Create"}
-                                        </button>
-                                    </div>
-                                </form>
+                        {/* ── Student Info ── */}
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <div className="flex items-center gap-3">
+                            {/* Avatar */}
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-black text-lg flex-shrink-0">
+                              {studentName.charAt(0).toUpperCase()}
                             </div>
-                        </div>
-                    )}
-
-                    {viewSubModal && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-                       <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-4xl rounded-[40px] shadow-2xl p-8 max-h-[80vh] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-6">
-                           <h3 className="text-2xl font-black text-[var(--text-main)]">Student Submissions</h3>
-                           <button onClick={() => setViewSubModal(false)} className="p-2 bg-slate-100 rounded-full hover:bg-slate-200">✕</button>
-                        </div>
-
-                        {currentSubmissions.length === 0 ? (
-                           <p className="text-center py-10 text-slate-400 font-medium">No one has submitted yet.</p>
-                        ) : (
-                        <div className="space-y-4">
-                        {currentSubmissions.map((sub) => (
-                          <div key={sub._id} className="p-6 bg-[var(--input-bg)] rounded-3xl border border-[var(--border-color)] flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
-                                   {sub.student?.user?.name?.charAt(0)}
-                                </div>
-                                <div>
-                                  <h4 className="font-bold text-[var(--text-main)] leading-none">{sub.student?.user?.name}</h4>
-                                  <p className="text-[11px] text-slate-400 mt-1 tracking-wider font-bold">Roll Number: {sub.student?.rollNumber}</p>
-                                  <p className="text-[11px] text-slate-400 mt-1 tracking-wider font-bold">{sub.student?.user?.email}</p>
-                                </div>
+                            <div>
+                              <h4 className="font-bold text-[var(--text-main)] text-base flex items-center gap-1.5">
+                                <FiUser size={13} className="text-blue-500" />
+                                {studentName}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+                                  <FiHash size={10} /> Roll: {rollNo}
+                                </span>
+                                {cls && (
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    Class {cls}
+                                  </span>
+                                )}
+                                {sec && (
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                                    Section {sec}
+                                  </span>
+                                )}
+                                <span className="text-[10px] text-emerald-600 font-medium">
+                                  Submitted: {new Date(sub.submittedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </span>
                               </div>
-
-                              <div className="bg-[var(--card-bg)] text-[var(--text-main)] p-4 rounded-2xl border border-[var(--border-color)] text-sm text-[var(--text-muted)] italic">
-                                {sub.answer}
-                              </div>
-                              <div className='mt-2'>
-                                 <a 
-                                    href={sub.fileUrl} 
-                                    target="_blank" 
-                                    rel="noreferrer"
-                                    className="w-fit bg-blue-100 text-blue-700 hover:bg-blue-200  px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2"
-                                >
-                                    View File
-                                </a>
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-col items-end gap-3 ml-6">
-                                <p className="text-xs text-green-500 mb-3 ml-12">Submitted on: {new Date(sub.submittedAt).toLocaleString()}</p>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black uppercase text-slate-400">Marks:</span>
-                                    <input 
-                                        type="number" 
-                                        defaultValue={sub.marks} 
-                                        className="w-16 p-2 bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-lg text-center font-bold"
-                                        onKeyDown={(e) => {if (e.key === 'Enter') handleUpdateMarks(sub._id, (e.target as HTMLInputElement).value);}}
-                                    />
-                                </div>
                             </div>
                           </div>
-                          ))}
+                          {/* Status badge */}
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase flex-shrink-0 ${
+                            isGraded
+                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                              : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
+                          }`}>
+                            {isGraded ? `✓ Graded ${marksMap[sub._id] || sub.marks}/100` : 'Submitted'}
+                          </span>
                         </div>
-                        )}
+
+                        {/* Answer */}
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl text-sm text-[var(--text-muted)] italic mb-4 leading-relaxed">
+                          "{sub.answer}"
+                        </div>
+
+                        {/* File / PDF */}
+                        <div className="mb-5">
+                          {isPdf ? (
+                            <a href={sub.fileUrl}
+                              download={`${studentName.replace(/\s+/g,'_')}_assignment.pdf`}
+                              className="inline-flex items-center gap-2 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+                            >
+                              <FiFileText size={13} /> Download Student PDF
+                            </a>
+                          ) : (
+                            <a href={sub.fileUrl} target="_blank" rel="noreferrer"
+                              className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+                            >
+                              <FiLink size={13} /> View Submission Link
+                            </a>
+                          )}
+                        </div>
+
+                        {/* ── Marks Section ── */}
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl">
+                          <p className="text-[10px] font-black uppercase text-[var(--text-muted)] mb-3 flex items-center gap-1">
+                            <FiAward className="text-amber-500" size={12} /> Enter Marks — Student will see this
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={marksMap[sub._id] ?? ''}
+                              onChange={e => setMarksMap(prev => ({ ...prev, [sub._id]: e.target.value }))}
+                              className="w-24 p-3 bg-[var(--input-bg)] border-2 border-[var(--border-color)] rounded-xl text-center font-black text-[var(--text-main)] text-lg outline-none focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                              placeholder="0"
+                            />
+                            <span className="text-[var(--text-muted)] font-bold text-lg">/ 100</span>
+                            <button
+                              onClick={() => handleSaveMarks(sub._id)}
+                              disabled={savingId === sub._id}
+                              className="ml-auto flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
+                            >
+                              {savingId === sub._id
+                                ? <><FiLoader className="animate-spin" size={14} /> Saving...</>
+                                : <><FiSave size={14} /> Save Marks</>
+                              }
+                            </button>
+                          </div>
+                          {isGraded && (
+                            <p className="text-xs text-emerald-600 font-bold mt-2 flex items-center gap-1">
+                              <FiCheckCircle size={11} /> Marks saved — student can see {marksMap[sub._id] || sub.marks}/100 in their history
+                            </p>
+                          )}
+                        </div>
+
                       </div>
-                    </div>
-                    )}
+                    );
+                  })}
                 </div>
-            </main>
+              </div>
+            </div>
+          )}
+
         </div>
-    );
+      </main>
+    </div>
+  );
 };
 
 export default TeacherAssignments;

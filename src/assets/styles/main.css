@@ -1422,3 +1422,86 @@ html.dark-mode .theme-toggle-btn:hover {
     font-size: 13px !important;
   }
 }
+
+
+
+/* =========================================================
+   COMPREHENSIVE RESPONSIVE DESIGN
+   ========================================================= */
+
+@media (max-width: 768px) {
+  /* Fix hardcoded inline grids to be single column */
+  /* Target elements that have display: grid and hardcoded columns */
+  [style*="display: grid"], [style*="display:grid"] {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Exclude grids that use auto-fit (which are already responsive) */
+  [style*="auto-fit"] {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+  }
+  
+  /* Form elements should take full width inside flexible containers */
+  input:not([type="checkbox"]):not([type="radio"]), 
+  select, 
+  textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  /* Modals: override fixed widths (e.g. 500px, 600px, 400px) */
+  .modal-content, 
+  [style*="width: 500px"], 
+  [style*="width: 600px"], 
+  [style*="width: 400px"], 
+  [style*="width: 350px"] {
+    width: 95% !important;
+    max-width: 95% !important;
+    margin: 0 auto !important;
+    box-sizing: border-box;
+  }
+  
+  /* Fix Tables overflowing */
+  table {
+    min-width: 600px !important;
+  }
+  
+  /* Any element containing a table must be able to scroll horizontally */
+  .table-container, 
+  [style*="overflowY: auto"], 
+  [style*="overflow-y: auto"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+  }
+  
+  /* Ensure main padding is smaller on mobile */
+  .dashboard-container {
+    padding: 12px !important;
+    gap: 16px !important;
+  }
+
+  /* Make flex rows stack if they are form rows or button groups */
+  .form-row, .actions-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Ensure sidebar drawer works correctly */
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -280px;
+    width: 280px !important;
+    height: 100vh !important;
+    z-index: 1000 !important;
+    transition: transform 0.3s ease !important;
+  }
+  .sidebar.open {
+    transform: translateX(280px) !important;
+  }
+  .sidebar-overlay {
+    z-index: 999 !important;
+  }
+}

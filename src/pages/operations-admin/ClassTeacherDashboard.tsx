@@ -22,10 +22,7 @@ const ClassTeacherDashboard = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [subjectTeachers, setSubjectTeachers] = useState<any[]>([]);
-  const [announcements, setAnnouncements] = useState<any[]>([
-    { id: '1', title: 'Science Lab Project Submission', date: '2026-08-05', text: 'All students must submit their chemistry experiment reports by Friday.', author: teacherName },
-    { id: '2', title: 'Mid-Term Exam Syllabus Released', date: '2026-08-01', text: 'Check the exam portal for the complete topic list.', author: 'Academic Office' }
-  ]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
 
   const [searchStudent, setSearchStudent] = useState('');
   const [activeSubTab, setActiveSubTab] = useState<'roster' | 'attendance' | 'applications' | 'subjectTeachers' | 'announcements'>('roster');
@@ -39,8 +36,17 @@ const ClassTeacherDashboard = () => {
   const [markAttendanceList, setMarkAttendanceList] = useState<Record<string, string>>({});
   const [savingAttendance, setSavingAttendance] = useState(false);
 
+  // Timetable state — fetched from API for the teacher's class
+  const [classTimetable, setClassTimetable] = useState<any[]>([]);
+  const [selectedTimetableDay, setSelectedTimetableDay] = useState(() => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[new Date().getDay()];
+  });
+  const [timetableLoading, setTimetableLoading] = useState(false);
+
   useEffect(() => {
     fetchClassData();
+    fetchNotices();
     const unsubAtt = onEvent('ATTENDANCE_CHANGED', () => {
       fetchClassData();
       if (window.showToast) window.showToast("📋 Real-time Update: Attendance marked!", "info");
@@ -65,23 +71,11 @@ const ClassTeacherDashboard = () => {
   const fetchClassData = async () => {
     try {
       setLoading(true);
-      const [classRes, appRes, teachersRes, allStudentsRes] = await Promise.allSettled([
+      const [classRes, appRes, teachersRes] = await Promise.allSettled([
         API.get(`/api/teacher/class-students/${teacherEmail}`),
         API.get('/api/application/all'),
-        API.get('/api/academic-admin/teachers'),
-        API.get('/api/admin/student-admin/students')
+        API.get('/api/academic-admin/teachers')
       ]);
-
-      const demoSt = [
-        { _id: 'st1', rollNumber: '10A01', user: { name: 'Rahul Verma', email: 'rahul.v@sps.edu', phone: '+919876543210' }, gender: 'Male', bloodGroup: 'B+', parentName: 'Ramesh Verma', parentPhone: '+919876001122', feeStatus: 'Paid', attendancePct: 94 },
-        { _id: 'st2', rollNumber: '10A02', user: { name: 'Priya Sharma', email: 'priya.s@sps.edu', phone: '+919876543211' }, gender: 'Female', bloodGroup: 'O+', parentName: 'Sunil Sharma', parentPhone: '+919876001123', feeStatus: 'Pending', attendancePct: 88 },
-        { _id: 'st3', rollNumber: '10A03', user: { name: 'Amit Kumar', email: 'amit.k@sps.edu', phone: '+919876543212' }, gender: 'Male', bloodGroup: 'A+', parentName: 'Vijay Kumar', parentPhone: '+919876001124', feeStatus: 'Paid', attendancePct: 96 },
-        { _id: 'st4', rollNumber: '10A04', user: { name: 'Ananya Gupta', email: 'ananya.g@sps.edu', phone: '+919876543213' }, gender: 'Female', bloodGroup: 'AB+', parentName: 'Sanjay Gupta', parentPhone: '+919876001125', feeStatus: 'Paid', attendancePct: 91 },
-        { _id: 'st5', rollNumber: '10A05', user: { name: 'Vikram Singh', email: 'vikram.s@sps.edu', phone: '+919876543214' }, gender: 'Male', bloodGroup: 'O-', parentName: 'Rajesh Singh', parentPhone: '+919876001126', feeStatus: 'Pending', attendancePct: 85 },
-        { _id: 'st6', rollNumber: '10A06', user: { name: 'Neha Patel', email: 'neha.p@sps.edu', phone: '+919876543215' }, gender: 'Female', bloodGroup: 'B-', parentName: 'Kishore Patel', parentPhone: '+919876001127', feeStatus: 'Paid', attendancePct: 92 },
-        { _id: 'st7', rollNumber: '10A07', user: { name: 'Rohan Das', email: 'rohan.d@sps.edu', phone: '+919876543216' }, gender: 'Male', bloodGroup: 'A-', parentName: 'Manish Das', parentPhone: '+919876001128', feeStatus: 'Paid', attendancePct: 89 },
-        { _id: 'st8', rollNumber: '10A08', user: { name: 'Sneha Roy', email: 'sneha.r@sps.edu', phone: '+919876543217' }, gender: 'Female', bloodGroup: 'O+', parentName: 'Alok Roy', parentPhone: '+919876001129', feeStatus: 'Pending', attendancePct: 87 }
-      ];
 
       let loadedStudents: any[] = [];
       let clsData = { className: '10', section: 'A', room: '204', startTime: '08:00', endTime: '14:00' };
@@ -89,26 +83,6 @@ const ClassTeacherDashboard = () => {
       if (classRes.status === 'fulfilled' && classRes.value.data?.data?.students?.length > 0) {
         clsData = classRes.value.data.data.classInfo || clsData;
         loadedStudents = classRes.value.data.data.students;
-      } else if (allStudentsRes.status === 'fulfilled' && allStudentsRes.value.data?.data?.length > 0) {
-        loadedStudents = allStudentsRes.value.data.data.map((s: any, idx: number) => ({
-          _id: s._id || `st_${idx}`,
-          rollNumber: s.rollNumber || `10A0${idx + 1}`,
-          user: {
-            name: s.user?.name || s.name || `Student ${idx + 1}`,
-            email: s.user?.email || s.email || `student${idx + 1}@sps.edu`,
-            phone: s.user?.phone || s.phone || '+919876543210'
-          },
-          gender: s.gender || (idx % 2 === 0 ? 'Male' : 'Female'),
-          bloodGroup: s.bloodGroup || 'O+',
-          parentName: s.parentName || 'Parent Guardian',
-          parentPhone: s.parentPhone || '+919876001122',
-          feeStatus: s.feeStatus || (idx % 3 === 0 ? 'Pending' : 'Paid'),
-          attendancePct: s.attendancePct || 90
-        }));
-      }
-
-      if (loadedStudents.length === 0) {
-        loadedStudents = demoSt;
       }
 
       setClassInfo(clsData);
@@ -121,34 +95,62 @@ const ClassTeacherDashboard = () => {
       });
       setMarkAttendanceList(initialAtt);
 
-      // Process Applications
-      let loadedApps: any[] = [];
+      // Process Applications — only from API, no demo data
       if (appRes.status === 'fulfilled' && appRes.value.data?.length > 0) {
-        loadedApps = appRes.value.data;
+        setApplications(appRes.value.data);
       } else {
-        loadedApps = [
-          { _id: 'app1', studentName: 'Rahul Verma', rollNumber: '10A01', type: 'Medical Leave', reason: 'High fever and severe viral infection. Doctor advised 3 days complete bed rest.', startDate: '2026-08-04', endDate: '2026-08-06', status: 'Pending', appliedOn: '2026-08-03' },
-          { _id: 'app2', studentName: 'Priya Sharma', rollNumber: '10A02', type: 'Family Function Leave', reason: 'Attending elder sister wedding ceremony in Jaipur.', startDate: '2026-08-10', endDate: '2026-08-12', status: 'Approved', appliedOn: '2026-08-02' },
-          { _id: 'app3', studentName: 'Amit Kumar', rollNumber: '10A03', type: 'Sports Duty Leave', reason: 'Representing school in Inter-School District Football Championship.', startDate: '2026-08-08', endDate: '2026-08-09', status: 'Pending', appliedOn: '2026-08-04' }
-        ];
+        setApplications([]);
       }
-      setApplications(loadedApps);
 
-      // Process Subject Teachers
+      // Process Subject Teachers — only from API, no demo data
       if (teachersRes.status === 'fulfilled' && teachersRes.value.data?.data?.length > 0) {
         setSubjectTeachers(teachersRes.value.data.data);
       } else {
-        setSubjectTeachers([
-          { _id: 't1', user: { name: 'Dr. Ramesh Sen', email: 'ramesh.sen@sps.edu', phone: '+919876111111' }, specialization: 'Mathematics', department: 'Mathematics' },
-          { _id: 't2', user: { name: 'Sunita Rao', email: 'sunita.rao@sps.edu', phone: '+919876222222' }, specialization: 'Physics & Chemistry', department: 'Science' },
-          { _id: 't3', user: { name: 'Kavita Joshi', email: 'kavita.j@sps.edu', phone: '+919876333333' }, specialization: 'English Literature', department: 'Languages' },
-          { _id: 't4', user: { name: 'Arun Malhotra', email: 'arun.m@sps.edu', phone: '+919876444444' }, specialization: 'World History & Civics', department: 'Social Science' }
-        ]);
+        setSubjectTeachers([]);
       }
+
+      // Fetch timetable for this class from API
+      await fetchClassTimetable(clsData.className, clsData.section);
+
     } catch (err) {
       console.error('Error loading class teacher data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchClassTimetable = async (className?: string, section?: string, day?: string) => {
+    try {
+      setTimetableLoading(true);
+      const cls = className || classInfo?.className;
+      const sec = section || classInfo?.section;
+      const dayOfWeek = day || selectedTimetableDay;
+
+      if (!cls || !sec) return;
+
+      const ttRes = await API.get('/api/timetable', {
+        params: { className: cls, section: sec, dayOfWeek }
+      });
+      const ttData = ttRes.data?.data || [];
+
+      if (ttData.length > 0 && ttData[0].periods) {
+        const periods = ttData[0].periods.map((p: any, idx: number) => ({
+          period: p.isBreak ? (p.period || 'Break') : (p.period || `Period ${idx + 1}`),
+          time: `${p.startTime || '00:00'} - ${p.endTime || '00:00'}`,
+          subject: p.isBreak ? '☕ Break' : (p.subject || 'Free Period'),
+          teacher: p.isBreak ? 'School Premises' : (p.teacher || 'TBD'),
+          room: p.room || `Room ${classInfo?.room || 'TBD'}`,
+          isBreak: p.isBreak || false
+        }));
+        setClassTimetable(periods);
+      } else {
+        setClassTimetable([]);
+      }
+    } catch (err) {
+      console.warn('Could not load class timetable:', err);
+      setClassTimetable([]);
+    } finally {
+      setTimetableLoading(false);
     }
   };
 
@@ -204,20 +206,43 @@ const ClassTeacherDashboard = () => {
     }
   };
 
-  const postAnnouncement = (e: React.FormEvent) => {
+  const fetchNotices = async () => {
+    try {
+      const res = await API.get('/api/notifications');
+      if (res.data?.data) {
+        const mapped = res.data.data.map((n: any) => ({
+          id: n._id,
+          title: n.title,
+          date: new Date(n.createdAt).toISOString().split('T')[0],
+          text: n.message,
+          author: n.createdBy || 'Admin'
+        }));
+        setAnnouncements(mapped);
+      }
+    } catch (err) {
+      console.log('Error fetching notices:', err);
+    }
+  };
+
+  const postAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNotice.title || !newNotice.text) return;
-    const item = {
-      id: String(Date.now()),
-      title: newNotice.title,
-      text: newNotice.text,
-      date: new Date().toISOString().split('T')[0],
-      author: teacherName
-    };
-    setAnnouncements(prev => [item, ...prev]);
-    setNewNotice({ title: '', text: '' });
-    setShowAnnounceModal(false);
-    triggerMsg('Class notice posted successfully!');
+    try {
+      await API.post('/api/notifications', {
+        title: newNotice.title,
+        message: newNotice.text,
+        targetRole: 'student',
+        targetClass: classInfo?.className || 'all',
+        targetSection: classInfo?.section || 'all'
+      });
+      setNewNotice({ title: '', text: '' });
+      setShowAnnounceModal(false);
+      triggerMsg('Class notice posted successfully!');
+      fetchNotices();
+    } catch (err) {
+      console.error(err);
+      triggerMsg('Error posting notice.');
+    }
   };
 
   const exportRosterCSV = () => {
@@ -253,15 +278,14 @@ const ClassTeacherDashboard = () => {
   const absentCount = Object.values(markAttendanceList).filter(v => v === 'Absent').length;
   const attendancePct = totalMarked > 0 ? Math.round((presentCount / totalMarked) * 100) : 100;
 
-  const timetableSchedule = [
-    { period: 'Period 1', time: '08:00 AM - 08:45 AM', subject: 'Mathematics', teacher: subjectTeachers[0]?.user?.name || 'Dr. Ramesh Sen', room: 'Room 204' },
-    { period: 'Period 2', time: '08:45 AM - 09:30 AM', subject: 'Physics & Chemistry', teacher: subjectTeachers[1]?.user?.name || 'Sunita Rao', room: 'Lab B' },
-    { period: 'Period 3', time: '09:30 AM - 10:15 AM', subject: 'English Literature', teacher: subjectTeachers[2]?.user?.name || 'Kavita Joshi', room: 'Room 204' },
-    { period: 'Recess Break', time: '10:15 AM - 10:30 AM', subject: '☕ Tea & Snacks Break', teacher: 'School Premises', room: 'Cafeteria' },
-    { period: 'Period 4', time: '10:30 AM - 11:15 AM', subject: 'World History & Civics', teacher: subjectTeachers[3]?.user?.name || 'Arun Malhotra', room: 'Room 204' },
-    { period: 'Period 5', time: '11:15 AM - 12:00 PM', subject: 'Computer Science Lab', teacher: 'Prakash Naidu', room: 'IT Lab 2' },
-    { period: 'Period 7', time: '12:45 PM - 01:30 PM', subject: 'Class Assembly & Guidance', teacher: teacherName, room: 'Room 204' },
-  ];
+  // Timetable is now fetched from API — no hardcoded data
+  const timetableSchedule = classTimetable;
+
+  // Handle day change for timetable viewer
+  const handleTimetableDayChange = (newDay: string) => {
+    setSelectedTimetableDay(newDay);
+    fetchClassTimetable(classInfo?.className, classInfo?.section, newDay);
+  };
 
   const filteredStudents = students.filter(s =>
     !searchStudent ||
@@ -537,7 +561,9 @@ const ClassTeacherDashboard = () => {
                     ) : (
                       <tr>
                         <td colSpan={8} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                          No students found matching search criteria.
+                          {students.length === 0 
+                            ? '🎓 No students enrolled in this class yet. Students will appear here once admitted to your class.' 
+                            : 'No students found matching search criteria.'}
                         </td>
                       </tr>
                     )}
@@ -715,61 +741,91 @@ const ClassTeacherDashboard = () => {
           ══════════════════════════════════ */}
           {activeSubTab === 'subjectTeachers' && (
             <div>
-              <div style={{ marginBottom: '24px' }}>
-                <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '800' }}>📅 Class {classInfo?.className}-{classInfo?.section} Daily Period Timetable Schedule</h3>
-                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Period-by-period class timings, subject assignments, and instructor locations.</p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: '800' }}>📅 Class {classInfo?.className}-{classInfo?.section} Daily Period Timetable Schedule</h3>
+                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)' }}>Period-by-period class timings, subject assignments, and instructor locations.</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>Day:</span>
+                  <select
+                    value={selectedTimetableDay}
+                    onChange={(e) => handleTimetableDayChange(e.target.value)}
+                    style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: '700', cursor: 'pointer', outline: 'none' }}
+                  >
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div className="table-container" style={{ marginBottom: '28px' }}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Period #</th>
-                      <th>Time Slot</th>
-                      <th>Subject Name</th>
-                      <th>Assigned Instructor</th>
-                      <th>Classroom / Lab Location</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timetableSchedule.map((t, idx) => (
-                      <tr key={idx} style={{ backgroundColor: t.period.includes('Recess') ? 'rgba(245,158,11,0.06)' : 'transparent' }}>
-                        <td><strong style={{ color: 'var(--primary)' }}>{t.period}</strong></td>
-                        <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{t.time}</td>
-                        <td><strong style={{ color: 'var(--text-main)' }}>{t.subject}</strong></td>
-                        <td style={{ fontSize: '13px' }}>{t.teacher}</td>
-                        <td>
-                          <span style={{ padding: '3px 10px', borderRadius: '6px', backgroundColor: 'var(--input-bg)', fontSize: '12px', fontWeight: '700' }}>
-                            📍 {t.room}
-                          </span>
-                        </td>
+              {timetableLoading ? (
+                <div style={{ textAlign: 'center', padding: '45px', backgroundColor: 'var(--card-bg)', borderRadius: '14px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                  ⏳ Loading timetable...
+                </div>
+              ) : timetableSchedule.length > 0 ? (
+                <div className="table-container" style={{ marginBottom: '28px' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Period #</th>
+                        <th>Time Slot</th>
+                        <th>Subject Name</th>
+                        <th>Assigned Instructor</th>
+                        <th>Classroom / Lab Location</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {timetableSchedule.map((t: any, idx: number) => (
+                        <tr key={idx} style={{ backgroundColor: t.isBreak ? 'rgba(245,158,11,0.06)' : 'transparent' }}>
+                          <td><strong style={{ color: 'var(--primary)' }}>{t.period}</strong></td>
+                          <td style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{t.time}</td>
+                          <td><strong style={{ color: 'var(--text-main)' }}>{t.subject}</strong></td>
+                          <td style={{ fontSize: '13px' }}>{t.teacher}</td>
+                          <td>
+                            <span style={{ padding: '3px 10px', borderRadius: '6px', backgroundColor: 'var(--input-bg)', fontSize: '12px', fontWeight: '700' }}>
+                              📍 {t.room}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '45px', backgroundColor: 'var(--card-bg)', borderRadius: '14px', border: '1px solid var(--border-color)', color: 'var(--text-muted)', marginBottom: '28px' }}>
+                  📅 No timetable configured for Class {classInfo?.className}-{classInfo?.section} on <strong>{selectedTimetableDay}</strong>. Please set up the timetable from the Academic Admin panel.
+                </div>
+              )}
 
               <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: '800' }}>📚 Faculty Teachers Assigned to Class {classInfo?.className}-{classInfo?.section}</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-                {subjectTeachers.map((st: any) => (
-                  <div key={st._id} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {(st.user?.name || 'T').slice(0, 2).toUpperCase()}
+              {subjectTeachers.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+                  {subjectTeachers.map((st: any) => (
+                    <div key={st._id} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#3b82f6', color: 'white', fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {(st.user?.name || 'T').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <strong style={{ fontSize: '15px', color: 'var(--text-main)', display: 'block' }}>{st.user?.name}</strong>
+                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{st.specialization || 'Subject Instructor'}</span>
+                        </div>
                       </div>
-                      <div>
-                        <strong style={{ fontSize: '15px', color: 'var(--text-main)', display: 'block' }}>{st.user?.name}</strong>
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{st.specialization || 'Subject Instructor'}</span>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
+                        <span>✉️ {st.user?.email}</span>
+                        <span>📞 {st.user?.phone || 'N/A'}</span>
+                        <span>🏛️ Department: <strong>{st.department || 'Academic'}</strong></span>
                       </div>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
-                      <span>✉️ {st.user?.email}</span>
-                      <span>📞 {st.user?.phone || '+919876543210'}</span>
-                      <span>🏛️ Department: <strong>{st.department || 'Academic'}</strong></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '45px', backgroundColor: 'var(--card-bg)', borderRadius: '14px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                  📚 No faculty teacher records found. Teacher assignments will appear here once configured.
+                </div>
+              )}
             </div>
           )}
 

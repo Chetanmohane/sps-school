@@ -71,3 +71,46 @@ exports.updateStatus = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// GET applications filtered by class (for class teacher view)
+exports.getByClass = async (req, res) => {
+  try {
+    const { className, section } = req.query;
+
+    if (!className) {
+      return res.status(400).json({ message: "className is required" });
+    }
+
+    // Find all students in this class+section
+    const query = { className };
+    if (section) query.section = section;
+    const students = await Student.find(query).select("_id");
+    const studentIds = students.map((s) => s._id);
+
+    const applications = await Application.find({ student: { $in: studentIds } })
+      .populate({
+        path: "student",
+        populate: { path: "user", select: "name" },
+      })
+      .sort({ appliedDate: -1 });
+
+    res.status(200).json(applications);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// DELETE an application by ID
+exports.deleteApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Application.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+    notifyChange("APPLICATION_CHANGED", { action: "delete", id });
+    res.status(200).json({ message: "Application deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

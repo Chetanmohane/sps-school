@@ -4,9 +4,11 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const controller = require("../controllers/notificationController");
 
+const allowedRoles = ["super-admin", "manager-admin", "academic-admin", "student-admin", "teacher"];
+
 router.get("/", auth, controller.getNotifications);
-router.post("/", auth, role(["super-admin", "manager-admin"]), controller.createNotification);
-router.delete("/:id", auth, role(["super-admin", "manager-admin"]), controller.deleteNotification);
-router.put("/:id", auth, role(["super-admin", "manager-admin"]), controller.updateNotification);
+router.post("/", auth, role(allowedRoles), controller.createNotification);
+router.delete("/:id", auth, role(allowedRoles), controller.deleteNotification);
+router.put("/:id", auth, role(allowedRoles), controller.updateNotification);
 
 module.exports = router;

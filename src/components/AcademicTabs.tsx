@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   FiHome, FiUsers, FiBookOpen, FiLayers, FiAward, 
   FiCheckSquare, FiFileText, FiUserPlus, FiChevronLeft, FiChevronRight,
-  FiCalendar
+  FiCalendar, FiBell
 } from 'react-icons/fi';
 
 const AcademicTabs: React.FC = () => {
@@ -24,7 +24,9 @@ const AcademicTabs: React.FC = () => {
     { id: 'promotions', name: 'Promotions', path: '/academic-admin?tab=promotions', icon: <FiLayers />, emoji: '🚀' },
     { id: 'results', name: 'Exam Results', path: '/academic-admin/results', icon: <FiAward />, emoji: '🏆' },
     { id: 'attendance', name: 'Attendance', path: '/academic-admin/attendance', icon: <FiCheckSquare />, emoji: '✅' },
-    { id: 'exams', name: 'Exam Timetable', path: '/exams', icon: <FiCalendar />, emoji: '📅' }
+    { id: 'exams', name: 'Exam Timetable', path: '/exams', icon: <FiCalendar />, emoji: '📅' },
+    { id: 'timetable', name: 'Daily Timetable', path: '/timetable', icon: <FiCalendar />, emoji: '🗓️' },
+    { id: 'notices', name: 'Notice Board', path: '/academic-admin?tab=notices', icon: <FiBell />, emoji: '📢' }
   ];
 
   const isTabActive = (tab: typeof tabs[0]) => {

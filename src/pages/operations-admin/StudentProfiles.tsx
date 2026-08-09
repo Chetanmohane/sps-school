@@ -17,6 +17,7 @@ const StudentProfiles = () => {
   const [viewStudentAttendance, setViewStudentAttendance] = useState<any>({ records: [], percentage: 0 });
   const [viewStudentExams, setViewStudentExams] = useState<any[]>([]);
   const [viewStudentFees, setViewStudentFees] = useState<any[]>([]);
+  const [viewStudentResults, setViewStudentResults] = useState<any>(null);
   const [viewTab, setViewTab] = useState<'profile' | 'attendance' | 'exams' | 'results' | 'fees'>('profile');
 
   const editFileInputRef = useRef<HTMLInputElement>(null);
@@ -29,10 +30,11 @@ const StudentProfiles = () => {
     try {
       const email = student.user?.email;
       if (email) {
-        const [attRes, examsRes, feesRes] = await Promise.allSettled([
+        const [attRes, examsRes, feesRes, resultsRes] = await Promise.allSettled([
           API.get(`/api/attendance/${email}`),
           API.get('/api/exams'),
-          API.get('/api/finance/my-fees', { params: { email } })
+          API.get('/api/finance/my-fees', { params: { email } }),
+          API.get(`/api/admin/student-admin/results/${student._id}`)
         ]);
 
         if (attRes.status === 'fulfilled' && attRes.value.data) {
@@ -56,6 +58,17 @@ const StudentProfiles = () => {
           setViewStudentFees(feesRes.value.data);
         } else {
           setViewStudentFees([]);
+        }
+
+        if (resultsRes.status === 'fulfilled' && resultsRes.value.data) {
+          const resData = resultsRes.value.data;
+          if (resData.data || resData.success) {
+            setViewStudentResults(resData.data || {});
+          } else {
+            setViewStudentResults(null);
+          }
+        } else {
+          setViewStudentResults(null);
         }
       }
     } catch (err) {
@@ -660,44 +673,63 @@ const StudentProfiles = () => {
               {/* TAB 4: EXAM RESULTS */}
               {viewTab === 'results' && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                  <div style={{ padding: "15px", backgroundColor: "rgba(16,185,129,0.08)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <div style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", textTransform: "uppercase" }}>Overall Academic Performance</div>
-                      <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-main)", marginTop: "2px" }}>Cumulative GPA: 9.3 / 10</div>
-                    </div>
-                    <span style={{ padding: "6px 14px", backgroundColor: "#10b981", color: "white", borderRadius: "20px", fontWeight: "800", fontSize: "12px" }}>
-                      STATUS: PASSED
-                    </span>
-                  </div>
+                  {viewStudentResults && Object.keys(viewStudentResults).length > 0 ? (
+                    Object.keys(viewStudentResults).map(termKey => {
+                      const term = viewStudentResults[termKey];
+                      return (
+                        <div key={termKey} style={{ display: "flex", flexDirection: "column", gap: "15px", marginBottom: "20px" }}>
+                          <div style={{ padding: "15px", backgroundColor: "rgba(16,185,129,0.08)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <div style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", textTransform: "uppercase" }}>{term.termName || termKey}</div>
+                              <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-main)", marginTop: "2px" }}>GPA: {term.overallGpa} | Score: {term.totalMarks}</div>
+                            </div>
+                            <span style={{ padding: "6px 14px", backgroundColor: term.status === 'PASSED' ? "#10b981" : "#ef4444", color: "white", borderRadius: "20px", fontWeight: "800", fontSize: "12px" }}>
+                              STATUS: {term.status}
+                            </span>
+                          </div>
 
-                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", border: "1px solid var(--border-color)", borderRadius: "12px", overflow: "hidden" }}>
-                    <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
-                      <tr>
-                        <th style={{ padding: "10px 14px" }}>Subject</th>
-                        <th style={{ padding: "10px 14px" }}>Marks Obtained</th>
-                        <th style={{ padding: "10px 14px" }}>Max Marks</th>
-                        <th style={{ padding: "10px 14px" }}>Grade</th>
-                        <th style={{ padding: "10px 14px" }}>Remarks</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { subject: 'Mathematics', marks: 95, max: 100, grade: 'O', remarks: 'Outstanding' },
-                        { subject: 'Science & Tech', marks: 90, max: 100, grade: 'O', remarks: 'Outstanding' },
-                        { subject: 'English Literature', marks: 92, max: 100, grade: 'O', remarks: 'Outstanding' },
-                        { subject: 'Social Science', marks: 88, max: 100, grade: 'A+', remarks: 'Excellent' },
-                        { subject: 'Computer Applications', marks: 96, max: 100, grade: 'O', remarks: 'Outstanding' },
-                      ].map((sub, i) => (
-                        <tr key={i} style={{ borderTop: "1px solid var(--border-color)" }}>
-                          <td style={{ padding: "10px 14px", fontWeight: "700" }}>{sub.subject}</td>
-                          <td style={{ padding: "10px 14px", fontWeight: "700" }}>{sub.marks}</td>
-                          <td style={{ padding: "10px 14px", color: "var(--text-muted)" }}>{sub.max}</td>
-                          <td style={{ padding: "10px 14px" }}><span style={{ padding: "2px 8px", borderRadius: "6px", backgroundColor: "#8b5cf6", color: "white", fontWeight: "800", fontSize: "11px" }}>{sub.grade}</span></td>
-                          <td style={{ padding: "10px 14px", fontWeight: "600", color: "var(--text-muted)" }}>⭐ {sub.remarks}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", border: "1px solid var(--border-color)", borderRadius: "12px", overflow: "hidden" }}>
+                            <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
+                              <tr>
+                                <th style={{ padding: "10px 14px" }}>Subject</th>
+                                <th style={{ padding: "10px 14px" }}>Marks Obtained</th>
+                                <th style={{ padding: "10px 14px" }}>Max Marks</th>
+                                <th style={{ padding: "10px 14px" }}>Grade</th>
+                                <th style={{ padding: "10px 14px" }}>Remarks</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {term.subjects && term.subjects.length > 0 ? term.subjects.map((sub: any, i: number) => (
+                                <tr key={i} style={{ borderTop: "1px solid var(--border-color)" }}>
+                                  <td style={{ padding: "12px 14px", fontWeight: "700" }}>{sub.name}</td>
+                                  <td style={{ padding: "12px 14px", fontWeight: "800", color: "#3b82f6" }}>{sub.marks}</td>
+                                  <td style={{ padding: "12px 14px", fontWeight: "700", color: "var(--text-muted)" }}>{sub.maxMarks}</td>
+                                  <td style={{ padding: "12px 14px" }}>
+                                    <span style={{
+                                      padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "800",
+                                      backgroundColor: sub.grade.includes('A') || sub.grade === 'O' ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)",
+                                      color: sub.grade.includes('A') || sub.grade === 'O' ? "#10b981" : "#f59e0b"
+                                    }}>{sub.grade}</span>
+                                  </td>
+                                  <td style={{ padding: "12px 14px", fontSize: "12px", color: "var(--text-muted)" }}>{sub.remarks || '-'}</td>
+                                </tr>
+                              )) : (
+                                <tr>
+                                  <td colSpan={5} style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No subject results published for this term yet.</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px dashed var(--border-color)" }}>
+                      <div style={{ fontSize: "36px", marginBottom: "12px" }}>📊</div>
+                      <div style={{ fontSize: "16px", fontWeight: "700", marginBottom: "6px" }}>No Exam Results Available</div>
+                      <div style={{ fontSize: "13px" }}>No results have been published for this student yet.</div>
+                    </div>
+                  )}
                 </div>
               )}
 

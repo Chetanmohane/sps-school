@@ -7,9 +7,19 @@ exports.getNotifications = async (req, res) => {
     const userRole = req.user?.role || "student";
     let query = {};
     
-    // Admins and managers should see ALL notifications in history.
-    // Others only see notices targeted to their role or "all".
-    if (userRole !== "super-admin" && userRole !== "manager-admin") {
+    const adminRoles = ["super-admin", "manager-admin", "academic-admin", "finance-admin", "student-admin", "operations-admin"];
+    
+    if (adminRoles.includes(userRole)) {
+      query = {};
+    } else if (userRole === "teacher") {
+      query = {
+        $or: [
+          { targetRole: "all" },
+          { targetRole: "teacher" },
+          { targetRole: "student" }
+        ]
+      };
+    } else {
       query = {
         $or: [
           { targetRole: "all" },
@@ -26,11 +36,23 @@ exports.getNotifications = async (req, res) => {
       const student = await Student.findOne({ user: req.user.id });
       if (student && student.className) {
         const studentClassNorm = student.className.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
+        const studentSectionNorm = (student.section || '').toString().toLowerCase().trim();
         
         filtered = notifications.filter(n => {
-          if (!n.targetClass || n.targetClass.toLowerCase() === 'all') return true;
-          const targetClassNorm = n.targetClass.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
-          return targetClassNorm === studentClassNorm;
+          let classMatch = true;
+          let sectionMatch = true;
+
+          if (n.targetClass && n.targetClass.toLowerCase() !== 'all') {
+            const targetClassNorm = n.targetClass.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
+            classMatch = targetClassNorm === studentClassNorm;
+          }
+
+          if (n.targetSection && n.targetSection.toLowerCase() !== 'all') {
+            const targetSectionNorm = n.targetSection.toString().toLowerCase().trim();
+            sectionMatch = targetSectionNorm === studentSectionNorm;
+          }
+
+          return classMatch && sectionMatch;
         });
       }
     }
@@ -49,7 +71,7 @@ exports.getNotifications = async (req, res) => {
 
 exports.createNotification = async (req, res) => {
   try {
-    const { title, message, targetRole, targetClass } = req.body;
+    const { title, message, targetRole, targetClass, targetSection } = req.body;
     
     if (!title || !message) {
       return res.status(400).json({ message: "Title and message are required." });
@@ -68,6 +90,7 @@ exports.createNotification = async (req, res) => {
       message,
       targetRole: targetRole || "all",
       targetClass: targetClass || "all",
+      targetSection: targetSection || "all",
       createdBy: creatorName
     });
 
@@ -88,11 +111,11 @@ exports.createNotification = async (req, res) => {
 exports.updateNotification = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, message, targetRole, targetClass } = req.body;
+    const { title, message, targetRole, targetClass, targetSection } = req.body;
 
     const updated = await Notification.findByIdAndUpdate(
       id,
-      { title, message, targetRole: targetRole || "all", targetClass: targetClass || "all" },
+      { title, message, targetRole: targetRole || "all", targetClass: targetClass || "all", targetSection: targetSection || "all" },
       { new: true }
     );
 

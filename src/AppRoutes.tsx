@@ -47,6 +47,8 @@ import Exams from './pages/operations-admin/Exams';
 import AdminStudentProfileView from './pages/operations-admin/AdminStudentProfileView';
 import SubjectsCatalog from './pages/operations-admin/SubjectsCatalog';
 import AuditLogs from './pages/operations-admin/AuditLogs';
+import ManageTimetable from './pages/operations-admin/ManageTimetable';
+import StudentTimetable from './pages/operations-admin/StudentTimetable';
 // Route Guard Component
 const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
   const token = localStorage.getItem('token');
@@ -233,6 +235,16 @@ const AppRoutes = () => {
             <StudentFees />
           </ProtectedRoute>
         } />
+        <Route path="/student/timetable" element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentTimetable />
+          </ProtectedRoute>
+        } />
+        <Route path="/teacher/timetable" element={
+          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+            <StudentTimetable />
+          </ProtectedRoute>
+        } />
 
         <Route path="/operations-admin/events" element={
           <ProtectedRoute allowedRoles={['operations-admin', 'super-admin', 'manager-admin']}>
@@ -255,8 +267,13 @@ const AppRoutes = () => {
           </ProtectedRoute>
         } />
         <Route path="/exams" element={
-          <ProtectedRoute allowedRoles={['super-admin', 'manager-admin', 'academic-admin']}>
+          <ProtectedRoute allowedRoles={['super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'operations-admin']}>
             <Exams />
+          </ProtectedRoute>
+        } />
+        <Route path="/timetable" element={
+          <ProtectedRoute allowedRoles={['super-admin', 'manager-admin', 'academic-admin', 'teacher', 'teacher-admin', 'operations-admin']}>
+            <ManageTimetable />
           </ProtectedRoute>
         } />
         <Route path="/admin/student-profiles" element={

@@ -58,6 +58,13 @@ const Sidebar = () => {
       path: '/exams',
     },
     {
+      key: 'timetable',
+      name: 'Manage Daily Timetable',
+      emoji: '🗓️',
+      color: '#06b6d4',
+      path: '/timetable',
+    },
+    {
       key: 'hierarchy',
       name: 'Role Hierarchy Diagram',
       emoji: '🌳',
@@ -89,6 +96,7 @@ const Sidebar = () => {
       { path: '/finance-admin', name: 'Finance Admin Overview', icon: <FiDollarSign /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
+      { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
       { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
@@ -106,6 +114,7 @@ const Sidebar = () => {
       { path: '/academic-admin/results', name: 'Exam Results', icon: <FiAward /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
+      { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
       { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
@@ -122,6 +131,8 @@ const Sidebar = () => {
       { path: '/academic-admin/attendance', name: 'Student Attendance', icon: <FiCheckSquare /> },
       { path: '/academic-admin/results', name: 'Exam Results', icon: <FiAward /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
+      { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
+      { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
       { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
@@ -132,14 +143,19 @@ const Sidebar = () => {
     ],
     'operations-admin': [
       { path: '/operations-admin', name: 'Operations Dashboard', icon: <FiHome /> },
+      { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
+      { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
     'teacher': [
       { path: '/teacher', name: 'Subject Teacher Portal', icon: <FiHome /> },
       { path: '/teacher/myclasses', name: 'My Classes & Timetable', icon: <FiUsers /> },
+      { path: '/teacher/timetable', name: '🗓️ My Class Timetable', icon: <FiCalendar /> },
       { path: '/teacher/attendanceMark', name: 'Subject Period Attendance', icon: <FiCheckSquare /> },
       { path: '/teacher/results', name: 'Subject Exam Results', icon: <FiAward /> },
-      { path: '/teacher/exam-timetable', name: 'Exam Timetable & Duty', icon: <FiCalendar /> },
+      { path: '/teacher/exam-timetable', name: 'Exam Duty', icon: <FiCalendar /> },
+      { path: '/exams', name: '📅 Manage Exams', icon: <FiCalendar /> },
+      { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
       { path: '/teacher/assignments', name: 'Assignments & Homework', icon: <FiEdit3 /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
@@ -147,6 +163,7 @@ const Sidebar = () => {
     'student': [
       { path: '/student', name: 'Student Dashboard', icon: <FiHome /> },
       { path: '/student/profile', name: 'My Profile', icon: <FiUsers /> },
+      { path: '/student/timetable', name: '🗓️ My Class Timetable', icon: <FiCalendar /> },
       { path: '/student/attendance', name: 'My Attendance', icon: <FiCheckSquare /> },
       { path: '/student/fees', name: 'Fee Dues & Receipts', icon: <FiDollarSign /> },
       { path: '/student/results', name: 'Exam Results', icon: <FiFileText /> },
@@ -189,6 +206,7 @@ const Sidebar = () => {
     { path: '/academic-admin?tab=promotions', name: 'Promotions Section', icon: <FiLayers /> },
     { path: '/academic-admin/attendance', name: 'Student Attendance', icon: <FiCheckSquare /> },
     { path: '/academic-admin/results', name: 'Exam Results', icon: <FiAward /> },
+    { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
   ];
 
   const isCatActive = (catPath: string) => {
@@ -225,7 +243,7 @@ const Sidebar = () => {
     return titles[userRole] || 'MAIN MENU';
   };
 
-  const isSuperAdmin = userRole === 'super-admin' || location.pathname.startsWith('/super-admin');
+  const isSuperAdmin = userRole === 'super-admin';
   const { fontSize, cycleFont } = useTheme();
 
   const fontLabels: Record<string, string> = { small: 'A−', medium: 'A', large: 'A+' };

@@ -8,6 +8,7 @@ import StudentProfiles from './StudentProfiles';
 import Admissions from './Admission';
 import ClassAllocation from './ClassAllocation';
 import Promotions from './Promotions';
+import NoticeBoardAdmin from '../../components/NoticeBoardAdmin';
 import { 
   FiUsers, FiBookOpen, FiActivity, FiAward, 
   FiClock, FiPlus, FiCompass, 
@@ -140,6 +141,11 @@ const AcademicAdminDashboard = () => {
           {activeTab === 'profiles' && <StudentProfiles />}
           {activeTab === 'allocation' && <ClassAllocation />}
           {activeTab === 'promotions' && <Promotions />}
+          {activeTab === 'notices' && (
+            <div style={{ marginTop: '24px' }}>
+              <NoticeBoardAdmin />
+            </div>
+          )}
 
           {(!activeTab || activeTab === 'overview') && (
             <>
@@ -173,7 +179,7 @@ const AcademicAdminDashboard = () => {
               </p>
             </div>
             
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => navigate('/academic-admin/teachers')} 
                 style={{ padding: '9px 16px', borderRadius: '8px', backgroundColor: '#3b82f6', color: 'white', border: 'none', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
@@ -181,10 +187,16 @@ const AcademicAdminDashboard = () => {
                 + Add Teacher
               </button>
               <button 
-                onClick={() => navigate('/academic-admin/classes')} 
-                style={{ padding: '9px 16px', borderRadius: '8px', backgroundColor: '#f59e0b', color: 'white', border: 'none', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+                onClick={() => navigate('/exams')} 
+                style={{ padding: '9px 16px', borderRadius: '8px', backgroundColor: '#6366f1', color: 'white', border: 'none', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
               >
-                + Manage Classes
+                📅 Create Exam Timetable
+              </button>
+              <button 
+                onClick={() => navigate('/timetable')} 
+                style={{ padding: '9px 16px', borderRadius: '8px', backgroundColor: '#06b6d4', color: 'white', border: 'none', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}
+              >
+                🗓️ Manage Daily Timetable
               </button>
             </div>
           </div>

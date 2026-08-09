@@ -32,5 +32,6 @@ app.use("/api/admin", require("../routes/adminRoutes"));
 app.use("/api/academic-admin", require("../routes/academicAdminRoutes"));
 app.use("/api/exams", require("../routes/examRoutes"));
 app.use("/api/notifications", require("../routes/notificationRoutes"));
+app.use("/api/timetable", require("../routes/timetableRoutes"));
 
 module.exports = app;

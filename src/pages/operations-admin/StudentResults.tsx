@@ -10,9 +10,8 @@ const StudentResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Shared results state
-  const [resultsData] = useSharedState<Record<string, any>>('erp_results', {});
-
+  // Shared results state removed, fetching directly from profile API
+  
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -72,14 +71,14 @@ const StudentResults = () => {
   ];
 
   const getStudentExamTerms = () => {
-    if (!studentProfile || !(studentProfile as any)._id) return defaultExamTerms;
-    const studentGrades = (studentProfile as any).results || resultsData[(studentProfile as any)._id];
-    if (!studentGrades) return defaultExamTerms;
+    if (!studentProfile || !(studentProfile as any)._id) return [];
+    const studentGrades = (studentProfile as any).results;
+    if (!studentGrades) return [];
 
     const terms = [];
     if (studentGrades['Term-1']) terms.push(studentGrades['Term-1']);
     if (studentGrades['Term-2']) terms.push(studentGrades['Term-2']);
-    return terms.length > 0 ? terms : defaultExamTerms;
+    return terms;
   };
 
   const handlePrint = () => {
@@ -149,8 +148,15 @@ const StudentResults = () => {
 
           {/* Terms Report Cards */}
           <div className="space-y-8">
-            {getStudentExamTerms().map((term, tIdx) => (
-              <div key={tIdx} className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-3xl border border-[var(--border-color)] shadow-sm overflow-hidden">
+            {getStudentExamTerms().length === 0 ? (
+              <div className="bg-[var(--card-bg)] text-[var(--text-main)] p-8 rounded-3xl border border-[var(--border-color)] shadow-sm text-center">
+                <FiAward size={48} className="mx-auto text-[var(--text-muted)] mb-4" />
+                <h3 className="text-xl font-black mb-2">No Results Published</h3>
+                <p className="text-[var(--text-muted)]">Your academic results have not been published yet. Please check back later.</p>
+              </div>
+            ) : (
+              getStudentExamTerms().map((term, tIdx) => (
+                <div key={tIdx} className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-3xl border border-[var(--border-color)] shadow-sm overflow-hidden">
                 <div className="p-6 bg-slate-50/50 border-b border-[var(--border-color)] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
                     <h3 className="font-black text-lg text-[var(--text-main)]">{term.termName}</h3>
@@ -206,7 +212,7 @@ const StudentResults = () => {
                   </table>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       </main>

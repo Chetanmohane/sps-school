@@ -37,7 +37,8 @@ router.post("/student-admin/promotions/bulk", auth, role(["student-admin", "supe
 router.post("/student-admin/promotions/:studentId", auth, role(["student-admin", "super-admin", "manager-admin", "academic-admin", "teacher-admin"]), studentAdminController.promoteSingleStudent);
 
 // ===== RESULTS =====
-router.get("/student-admin/results/:studentId", auth, role(["student-admin", "super-admin", "manager-admin", "academic-admin", "teacher-admin"]), studentAdminController.getStudentResults);
-router.post("/student-admin/results/:studentId", auth, role(["student-admin", "super-admin", "manager-admin", "academic-admin", "teacher-admin"]), studentAdminController.updateStudentResults);
+router.get("/student-admin/results/:studentId", auth, role(["student-admin", "super-admin", "manager-admin", "academic-admin", "teacher-admin", "teacher", "operations-admin"]), studentAdminController.getStudentResults);
+router.post("/student-admin/results/:studentId", auth, role(["student-admin", "super-admin", "manager-admin", "academic-admin", "teacher-admin", "teacher", "operations-admin"]), studentAdminController.updateStudentResults);
+
 
 module.exports = router;

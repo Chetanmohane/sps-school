@@ -58,7 +58,8 @@ const StudentAdminDashboard = () => {
   /* shared state */
   const [students, setStudents]     = useSharedState('erp_students', INIT_STUDENTS);
   const [admissions, setAdmissions] = useSharedState('erp_admissions', INIT_ADMISSIONS);
-  const [statusMsg, setStatusMsg]   = useState(null);
+  const [statusMsg, setStatusMsg]   = useState<any>(null);
+  const [studentToDelete, setStudentToDelete] = useState<any>(null);
 
   /* search / filter */
   const [srchP, setSrchP] = useState('');
@@ -149,9 +150,17 @@ const StudentAdminDashboard = () => {
     setStudents(p=>p.map(s=>s.id===editSt.id?{...s,...editSt}:s));
     setShowEditStudent(false); trigger('Student profile updated!');
   };
-  const delStudent = id => {
-    if(!window.confirm('Delete this student?')) return;
-    setStudents(p=>p.filter(s=>s.id!==id)); trigger('Student deleted.');
+  const delStudent = id => { setStudentToDelete(id); };
+  const confirmDeleteStudent = async () => {
+    if(!studentToDelete) return;
+    try {
+      await API.delete(`/api/admin/student-admin/students/${studentToDelete}`);
+      setStudents((p: any[]) => p.filter(s => s.id !== studentToDelete && s._id !== studentToDelete));
+      trigger('Student deleted successfully!');
+    } catch (err) {
+      trigger('Failed to delete student', 'danger');
+    }
+    setStudentToDelete(null);
   };
 
   const addAdmission = e => {
@@ -373,6 +382,24 @@ const StudentAdminDashboard = () => {
         )}
 
       </main>
+
+      {/* Custom Delete Confirm Modal */}
+      {studentToDelete && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ background: 'var(--card-bg)', padding: '24px', borderRadius: '12px', width: '350px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+            <div style={{ color: '#ef4444', marginBottom: '16px' }}>
+              <FiTrash2 size={40} />
+            </div>
+            <h3 style={{ margin: '0 0 8px 0' }}>Delete Student</h3>
+            <p style={{ margin: '0 0 24px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Are you sure you want to delete this student? This action cannot be undone.</p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setStudentToDelete(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
+              <button onClick={confirmDeleteStudent} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

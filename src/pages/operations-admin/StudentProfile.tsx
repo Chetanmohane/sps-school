@@ -10,6 +10,9 @@ import {
   FiCamera, FiUploadCloud, FiTrash2
 } from 'react-icons/fi';
 import API from '../../api/axios';
+import ExamTimetableSection from '../../components/ExamTimetableSection';
+import ExamResultsSection from '../../components/ExamResultsSection';
+import { useSharedState } from '../../hooks/useSharedState';
 import { useSocket } from '../../context/SocketContext';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -398,7 +401,7 @@ const StudentProfile = () => {
 
                   {/* Student Name & Info */}
                   <div className="pt-2 sm:pt-12">
-                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
                       <h1 className="text-2xl font-black text-[var(--text-main)] tracking-tight">{student?.user?.name || 'Active Student'}</h1>
                       <span className="bg-emerald-500/10 text-emerald-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-500/20 uppercase tracking-wider">
                         STUDENT
@@ -450,7 +453,7 @@ const StudentProfile = () => {
                   { id: 'personal', label: 'Personal & Parent Details', icon: FiUser },
                   { id: 'academic', label: 'Academic & Subjects', icon: FiBookOpen },
                   { id: 'finance', label: 'Fee Statement & Payments', icon: FiCreditCard },
-                  { id: 'exams', label: 'Exam Timetable', icon: FiCalendar },
+                  { id: 'exams', label: 'Exam Timetable & Scorecard', icon: FiAward },
                 ].map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
@@ -656,47 +659,14 @@ const StudentProfile = () => {
                   </div>
 
                   {/* Academic Exam Timetable */}
-                  <div className="bg-[var(--card-bg)] p-6 rounded-2xl border border-[var(--border-color)] shadow-sm">
-                    <h3 className="text-sm font-black mb-4 flex items-center justify-between border-b border-[var(--border-color)] pb-3">
-                      <span className="flex items-center gap-2">
-                        <FiAward className="text-rose-500" /> Academic Exam Timetable
-                      </span>
-                      <span className="text-xs font-bold text-[var(--text-muted)]">Class 10-A</span>
-                    </h3>
-
-                    <div className="space-y-3.5">
-                      {exams.map((exam, idx) => {
-                        const examDate = new Date(exam.date);
-                        return (
-                          <div key={idx} className="flex items-center gap-4 p-4 rounded-xl border border-[var(--border-color)] hover:bg-[var(--hover-bg)] transition-colors">
-                            <div className="w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                              <span className="text-[10px] font-bold uppercase">{examDate.toLocaleString('default', { month: 'short' })}</span>
-                              <span className="text-lg font-black leading-none">{examDate.getDate()}</span>
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-bold text-sm leading-snug">{exam.title}</h4>
-                              <p className="text-xs text-[var(--text-muted)] flex flex-wrap items-center gap-2 mt-1">
-                                <span className="flex items-center gap-1 font-semibold text-[var(--text-main)]"><FiBookOpen size={13} /> {exam.subject}</span>
-                                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                                  <FiClock size={10} className="inline mr-1" />{exam.startTime || '09:00 AM'} - {exam.endTime || '12:00 PM'}
-                                </span>
-                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
-                                  🏫 {exam.roomNumber || 'Hall 101'}
-                                </span>
-                              </p>
-                            </div>
-                            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
-                              Upcoming
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <ExamTimetableSection exams={exams} />
 
                 </div>
 
               </div>
+
+              {/* Full Width Academic Exam Results Section */}
+              <ExamResultsSection student={student} />
 
             </div>
           )}
@@ -797,7 +767,7 @@ const StudentProfile = () => {
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="bg-[var(--card-bg)] p-6 rounded-2xl border border-[var(--border-color)] shadow-sm">
                 <h3 className="text-base font-black border-b border-[var(--border-color)] pb-3 flex items-center gap-2 mb-6">
-                  <FiBookOpen className="text-emerald-600" /> Enrolled Subjects & Course Catalogue (Class 10)
+                  <FiBookOpen className="text-emerald-600" /> Enrolled Subjects & Course Catalogue (Class {student?.className || '10'})
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -869,8 +839,14 @@ const StudentProfile = () => {
               </div>
             </div>
           )}
+
+          {/* TAB 5: EXAMS & RESULTS */}
           {activeTab === 'exams' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="space-y-8 animate-in fade-in duration-300">
+              {/* Detailed Exam Results Section */}
+              <ExamResultsSection student={student} />
+
+              {/* Timetable Table */}
               <div className="bg-[var(--card-bg)] p-6 rounded-2xl border border-[var(--border-color)] shadow-sm">
                 <h3 className="text-base font-black border-b border-[var(--border-color)] pb-3 flex items-center gap-2 mb-6">
                   <FiCalendar className="text-emerald-500" /> Exam Datesheet & Timetable (Class {student?.className || '10'})

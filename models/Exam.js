@@ -30,9 +30,21 @@ const examSchema = new mongoose.Schema({
     type: String,
     required: [true, "Class is required"]
   },
+  section: {
+    type: String,
+    required: [true, "Section is required"]
+  },
   subject: {
     type: String,
     required: [true, "Subject is required"]
+  },
+  invigilator: {
+    type: String,
+    default: "TBD"
+  },
+  createdBy: {
+    type: String,
+    default: "Admin"
   },
   createdAt: {
     type: Date,

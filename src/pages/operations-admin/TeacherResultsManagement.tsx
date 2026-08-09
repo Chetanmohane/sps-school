@@ -97,28 +97,51 @@ const TeacherResultsManagement = () => {
       const response = await API.get(`/api/attendance/list?className=${encodeURIComponent(selectedClass)}&section=${encodeURIComponent(selectedSection)}`);
       const list = response.data || [];
 
-      // Map to Result Items
-      const formattedList: StudentResultItem[] = list.map((st: any, idx: number) => ({
-        studentId: st._id,
-        rollNumber: st.rollNumber || `100${idx + 1}`,
-        name: st.user?.name || 'Student Name',
-        email: st.user?.email || 'student@school.edu',
-        className: selectedClass,
-        section: selectedSection,
-        subjectName: subjectName,
-        subjectCode: subjectCode,
-        maxMarks: 100,
-        marksObtained: Math.floor(Math.random() * 25) + 70, // sample default
-        grade: 'A',
-        remark: 'Good performance in problem solving',
-        isSubmitted: false
-      }));
+      const termKey = examType.toLowerCase().includes('mid') || examType.toLowerCase().includes('unit') || examType.toLowerCase().includes('quarter')
+        ? 'Term-1'
+        : 'Term-2';
+      
+      const targetSubjectName = matchSubjectName(subjectName);
 
-      // Update grades
-      formattedList.forEach(st => {
-        st.grade = calculateGrade(st.marksObtained, st.maxMarks);
+      const formattedListPromises = list.map(async (st: any, idx: number) => {
+        let marksObtained = 0;
+        let remarkText = '';
+
+        try {
+          const res = await API.get(`/api/admin/student-admin/results/${st._id}`);
+          const resultsData = res.data?.data || {};
+          const termData = resultsData[termKey];
+          if (termData && termData.subjects) {
+            const subjectEntry = termData.subjects.find((sub: any) => matchSubjectName(sub.name) === targetSubjectName);
+            if (subjectEntry) {
+              marksObtained = subjectEntry.marks;
+              remarkText = subjectEntry.remarks;
+            }
+          }
+        } catch (err) {
+          console.warn("Could not fetch real results for student", st._id);
+        }
+
+        const gradeDetails = getGradeDetails(marksObtained);
+
+        return {
+          studentId: st._id,
+          rollNumber: st.rollNumber || `100${idx + 1}`,
+          name: st.user?.name || 'Student Name',
+          email: st.user?.email || 'student@school.edu',
+          className: selectedClass,
+          section: selectedSection,
+          subjectName: subjectName,
+          subjectCode: subjectCode,
+          maxMarks: 100,
+          marksObtained: marksObtained,
+          grade: gradeDetails.grade,
+          remark: remarkText || gradeDetails.remarks,
+          isSubmitted: false
+        };
       });
 
+      const formattedList = await Promise.all(formattedListPromises);
       setStudents(formattedList);
     } catch (err) {
       console.error("Error fetching students for results", err);
@@ -150,12 +173,106 @@ const TeacherResultsManagement = () => {
     );
   };
 
+  // Normalizes long subject names to match Student report card
+  const matchSubjectName = (name: string) => {
+    const lower = name.toLowerCase();
+    if (lower.includes('math')) return 'Mathematics';
+    if (lower.includes('science') || lower.includes('physic')) return 'Science & Tech';
+    if (lower.includes('english')) return 'English Literature';
+    if (lower.includes('social') || lower.includes('history')) return 'Social Science';
+    if (lower.includes('computer')) return 'Computer Applications';
+    return name;
+  };
+
+  const getGradeDetails = (m: number) => {
+    if (m >= 95) return { grade: "O", remarks: "Outstanding" };
+    if (m >= 85) return { grade: "A+", remarks: "Excellent" };
+    if (m >= 75) return { grade: "A", remarks: "Very Good" };
+    if (m >= 60) return { grade: "B+", remarks: "Good" };
+    if (m >= 50) return { grade: "B", remarks: "Average" };
+    if (m >= 40) return { grade: "C", remarks: "Pass" };
+    return { grade: "F", remarks: "Needs Improvement" };
+  };
+
   const handleSaveResults = async () => {
     setSaving(true);
     try {
-      await new Promise(res => setTimeout(res, 800));
+      const termKey = examType.toLowerCase().includes('mid') || examType.toLowerCase().includes('unit') || examType.toLowerCase().includes('quarter')
+        ? 'Term-1'
+        : 'Term-2';
+
+      const termName = termKey === 'Term-1' ? "Term-1 Examinations (Mid-Term)" : "Term-2 Examinations (Final Exam)";
+
+      const savePromises = students.map(async (st) => {
+        let currentResults: any = {};
+        try {
+          const res = await API.get(`/api/admin/student-admin/results/${st.studentId}`);
+          currentResults = res.data?.data || {};
+        } catch (e) {
+          console.warn(`Could not fetch results for student ${st.name}, initializing new.`, e);
+        }
+
+        // Initialize term if it doesn't exist
+        if (!currentResults[termKey]) {
+          currentResults[termKey] = {
+            termName,
+            overallGpa: "0.0 / 10",
+            grade: "F",
+            totalMarks: "0 / 500",
+            status: "FAILED",
+            subjects: [
+              { name: "Mathematics", marks: 0, maxMarks: 100, grade: "F", remarks: "Needs Improvement" },
+              { name: "Science & Tech", marks: 0, maxMarks: 100, grade: "F", remarks: "Needs Improvement" },
+              { name: "English Literature", marks: 0, maxMarks: 100, grade: "F", remarks: "Needs Improvement" },
+              { name: "Social Science", marks: 0, maxMarks: 100, grade: "F", remarks: "Needs Improvement" },
+              { name: "Computer Applications", marks: 0, maxMarks: 100, grade: "F", remarks: "Needs Improvement" }
+            ]
+          };
+        }
+
+        const termData = currentResults[termKey];
+        const targetSubjectName = matchSubjectName(st.subjectName);
+        
+        // Find subject or append if not exists
+        let subjectIndex = termData.subjects.findIndex((sub: any) => matchSubjectName(sub.name) === targetSubjectName);
+        const marksNum = Number(st.marksObtained) || 0;
+        const gradeDetails = getGradeDetails(marksNum);
+
+        const newSubjectEntry = {
+          name: targetSubjectName,
+          marks: marksNum,
+          maxMarks: st.maxMarks,
+          grade: gradeDetails.grade,
+          remarks: st.remark || gradeDetails.remarks
+        };
+
+        if (subjectIndex >= 0) {
+          termData.subjects[subjectIndex] = newSubjectEntry;
+        } else {
+          termData.subjects.push(newSubjectEntry);
+        }
+
+        // Recalculate term metrics
+        const totalMarksSum = termData.subjects.reduce((sum: number, sub: any) => sum + (Number(sub.marks) || 0), 0);
+        const totalMaxMarksSum = termData.subjects.reduce((sum: number, sub: any) => sum + (Number(sub.maxMarks) || 100), 0);
+        const avgPct = totalMaxMarksSum > 0 ? (totalMarksSum / totalMaxMarksSum) * 100 : 0;
+        const overallGpa = (avgPct / 10).toFixed(1);
+        const overallGradeDetails = getGradeDetails(avgPct);
+
+        termData.totalMarks = `${totalMarksSum} / ${totalMaxMarksSum}`;
+        termData.overallGpa = `${overallGpa} / 10`;
+        termData.grade = overallGradeDetails.grade;
+        termData.status = avgPct >= 40 ? "PASSED" : "FAILED";
+
+        // Save back to DB
+        await API.post(`/api/admin/student-admin/results/${st.studentId}`, {
+          results: currentResults
+        });
+      });
+
+      await Promise.all(savePromises);
+
       const teacherName = localStorage.getItem('userName') || 'Subject Teacher (Mathematics)';
-      
       setStudents(prev => prev.map(st => ({ ...st, isSubmitted: true })));
 
       // Update Order status if matching
@@ -166,19 +283,20 @@ const TeacherResultsManagement = () => {
         const updated = examOrders.map(o => o.id === activeOrder.id ? { ...o, status: 'SUBMITTED' } : o);
         setExamOrders(updated);
       }
-      
+
       if (window.showToast) {
         window.showToast(`✅ Exam Results for Class ${selectedClass}-${selectedSection} (${examType}) published by ${teacherName}!`, 'success');
       } else {
         alert(`✅ Exam Results for Class ${selectedClass}-${selectedSection} (${examType}) saved successfully!`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error saving results", err);
-      alert("Error saving exam results");
+      alert("Error saving exam results: " + (err.response?.data?.message || err.message));
     } finally {
       setSaving(false);
     }
   };
+
 
   // CSV Export Utility
   const handleExportCSV = () => {
@@ -462,6 +580,21 @@ const TeacherResultsManagement = () => {
                 </table>
               </div>
             )}
+            
+            {/* Added Save Button at the Bottom */}
+            {!loading && filteredStudents.length > 0 && (
+              <div className="p-5 border-t border-[var(--border-color)] bg-slate-100/80 dark:bg-slate-900/80 flex justify-end">
+                <button
+                  onClick={handleSaveResults}
+                  disabled={saving}
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 border border-indigo-500"
+                >
+                  {saving ? <FiLoader className="animate-spin" size={16} /> : <FiSave size={16} />}
+                  {saving ? 'Publishing Marks...' : 'Save & Publish Exam Results'}
+                </button>
+              </div>
+            )}
+
           </div>
         </div>
       </main>

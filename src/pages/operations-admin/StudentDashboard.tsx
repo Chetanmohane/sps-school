@@ -67,6 +67,8 @@ const StudentDashboard = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [pendingAssignmentsCount, setPendingAssignmentsCount] = useState<number>(0);
   const [currentDateString, setCurrentDateString] = useState<string>('');
+  const [timetable, setTimetable] = useState<any[]>([]);
+  const [timetableDay, setTimetableDay] = useState<string>('');;
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -99,6 +101,10 @@ const StudentDashboard = () => {
     // Format date string
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     setCurrentDateString(new Date().toLocaleDateString('en-US', options));
+    // Get today's day name
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const todayDay = days[new Date().getDay()];
+    setTimetableDay(todayDay);
     return () => {
       unsubFee();
       unsubAtt();
@@ -128,7 +134,7 @@ const StudentDashboard = () => {
           const photo = localStorage.getItem(`student_photo_${email}`);
           if (photo) pData.profileImage = photo;
         }
-        setStudent(pData);
+        setStudent(prev => ({ ...prev, ...pData, user: { ...prev.user, ...(pData.user || {}) } }));
         if (pData.className) profileClass = pData.className;
       }
 
@@ -184,6 +190,23 @@ const StudentDashboard = () => {
           date: n.createdAt
         }));
         setEvents(formattedNotices);
+      }
+
+      // 7. Fetch timetable for student's class/section for today
+      try {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const todayDay = days[new Date().getDay()];
+        const cls = profRes.status === 'fulfilled' ? profRes.value?.data?.className : null;
+        const sec = profRes.status === 'fulfilled' ? profRes.value?.data?.section : null;
+        if (cls && sec) {
+          const ttRes = await API.get('/api/timetable', { params: { className: cls, section: sec, dayOfWeek: todayDay } });
+          const ttData = ttRes.data.data || [];
+          if (ttData.length > 0) {
+            setTimetable(ttData[0].periods || []);
+          }
+        }
+      } catch (ttErr) {
+        console.warn('Could not load timetable from API:', ttErr);
       }
 
     } catch (err: any) {
@@ -245,36 +268,9 @@ const StudentDashboard = () => {
     }
   };
 
-  const getTimetableForClass = (clsName: string) => {
-    const normalized = clsName ? clsName.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim() : '10';
-    if (normalized === '9') {
-      return [
-        { period: "1", startTime: "08:30", endTime: "09:30", time: "08:30 AM - 09:30 AM", subject: "Science & Tech", teacher: "Dr. Ananya Sen", room: "Physics Lab" },
-        { period: "2", startTime: "09:30", endTime: "10:30", time: "09:30 AM - 10:30 AM", subject: "Mathematics", teacher: "Prof. Rajesh Kumar", room: "Room 102" },
-        { period: "Break", startTime: "10:30", endTime: "11:00", time: "10:30 AM - 11:00 AM", subject: "Recess Break", teacher: "", room: "Cafeteria", isBreak: true },
-        { period: "3", startTime: "11:00", endTime: "12:00", time: "11:00 AM - 12:00 PM", subject: "Computer Apps", teacher: "Prof. Vikas Gupta", room: "Computer Lab" },
-        { period: "4", startTime: "12:00", endTime: "13:00", time: "12:00 PM - 01:00 PM", subject: "English Literature", teacher: "Mrs. Sarah Smith", room: "Room 102" },
-      ];
-    }
-    if (normalized === '10') {
-      return [
-        { period: "1", startTime: "08:30", endTime: "09:30", time: "08:30 AM - 09:30 AM", subject: "Mathematics", teacher: "Prof. Rajesh Kumar", room: "Room 102" },
-        { period: "2", startTime: "09:30", endTime: "10:30", time: "09:30 AM - 10:30 AM", subject: "Science & Tech", teacher: "Dr. Ananya Sen", room: "Physics Lab" },
-        { period: "Break", startTime: "10:30", endTime: "11:00", time: "10:30 AM - 11:00 AM", subject: "Recess Break", teacher: "", room: "Cafeteria", isBreak: true },
-        { period: "3", startTime: "11:00", endTime: "12:00", time: "11:00 AM - 12:00 PM", subject: "English Literature", teacher: "Mrs. Sarah Smith", room: "Room 102" },
-        { period: "4", startTime: "12:00", endTime: "13:00", time: "12:00 PM - 01:00 PM", subject: "Computer Apps", teacher: "Prof. Vikas Gupta", room: "Computer Lab" },
-      ];
-    }
-    return [
-      { period: "1", startTime: "08:30", endTime: "09:30", time: "08:30 AM - 09:30 AM", subject: "Morning Assembly", teacher: "Class Teacher", room: "Assembly Hall" },
-      { period: "2", startTime: "09:30", endTime: "10:30", time: "09:30 AM - 10:30 AM", subject: "Language & Grammar", teacher: "Subject Instructor", room: "Room 103" },
-      { period: "Break", startTime: "10:30", endTime: "11:00", time: "10:30 AM - 11:00 AM", subject: "Recess Break", teacher: "", room: "Cafeteria", isBreak: true },
-      { period: "3", startTime: "11:00", endTime: "12:00", time: "11:00 AM - 12:00 PM", subject: "General Study", teacher: "Subject Instructor", room: "Room 103" },
-      { period: "4", startTime: "12:00", endTime: "13:00", time: "12:00 PM - 01:00 PM", subject: "Arts & Sports Period", teacher: "Instructor", room: "Playground" },
-    ];
-  };
 
-  const timetable = getTimetableForClass(student?.className || '10');
+  // timetable state is populated directly from API (class+section for today)
+  const timetableToShow = timetable;
 
   // Define stats structure
   const stats = [
@@ -415,6 +411,24 @@ const StudentDashboard = () => {
             </div>
           </div>
 
+          {/* Promotion Banner */}
+          {student?.promotionHistory && student.promotionHistory.length > 0 && (
+            <div className="bg-emerald-500/[0.08] border border-emerald-500/20 p-4 rounded-2xl flex items-start sm:items-center gap-4 mb-6 shadow-sm">
+              <div className="bg-emerald-500 text-white p-2.5 rounded-full shrink-0">
+                <FiAward size={20} />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-emerald-700 dark:text-emerald-400 font-bold text-sm">Congratulations! You have been promoted! 🎉</h4>
+                <p className="text-emerald-600/80 dark:text-emerald-400/80 text-xs mt-0.5">
+                  You were promoted from <strong>Class {student.promotionHistory[student.promotionHistory.length - 1].from}</strong> to <strong>Class {student.promotionHistory[student.promotionHistory.length - 1].to}</strong> on {new Date(student.promotionHistory[student.promotionHistory.length - 1].promotedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                </p>
+              </div>
+              <div className="shrink-0 hidden sm:block">
+                <span className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">New Session</span>
+              </div>
+            </div>
+          )}
+
           {/* Stats Glassmorphism Grid */}
           <div className="student-stats-row">
             {stats.map((stat, i) => (
@@ -458,42 +472,62 @@ const StudentDashboard = () => {
                   <h3 className="text-base font-black flex items-center gap-2">
                     <FiClock className="text-indigo-500" /> Daily Timetable
                   </h3>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">Your schedule and classrooms for today's periods.</p>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                    {timetableDay ? `Schedule for today — ${timetableDay}` : 'Your schedule for today\'s periods.'}
+                  </p>
                 </div>
 
-                <div className="student-timetable-timeline">
-                  {timetable.map((t, idx) => {
-                    const status = getTimetableStatus(t.startTime, t.endTime, t.isBreak);
-                    const isOngoing = status.label.includes("Ongoing") || status.label.includes("Interval");
+                {timetableToShow.length === 0 ? (
+                  <div className="text-center py-8 px-4">
+                    <FiClock className="mx-auto text-[var(--text-muted)] mb-3" size={28} />
+                    <p className="text-sm font-bold text-[var(--text-muted)]">No timetable set for today</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {timetableDay === 'Sunday' ? 'It\'s Sunday — Enjoy your holiday! 🎉' : 'Your teacher hasn\'t set a timetable for today yet.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="student-timetable-timeline">
+                    {timetableToShow.map((t: any, idx: number) => {
+                      // Support both 24h (HH:mm) and display format
+                      const displayTime = t.startTime && t.endTime 
+                        ? `${t.startTime} - ${t.endTime}` 
+                        : (t.time || '');
+                      const status = getTimetableStatus(
+                        t.startTime?.length === 5 ? t.startTime : '00:00',
+                        t.endTime?.length === 5 ? t.endTime : '00:01',
+                        t.isBreak
+                      );
+                      const isOngoing = status.label.includes("Ongoing") || status.label.includes("Interval");
 
-                    return (
-                      <div key={idx} className="student-timetable-node">
-                        {/* Dot marker */}
-                        <div className={`student-timetable-bullet ${isOngoing ? 'active' : 'inactive'}`} />
-                        
-                        <div className={`student-timetable-card ${isOngoing ? 'active' : ''}`}>
-                          <div className="student-timetable-header">
-                            <div>
-                              <span className="student-timetable-time">{t.time}</span>
-                              <h4 className="font-bold text-sm text-[var(--text-main)] mt-0.5" style={{ margin: 0 }}>{t.subject}</h4>
+                      return (
+                        <div key={idx} className="student-timetable-node">
+                          {/* Dot marker */}
+                          <div className={`student-timetable-bullet ${isOngoing ? 'active' : 'inactive'}`} />
+                          
+                          <div className={`student-timetable-card ${isOngoing ? 'active' : ''}`}>
+                            <div className="student-timetable-header">
+                              <div>
+                                <span className="student-timetable-time">{displayTime}</span>
+                                <h4 className="font-bold text-sm text-[var(--text-main)] mt-0.5" style={{ margin: 0 }}>{t.subject}</h4>
+                              </div>
+                              
+                              <span className={`student-timetable-badge ${status.color}`} style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 'bold' }}>
+                                {status.label}
+                              </span>
                             </div>
-                            
-                            <span className={`student-timetable-badge ${status.color}`} style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '8px', fontWeight: 'bold' }}>
-                              {status.label}
-                            </span>
+
+                            {!t.isBreak && (
+                              <div className="student-timetable-footer">
+                                <span className="flex items-center gap-1"><FiUser size={12} /> {t.teacher}</span>
+                                <span style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary)', padding: '2px 8.5px', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold' }}>{t.room}</span>
+                              </div>
+                            )}
                           </div>
-
-                          {!t.isBreak && (
-                            <div className="student-timetable-footer">
-                              <span className="flex items-center gap-1"><FiUser size={12} /> {t.teacher}</span>
-                              <span style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary)', padding: '2px 8.5px', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold' }}>{t.room}</span>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Profile card summary */}

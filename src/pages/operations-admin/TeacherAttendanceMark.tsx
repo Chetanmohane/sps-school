@@ -745,6 +745,18 @@ const TeacherAttendanceMark = () => {
                       </tbody>
                     </table>
                   </div>
+                  
+                  {/* Added Submit Button at the Bottom */}
+                  <div className="p-5 border-t border-slate-100 flex justify-end bg-slate-50/50">
+                    <button 
+                      onClick={submitMarkAttendance} 
+                      disabled={markSaving || isAlreadySubmitted}
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-200 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {markSaving ? <FiLoader className="animate-spin" size={16} /> : (isAlreadySubmitted ? '🔒 Final Submitted & Locked' : <FiSave size={16} />)}
+                      {markSaving ? 'Saving...' : (isAlreadySubmitted ? '' : 'Final Submit Attendance')}
+                    </button>
+                  </div>
                 </div>
               )}
               

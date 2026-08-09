@@ -51,8 +51,17 @@ const TeacherDashboard = () => {
   const [classInCharge, setClassInCharge] = useState<ClassInfo | null>(null);
   const [classStudents, setClassStudents] = useState<StudentItem[]>([]);
   const [loadingStudents, setLoadingStudents] = useState<boolean>(false);
+  const [notices, setNotices] = useState<any[]>([]);
+  const [newNotice, setNewNotice] = useState({ title: '', message: '', targetClass: '', targetSection: '' });
+  const [publishing, setPublishing] = useState(false);
   const [studentSearch, setStudentSearch] = useState<string>('');
   const [selectedStudent, setSelectedStudent] = useState<StudentItem | null>(null);
+  const [selectedStudentResults, setSelectedStudentResults] = useState<any>(null);
+  const [resultsLoading, setResultsLoading] = useState<boolean>(false);
+
+  // Today's live timetable for this teacher
+  const [todaySchedule, setTodaySchedule] = useState<any[]>([]);
+  const [timetableLoading, setTimetableLoading] = useState<boolean>(false);
 
   // Live clock
   const [now, setNow] = useState(new Date());
@@ -66,8 +75,35 @@ const TeacherDashboard = () => {
     if (teacherEmail) {
       fetchTeacherProfile();
       fetchClassStudents();
+      fetchTeacherTodayTimetable();
+      fetchNotices();
     }
   }, [teacherEmail]);
+
+  useEffect(() => {
+    if (selectedStudent && selectedStudent._id) {
+      fetchStudentResults(selectedStudent._id);
+    } else {
+      setSelectedStudentResults(null);
+    }
+  }, [selectedStudent]);
+
+  const fetchStudentResults = async (studentId: string) => {
+    try {
+      setResultsLoading(true);
+      const res = await API.get(`/api/admin/student-admin/results/${studentId}`);
+      if (res.data && (res.data.data || res.data.success)) {
+        setSelectedStudentResults(res.data.data || {});
+      } else {
+        setSelectedStudentResults(null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch student results", err);
+      setSelectedStudentResults(null);
+    } finally {
+      setResultsLoading(false);
+    }
+  };
 
   const fetchTeacherProfile = async () => {
     try {
@@ -79,6 +115,41 @@ const TeacherDashboard = () => {
       }
     } catch (err) {
       console.log('Error fetching teacher profile info:', err);
+    }
+  };
+
+  const fetchNotices = async () => {
+    try {
+      const res = await API.get('/api/notifications');
+      setNotices(res.data.data || []);
+    } catch (err) {
+      console.log('Error fetching notices:', err);
+    }
+  };
+
+  const publishNotice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const noticeClass = newNotice.targetClass || classInCharge?.className;
+    const noticeSection = newNotice.targetSection || classInCharge?.section || 'all';
+    if (!newNotice.title || !newNotice.message || !isClassTeacher || !noticeClass) return;
+    try {
+      setPublishing(true);
+      await API.post('/api/notifications', {
+        title: newNotice.title,
+        message: newNotice.message,
+        targetRole: 'student',
+        targetClass: noticeClass,
+        targetSection: noticeSection
+      });
+      setNewNotice({ title: '', message: '', targetClass: '', targetSection: '' });
+      fetchNotices();
+      if ((window as any).showToast) {
+        (window as any).showToast('Notice published to class successfully!', 'success');
+      }
+    } catch (err) {
+      console.log('Error publishing notice:', err);
+    } finally {
+      setPublishing(false);
     }
   };
 
@@ -98,6 +169,56 @@ const TeacherDashboard = () => {
     } finally {
       setLoadingStudents(false);
     }
+  };
+
+  const fetchTeacherTodayTimetable = async () => {
+    try {
+      setTimetableLoading(true);
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const todayDay = days[new Date().getDay()];
+      // Fetch all timetables for today
+      const res = await API.get('/api/timetable', { params: { dayOfWeek: todayDay } });
+      const allTimetables = res.data?.data || [];
+
+      // Collect all periods where this teacher is assigned
+      const myPeriods: any[] = [];
+      allTimetables.forEach((tt: any) => {
+        (tt.periods || []).forEach((p: any) => {
+          if (!p.isBreak && p.teacher &&
+            p.teacher.toLowerCase().includes(teacherName.toLowerCase().split(' ')[0].toLowerCase())) {
+            myPeriods.push({
+              time: `${p.startTime} – ${p.endTime}`,
+              startTime: p.startTime,
+              endTime: p.endTime,
+              subject: p.subject,
+              class: `Class ${tt.className}-${tt.section}`,
+              room: p.room || 'TBD',
+              period: p.period,
+            });
+          }
+        });
+      });
+
+      // Sort by startTime
+      myPeriods.sort((a, b) => a.startTime.localeCompare(b.startTime));
+      setTodaySchedule(myPeriods);
+    } catch (err) {
+      console.log('Could not fetch teacher timetable:', err);
+    } finally {
+      setTimetableLoading(false);
+    }
+  };
+
+  // Helper: compute status of a period based on current time
+  const getPeriodStatus = (startTime: string, endTime: string) => {
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = endTime.split(':').map(Number);
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    const startMin = sh * 60 + sm;
+    const endMin = eh * 60 + em;
+    if (nowMin < startMin) return 'Upcoming';
+    if (nowMin >= startMin && nowMin <= endMin) return 'Live';
+    return 'Done';
   };
 
   const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -195,19 +316,10 @@ const TeacherDashboard = () => {
     },
   ];
 
-  const schedule = [
-    { time: '09:00 – 09:45 AM', subject: 'Mathematics (Algebra)', class: 'Class 10-A', room: 'Room 102', status: 'Done', isMyClass: true },
-    { time: '10:00 – 10:45 AM', subject: 'Mathematics (Geometry)', class: 'Class 10-B', room: 'Room 104', status: 'Done', isMyClass: false },
-    { time: '11:00 – 11:45 AM', subject: 'Mathematics (Trigonometry)', class: 'Class 9-A', room: 'Room 105', status: 'Live', isMyClass: false },
-    { time: '01:30 – 02:15 PM', subject: 'Higher Mathematics (Calculus)', class: 'Class 12-A', room: 'Room 201', status: 'Upcoming', isMyClass: false },
-    { time: '02:30 – 03:15 PM', subject: 'Mathematics (Statistics)', class: 'Class 8-A', room: 'Room 103', status: 'Upcoming', isMyClass: false },
-  ];
+  // Use live API schedule; fall back to empty if not loaded yet
+  const schedule = todaySchedule;
 
-  const notices = [
-    { type: 'warning', emoji: '⚠️', message: 'Grade submission for Mid-Term Exam is due by Friday.', time: '2h ago' },
-    { type: 'success', emoji: '⭐', message: isClassTeacher ? `Class ${classInCharge?.className || '10'}-${classInCharge?.section || 'A'} monthly attendance report generated.` : 'Subject syllabus completion on track.', time: '4h ago' },
-    { type: 'info', emoji: '📢', message: 'Parent-Teacher Meeting scheduled for coming Saturday at 10 AM.', time: '1 day ago' },
-  ];
+
 
   const filteredClassStudents = classStudents.filter((st) =>
     st.user?.name?.toLowerCase().includes(studentSearch.toLowerCase()) ||
@@ -529,17 +641,31 @@ const TeacherDashboard = () => {
                     <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <FiCalendar size={16} style={{ color: 'var(--primary)' }} /> Today's Teaching Schedule
                     </h3>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{schedule.length} Periods</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                      {timetableLoading ? 'Loading…' : `${schedule.length} Period${schedule.length !== 1 ? 's' : ''}`}
+                    </span>
                   </div>
 
+                  {timetableLoading ? (
+                    <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
+                      ⏳ Loading your timetable…
+                    </div>
+                  ) : schedule.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 20px', borderRadius: '12px', border: '2px dashed var(--border-color)' }}>
+                      <div style={{ fontSize: '32px', marginBottom: '8px' }}>📭</div>
+                      <div style={{ fontWeight: '700', color: 'var(--text-muted)', fontSize: '13px' }}>No periods assigned to you today</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Your name must match in the timetable to see periods here.</div>
+                    </div>
+                  ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {schedule.map((slot, i) => {
+                    {schedule.map((slot: any, i: number) => {
+                      const status = getPeriodStatus(slot.startTime, slot.endTime);
                       const statusColors: Record<string, { bg: string; text: string; label: string }> = {
                         Done: { bg: 'rgba(16,185,129,0.1)', text: '#059669', label: 'Completed' },
                         Live: { bg: 'rgba(37,99,235,0.12)', text: '#2563eb', label: '🔴 Ongoing' },
                         Upcoming: { bg: 'rgba(148,163,184,0.1)', text: 'var(--text-muted)', label: 'Upcoming' },
                       };
-                      const sc = statusColors[slot.status] || statusColors.Upcoming;
+                      const sc = statusColors[status] || statusColors.Upcoming;
                       return (
                         <div key={i} style={{
                           display: 'flex',
@@ -547,31 +673,31 @@ const TeacherDashboard = () => {
                           alignItems: 'center',
                           padding: '14px 16px',
                           borderRadius: '12px',
-                          backgroundColor: slot.status === 'Live' ? 'rgba(37,99,235,0.05)' : 'var(--primary-bg)',
-                          border: slot.status === 'Live' ? '1px solid rgba(37,99,235,0.3)' : '1px solid var(--border-color)',
+                          backgroundColor: status === 'Live' ? 'rgba(37,99,235,0.05)' : 'var(--primary-bg)',
+                          border: status === 'Live' ? '1px solid rgba(37,99,235,0.3)' : '1px solid var(--border-color)',
                         }}>
                           <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>{slot.subject}</span>
-                              {slot.isMyClass && (
-                                <span style={{ fontSize: '10px', backgroundColor: 'rgba(245,158,11,0.15)', color: '#d97706', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>
-                                  My Class
-                                </span>
-                              )}
+                              <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>
+                                P{slot.period} — {slot.subject}
+                              </span>
+                              <span style={{ fontSize: '10px', backgroundColor: 'rgba(99,102,241,0.15)', color: '#6366f1', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>
+                                {slot.class}
+                              </span>
                             </div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{slot.class} · {slot.room}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>📍 {slot.room} · 🕐 {slot.time}</div>
                           </div>
 
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                             <span style={{ fontSize: '11px', fontWeight: '700', color: sc.text, backgroundColor: sc.bg, padding: '3px 8px', borderRadius: '20px' }}>
                               {sc.label}
                             </span>
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{slot.time}</span>
                           </div>
                         </div>
                       );
                     })}
                   </div>
+                  )}
                 </div>
 
                 {/* Notices & Alerts */}
@@ -580,14 +706,25 @@ const TeacherDashboard = () => {
                     <FiBell size={16} style={{ color: '#f59e0b' }} /> Official Notices & Circulars
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {notices.map((n, i) => (
+                    {notices.slice(0, 5).map((n, i) => (
                       <div key={i} style={{ padding: '14px 16px', borderRadius: '12px', backgroundColor: 'var(--primary-bg)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-main)' }}>{n.emoji} {n.message}</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-main)' }}>{n.title}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{n.message}</div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <FiClock size={11} /> {n.time}
+                          <FiClock size={11} /> {new Date(n.createdAt).toLocaleDateString()}
+                          {n.targetClass !== 'all' && (
+                            <span style={{ marginLeft: '8px', padding: '2px 6px', backgroundColor: 'rgba(99,102,241,0.1)', color: '#6366f1', borderRadius: '4px', fontSize: '9px', fontWeight: 800 }}>
+                              Class {n.targetClass}-{n.targetSection}
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
+                    {notices.length === 0 && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', padding: '16px' }}>
+                        No notices available.
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -617,10 +754,9 @@ const TeacherDashboard = () => {
                     Class {classInCharge?.className}-{classInCharge?.section} Roster & In-Charge Portal
                   </h2>
                   <p style={{ margin: '4px 0 0', fontSize: '13px', opacity: 0.9 }}>
-                    Total Strength: {classStudents.length} Students · Academic Year 2025-2026
+                    Manage students, track attendance, and publish class-specific notices.
                   </p>
                 </div>
-
                 <button
                   onClick={() => navigate('/teacher/attendanceMark')}
                   style={{
@@ -637,6 +773,58 @@ const TeacherDashboard = () => {
                 >
                   Take Class Roll Call →
                 </button>
+              </div>
+
+              {/* Class Notice Form */}
+              <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px', marginBottom: '28px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                <h3 style={{ margin: '0 0 16px', fontSize: '16px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FiBell style={{ color: '#f59e0b' }} /> Publish Notice to Class
+                </h3>
+                <form onSubmit={publishNotice}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginBottom: '16px' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Notice Title" 
+                      required 
+                      value={newNotice.title}
+                      onChange={(e) => setNewNotice({ ...newNotice, title: e.target.value })}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                    />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <select
+                        value={newNotice.targetClass || classInCharge?.className || ''}
+                        onChange={(e) => setNewNotice({ ...newNotice, targetClass: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                      >
+                        <option value="">Select Class</option>
+                        {['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'].map(c => <option key={c} value={c}>Class {c}</option>)}
+                      </select>
+                      <select
+                        value={newNotice.targetSection || classInCharge?.section || ''}
+                        onChange={(e) => setNewNotice({ ...newNotice, targetSection: e.target.value })}
+                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
+                      >
+                        <option value="all">All Sections</option>
+                        {['A','B','C','D','E','F'].map(s => <option key={s} value={s}>Section {s}</option>)}
+                      </select>
+                    </div>
+                    <textarea 
+                      placeholder="Enter detailed notice message for your students..." 
+                      required 
+                      rows={3}
+                      value={newNotice.message}
+                      onChange={(e) => setNewNotice({ ...newNotice, message: e.target.value })}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    disabled={publishing}
+                    style={{ padding: '10px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#f59e0b', color: 'white', fontWeight: 700, fontSize: '13px', cursor: publishing ? 'not-allowed' : 'pointer' }}
+                  >
+                    {publishing ? 'Publishing...' : '📢 Publish to Class'}
+                  </button>
+                </form>
               </div>
 
               {/* Student Search & Filters */}
@@ -767,7 +955,9 @@ const TeacherDashboard = () => {
                 width: '100%',
                 padding: '28px',
                 border: '1px solid var(--border-color)',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+                boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                maxHeight: '90vh',
+                overflowY: 'auto'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                   <div>
@@ -803,6 +993,66 @@ const TeacherDashboard = () => {
                     <div style={{ color: 'var(--success)', fontWeight: '800', fontSize: '18px', marginTop: '2px' }}>
                       {selectedStudent.attendancePct || 90}%
                     </div>
+                  </div>
+
+                  {/* Results Section */}
+                  <div style={{ padding: '12px', borderRadius: '10px', backgroundColor: 'var(--primary-bg)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontWeight: '700', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', marginBottom: '8px' }}>Academic Results</div>
+                    {resultsLoading ? (
+                      <div style={{ color: 'var(--text-muted)', fontSize: '12px', padding: '10px 0' }}>Fetching results...</div>
+                    ) : selectedStudentResults && Object.keys(selectedStudentResults).length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {Object.keys(selectedStudentResults).map(termKey => {
+                          const term = selectedStudentResults[termKey];
+                          return (
+                            <div key={termKey} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <div style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '12px' }}>{term.termName || termKey}</div>
+                                <div style={{ 
+                                  fontSize: '10px', 
+                                  fontWeight: '800', 
+                                  padding: '2px 6px', 
+                                  borderRadius: '4px',
+                                  backgroundColor: term.status === 'PASSED' ? 'rgba(16,185,129,0.1)' : 'rgba(248,113,113,0.1)',
+                                  color: term.status === 'PASSED' ? '#059669' : '#dc2626'
+                                }}>
+                                  {term.status}
+                                </div>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '11px', marginBottom: '8px' }}>
+                                <div><span style={{ color: 'var(--text-muted)' }}>Score:</span> <strong style={{ color: 'var(--text-main)' }}>{term.totalMarks}</strong></div>
+                                <div><span style={{ color: 'var(--text-muted)' }}>GPA/Grade:</span> <strong style={{ color: 'var(--text-main)' }}>{term.overallGpa} ({term.grade})</strong></div>
+                              </div>
+                              {/* Subject Breakdown */}
+                              {term.subjects && term.subjects.length > 0 && (
+                                <div style={{ marginTop: '8px' }}>
+                                  <table style={{ width: '100%', fontSize: '10px', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                      <tr style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                                        <th style={{ textAlign: 'left', paddingBottom: '4px' }}>Subject</th>
+                                        <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Marks</th>
+                                        <th style={{ textAlign: 'right', paddingBottom: '4px' }}>Grade</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {term.subjects.map((subj: any, i: number) => (
+                                        <tr key={i} style={{ borderBottom: i !== term.subjects.length - 1 ? '1px dashed var(--border-color)' : 'none' }}>
+                                          <td style={{ padding: '4px 0', color: 'var(--text-main)' }}>{subj.name}</td>
+                                          <td style={{ padding: '4px 0', textAlign: 'right', color: 'var(--text-main)', fontWeight: '600' }}>{subj.marks}/{subj.maxMarks}</td>
+                                          <td style={{ padding: '4px 0', textAlign: 'right', color: 'var(--text-main)', fontWeight: '600' }}>{subj.grade}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ color: 'var(--text-muted)', fontSize: '12px', padding: '10px 0' }}>No results published for this student yet.</div>
+                    )}
                   </div>
                 </div>
 

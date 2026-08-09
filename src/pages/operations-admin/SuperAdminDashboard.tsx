@@ -6,7 +6,8 @@ import RoleHierarchyMap from '../../components/RoleHierarchyMap';
 import API from '../../api/axios';
 import { useSocket } from '../../context/SocketContext';
 import { useSharedState } from '../../hooks/useSharedState';
-import { FiShield, FiActivity, FiUsers, FiTrendingUp, FiTrash2, FiPlus, FiEye, FiEyeOff, FiEdit2, FiX, FiCheck, FiCalendar, FiClock, FiDownload } from 'react-icons/fi';
+import { FiShield, FiActivity, FiUsers, FiTrendingUp, FiTrash2, FiPlus, FiEye, FiEyeOff, FiEdit2, FiX, FiCheck, FiCalendar, FiClock, FiDownload, FiSearch } from 'react-icons/fi';
+import NoticeBoardAdmin from '../../components/NoticeBoardAdmin';
 
 /* ─────────────────────────────────────────────────────────────────
    EXAM TIMETABLE TAB COMPONENT (used inside Super Admin Dashboard)
@@ -286,7 +287,7 @@ const SuperAdminDashboard = () => {
   const activeTab = new URLSearchParams(location.search).get('tab') || 'overview';
 
   const [announcements, setAnnouncements] = useState<any[]>([]);
-  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', message: '', targetRole: 'all', targetClass: 'all' });
+  const [newAnnouncement, setNewAnnouncement] = useState({ title: '', message: '', targetRole: 'all', targetClass: 'all', targetSection: 'all' });
   const [editingNotice, setEditingNotice] = useState<any>(null);
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -324,7 +325,7 @@ const SuperAdminDashboard = () => {
           window.showToast("Notice published successfully!", "success");
         }
       }
-      setNewAnnouncement({ title: '', message: '', targetRole: 'all', targetClass: 'all' });
+      setNewAnnouncement({ title: '', message: '', targetRole: 'all', targetClass: 'all', targetSection: 'all' });
       fetchAnnouncements();
     } catch (err: any) {
       window.alert("Failed to save notice: " + (err.response?.data?.message || err.message));
@@ -339,13 +340,14 @@ const SuperAdminDashboard = () => {
       title: notice.title,
       message: notice.message,
       targetRole: notice.targetRole || 'all',
-      targetClass: notice.targetClass || 'all'
+      targetClass: notice.targetClass || 'all',
+      targetSection: notice.targetSection || 'all'
     });
   };
 
   const handleCancelEdit = () => {
     setEditingNotice(null);
-    setNewAnnouncement({ title: '', message: '', targetRole: 'all', targetClass: 'all' });
+    setNewAnnouncement({ title: '', message: '', targetRole: 'all', targetClass: 'all', targetSection: 'all' });
   };
 
   const deleteAnnouncement = async (id: string) => {
@@ -368,7 +370,6 @@ const SuperAdminDashboard = () => {
   const [subAdmins, setSubAdmins] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
-
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showEditStudent, setShowEditStudent] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -376,20 +377,23 @@ const SuperAdminDashboard = () => {
   const [viewStudentAttendance, setViewStudentAttendance] = useState<any>({ records: [], percentage: 0 });
   const [viewStudentExams, setViewStudentExams] = useState<any[]>([]);
   const [viewStudentFees, setViewStudentFees] = useState<any[]>([]);
+  const [viewStudentResults, setViewStudentResults] = useState<any>(null);
   const [viewTab, setViewTab] = useState<'profile' | 'attendance' | 'exams' | 'results' | 'fees'>('profile');
 
   const handleViewStudentDetails = async (student: any) => {
     setSelectedViewStudent(student);
     setViewTab('profile');
     try {
-      const email = student.email;
+      const email = student.email || student.user?.email;
+      const studentId = student._id || student.user?._id;
       const studentClass = (student.class || student.className || '').toString().trim();
       console.log("[ViewDetails] Student:", student.name, "| Email:", email, "| Class:", studentClass);
 
-      const [attRes, examsRes, feesRes] = await Promise.allSettled([
+      const [attRes, examsRes, feesRes, resultsRes] = await Promise.allSettled([
         email ? API.get(`/api/attendance/${email}`) : Promise.reject('no email'),
         API.get('/api/exams'),
-        email ? API.get('/api/finance/my-fees', { params: { email } }) : Promise.reject('no email')
+        email ? API.get('/api/finance/my-fees', { params: { email } }) : Promise.reject('no email'),
+        studentId ? API.get(`/api/admin/student-admin/results/${studentId}`) : Promise.reject('no id')
       ]);
 
       // Attendance
@@ -399,20 +403,18 @@ const SuperAdminDashboard = () => {
         setViewStudentAttendance({ records: [], percentage: 0 });
       }
 
-      // Exam Timetable — filter by student's class
+      // Exam Timetable - filter by student's class
       if (examsRes.status === 'fulfilled' && examsRes.value.data) {
         const allExams = examsRes.value.data.exams || [];
         console.log("[ViewDetails] Total Exams from API:", allExams.length, "| Student class:", studentClass);
         console.log("[ViewDetails] Exam classNames:", allExams.map((e: any) => e.className));
         const classExams = allExams.filter((exam: any) => {
-          const examClass = (exam.className || '').toString().trim().toLowerCase();
-          const stuClass = studentClass.toLowerCase();
-          return examClass === stuClass || examClass.includes(stuClass) || stuClass.includes(examClass);
+          const examClass = (exam.className || '').toString().trim();
+          return examClass && studentClass && examClass.toLowerCase() === studentClass.toLowerCase();
         });
-        console.log("[ViewDetails] Filtered Exams for class:", classExams.length);
+        console.log("[ViewDetails] Filtered Exams for student:", classExams.length);
         setViewStudentExams(classExams);
       } else {
-        console.log("[ViewDetails] Exams fetch failed:", examsRes);
         setViewStudentExams([]);
       }
 
@@ -421,6 +423,18 @@ const SuperAdminDashboard = () => {
         setViewStudentFees(feesRes.value.data);
       } else {
         setViewStudentFees([]);
+      }
+
+      // Results
+      if (resultsRes.status === 'fulfilled' && resultsRes.value.data) {
+        const resData = resultsRes.value.data;
+        if (resData.data || resData.success) {
+          setViewStudentResults(resData.data || {});
+        } else {
+          setViewStudentResults(null);
+        }
+      } else {
+        setViewStudentResults(null);
       }
     } catch (err) {
       console.error("Error loading view student details:", err);
@@ -431,6 +445,7 @@ const SuperAdminDashboard = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showEditAdminModal, setShowEditAdminModal] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<any>(null);
+  const [studentToDelete, setStudentToDelete] = useState<any>(null);
   const [editAdminForm, setEditAdminForm] = useState({ name:'', phone:'', role:'', password:'', remarks:'' });
   const [showEditPassword, setShowEditPassword] = useState(false);
 
@@ -1062,7 +1077,18 @@ const SuperAdminDashboard = () => {
     setStudents(p => p.map(s => s.id === editingStudent.id ? { ...s, ...editingStudent } : s));
     setShowEditStudent(false); trigger('Student profile updated successfully!');
   };
-  const deleteStudent = (id: any) => { if(!window.confirm('Delete this student?')) return; setStudents(p=>p.filter(s=>s.id!==id)); trigger('Student deleted.'); };
+  const deleteStudent = (id: any) => { setStudentToDelete(id); };
+  const confirmDeleteStudent = async () => {
+    if(!studentToDelete) return;
+    try {
+      await API.delete(`/api/admin/student-admin/students/${studentToDelete}`);
+      trigger('Student deleted successfully!');
+      fetchStudents();
+    } catch (err) {
+      trigger('Failed to delete student', 'error');
+    }
+    setStudentToDelete(null);
+  };
 
   const markFee = async (id: any, status: any) => {
     try {
@@ -2109,135 +2135,7 @@ const SuperAdminDashboard = () => {
                TAB: GLOBAL ANNOUNCEMENTS & NOTICE BOARD
           ═══════════════════════════════════════════════════════════════════ */}
           {!activeSection && activeTab === 'announcements' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px', marginBottom: '28px' }}>
-              {/* Left Column: Publish Notice Form */}
-              <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
-                <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
-                  📢 {editingNotice ? 'Edit Announcement' : 'Publish Global Notice'}
-                </h3>
-                <form onSubmit={publishAnnouncement} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Notice Title *</label>
-                    <input 
-                      type="text" 
-                      required
-                      value={newAnnouncement.title}
-                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                      placeholder="e.g. Independence Day Holiday"
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Target Audience *</label>
-                    <select 
-                      value={newAnnouncement.targetRole}
-                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, targetRole: e.target.value, targetClass: e.target.value !== 'student' ? 'all' : newAnnouncement.targetClass })}
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
-                    >
-                      <option value="all">All Roles (Students & Teachers)</option>
-                      <option value="teacher">Teachers Only</option>
-                      <option value="student">Students Only</option>
-                      <option value="manager-admin">Managers Only</option>
-                    </select>
-                  </div>
-                  {newAnnouncement.targetRole === 'student' && (
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Target Class *</label>
-                      <select 
-                        value={newAnnouncement.targetClass}
-                        onChange={(e) => setNewAnnouncement({ ...newAnnouncement, targetClass: e.target.value })}
-                        style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
-                      >
-                        <option value="all">All Classes</option>
-                        {CLASSES.map(c => <option key={c} value={c}>Class {c}</option>)}
-                      </select>
-                    </div>
-                  )}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Detailed Message *</label>
-                    <textarea 
-                      required
-                      rows={5}
-                      value={newAnnouncement.message}
-                      onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
-                      placeholder="Enter announcement description..."
-                      style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button 
-                      type="submit" 
-                      disabled={publishing}
-                      style={{ padding: '12px 20px', borderRadius: '10px', border: 'none', backgroundColor: 'var(--primary)', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
-                    >
-                      {publishing ? 'Saving...' : editingNotice ? '💾 Save Changes' : '📢 Publish Announcement'}
-                    </button>
-                    {editingNotice && (
-                      <button 
-                        type="button"
-                        onClick={handleCancelEdit}
-                        style={{ padding: '12px 20px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', color: 'var(--text-muted)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
-                      >
-                        ❌ Cancel
-                      </button>
-                    )}
-                  </div>
-                </form>
-              </div>
-
-              {/* Right Column: Published Notices Directory */}
-              <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
-                  📖 Active Announcements ({announcements.length})
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto', maxHeight: '420px' }}>
-                  {loadingAnnouncements ? (
-                    <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>Loading announcements...</div>
-                  ) : announcements.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>No announcements published yet.</div>
-                  ) : (
-                    announcements.map((a) => (
-                      <div key={a._id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', padding: '14px', borderRadius: '12px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
-                            <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{a.title}</strong>
-                            <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase', backgroundColor: 'var(--primary-bg)', color: 'var(--primary)', border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)' }}>
-                              Target: {a.targetRole}
-                            </span>
-                            {a.targetClass && a.targetClass !== 'all' && (
-                              <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase', backgroundColor: 'var(--success-bg)', color: 'var(--success)', border: '1px solid color-mix(in srgb, var(--success) 20%, transparent)' }}>
-                                Class: {a.targetClass}
-                              </span>
-                            )}
-                          </div>
-                          <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.5' }}>{a.message}</p>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                            <span>By: {a.createdBy}</span>
-                            <span>{new Date(a.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '8px', alignSelf: 'flex-start' }}>
-                          <button 
-                            onClick={() => handleStartEdit(a)}
-                            style={{ border: 'none', background: 'none', color: 'var(--primary)', fontSize: '16px', cursor: 'pointer', padding: '4px' }}
-                            title="Edit Notice"
-                          >
-                            ✏️
-                          </button>
-                          <button 
-                            onClick={() => deleteAnnouncement(a._id)}
-                            style={{ border: 'none', background: 'none', color: 'var(--danger)', fontSize: '16px', cursor: 'pointer', padding: '4px' }}
-                            title="Delete Notice"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
+            <NoticeBoardAdmin />
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════
@@ -2296,7 +2194,7 @@ const SuperAdminDashboard = () => {
                             <button onClick={() => navigate('/super-admin?tab=admins')} style={{ backgroundColor: 'rgba(99,102,241,0.25)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
                               🛡️ Manage Admins
                             </button>
-                            <button onClick={() => navigate('/super-admin?tab=exams')} style={{ backgroundColor: 'rgba(245,158,11,0.25)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                            <button onClick={() => navigate('/exams')} style={{ backgroundColor: 'rgba(245,158,11,0.25)', color: '#fcd34d', border: '1px solid rgba(245,158,11,0.4)', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
                               📅 Exam Timetable
                             </button>
                           </div>
@@ -3808,53 +3706,61 @@ const SuperAdminDashboard = () => {
               {/* TAB 4: EXAM RESULTS */}
               {viewTab === 'results' && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-                  {viewStudentExams.length > 0 ? (
-                    <>
-                      <div style={{ padding: "15px", backgroundColor: "rgba(16,185,129,0.08)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <div style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", textTransform: "uppercase" }}>Scheduled Exams for Class {selectedViewStudent.class || selectedViewStudent.className}</div>
-                          <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-main)", marginTop: "2px" }}>Total: {viewStudentExams.length} Exam(s) Scheduled</div>
-                        </div>
-                        <span style={{ padding: "6px 14px", backgroundColor: "#3b82f6", color: "white", borderRadius: "20px", fontWeight: "800", fontSize: "12px" }}>
-                          ACADEMIC YEAR
-                        </span>
-                      </div>
+                  {viewStudentResults && Object.keys(viewStudentResults).length > 0 ? (
+                    Object.keys(viewStudentResults).map(termKey => {
+                      const term = viewStudentResults[termKey];
+                      return (
+                        <div key={termKey} style={{ display: "flex", flexDirection: "column", gap: "15px", marginBottom: "20px" }}>
+                          <div style={{ padding: "15px", backgroundColor: "rgba(16,185,129,0.08)", borderRadius: "12px", border: "1px solid rgba(16,185,129,0.2)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                              <div style={{ fontSize: "11px", fontWeight: "700", color: "#10b981", textTransform: "uppercase" }}>{term.termName || termKey}</div>
+                              <div style={{ fontSize: "18px", fontWeight: "800", color: "var(--text-main)", marginTop: "2px" }}>GPA: {term.overallGpa} | Score: {term.totalMarks}</div>
+                            </div>
+                            <span style={{ padding: "6px 14px", backgroundColor: term.status === 'PASSED' ? "#10b981" : "#ef4444", color: "white", borderRadius: "20px", fontWeight: "800", fontSize: "12px" }}>
+                              STATUS: {term.status}
+                            </span>
+                          </div>
 
-                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", border: "1px solid var(--border-color)", borderRadius: "12px", overflow: "hidden" }}>
-                        <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
-                          <tr>
-                            <th style={{ padding: "10px 14px" }}>Exam Title</th>
-                            <th style={{ padding: "10px 14px" }}>Subject</th>
-                            <th style={{ padding: "10px 14px" }}>Date</th>
-                            <th style={{ padding: "10px 14px" }}>Timing</th>
-                            <th style={{ padding: "10px 14px" }}>Venue</th>
-                            <th style={{ padding: "10px 14px" }}>Max Marks</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {viewStudentExams.map((exam: any, i: number) => (
-                            <tr key={i} style={{ borderTop: "1px solid var(--border-color)" }}>
-                              <td style={{ padding: "10px 14px", fontWeight: "700" }}>{exam.title}</td>
-                              <td style={{ padding: "10px 14px", color: "var(--text-muted)", fontWeight: "600" }}>📚 {exam.subject}</td>
-                              <td style={{ padding: "10px 14px", fontWeight: "600" }}>📅 {new Date(exam.date).toLocaleDateString('en-GB')}</td>
-                              <td style={{ padding: "10px 14px", fontWeight: "600" }}>🕒 {exam.startTime || '10:00 AM'} - {exam.endTime || '01:00 PM'}</td>
-                              <td style={{ padding: "10px 14px" }}>
-                                <span style={{ padding: "3px 10px", borderRadius: "8px", backgroundColor: "rgba(59,130,246,0.1)", color: "#3b82f6", fontWeight: "800", fontSize: "11px" }}>🏫 {exam.roomNumber || 'Hall-1'}</span>
-                              </td>
-                              <td style={{ padding: "10px 14px" }}>
-                                <span style={{ padding: "3px 10px", borderRadius: "8px", backgroundColor: "rgba(139,92,246,0.1)", color: "#8b5cf6", fontWeight: "800", fontSize: "11px" }}>{exam.maxMarks || 100} Marks</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </>
+                          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", border: "1px solid var(--border-color)", borderRadius: "12px", overflow: "hidden" }}>
+                            <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
+                              <tr>
+                                <th style={{ padding: "10px 14px" }}>Subject</th>
+                                <th style={{ padding: "10px 14px" }}>Marks Obtained</th>
+                                <th style={{ padding: "10px 14px" }}>Max Marks</th>
+                                <th style={{ padding: "10px 14px" }}>Grade</th>
+                                <th style={{ padding: "10px 14px" }}>Remarks</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {term.subjects && term.subjects.length > 0 ? term.subjects.map((sub: any, i: number) => (
+                                <tr key={i} style={{ borderTop: "1px solid var(--border-color)" }}>
+                                  <td style={{ padding: "12px 14px", fontWeight: "700" }}>{sub.name}</td>
+                                  <td style={{ padding: "12px 14px", fontWeight: "800", color: "#3b82f6" }}>{sub.marks}</td>
+                                  <td style={{ padding: "12px 14px", fontWeight: "700", color: "var(--text-muted)" }}>{sub.maxMarks}</td>
+                                  <td style={{ padding: "12px 14px" }}>
+                                    <span style={{
+                                      padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "800",
+                                      backgroundColor: sub.grade.includes('A') || sub.grade === 'O' ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)",
+                                      color: sub.grade.includes('A') || sub.grade === 'O' ? "#10b981" : "#f59e0b"
+                                    }}>{sub.grade}</span>
+                                  </td>
+                                  <td style={{ padding: "12px 14px", fontSize: "12px", color: "var(--text-muted)" }}>{sub.remarks || '-'}</td>
+                                </tr>
+                              )) : (
+                                <tr>
+                                  <td colSpan={5} style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>No subject results published for this term yet.</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })
                   ) : (
                     <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px dashed var(--border-color)" }}>
-                      <div style={{ fontSize: "36px", marginBottom: "12px" }}>📋</div>
+                      <div style={{ fontSize: "36px", marginBottom: "12px" }}>📊</div>
                       <div style={{ fontSize: "16px", fontWeight: "700", marginBottom: "6px" }}>No Exam Results Available</div>
-                      <div style={{ fontSize: "13px" }}>No exams have been scheduled for Class {selectedViewStudent.class || selectedViewStudent.className} yet.</div>
-                      <div style={{ fontSize: "12px", marginTop: "8px", color: "#f59e0b", fontWeight: "600" }}>👉 First schedule exams from the Exams section, then they will appear here.</div>
+                      <div style={{ fontSize: "13px" }}>No results have been published for this student yet.</div>
                     </div>
                   )}
                 </div>
@@ -3897,6 +3803,24 @@ const SuperAdminDashboard = () => {
 
         </div>
       </main>
+
+      {/* Custom Delete Confirm Modal */}
+      {studentToDelete && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ background: 'var(--card-bg)', padding: '24px', borderRadius: '12px', width: '350px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+            <div style={{ color: '#ef4444', marginBottom: '16px' }}>
+              <FiTrash2 size={40} />
+            </div>
+            <h3 style={{ margin: '0 0 8px 0' }}>Delete Student</h3>
+            <p style={{ margin: '0 0 24px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Are you sure you want to delete this student? This action cannot be undone.</p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setStudentToDelete(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
+              <button onClick={confirmDeleteStudent} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

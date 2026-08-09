@@ -17,6 +17,10 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     default: "all" // "all", "10", "9", etc.
   },
+  targetSection: {
+    type: String,
+    default: "all" // "all", "A", "B", etc.
+  },
   createdBy: {
     type: String,
     default: "Super Admin"

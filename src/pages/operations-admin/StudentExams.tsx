@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
-import { FiBookOpen, FiCalendar, FiClock, FiAlertCircle, FiLoader } from 'react-icons/fi';
+import { FiBookOpen, FiCalendar, FiClock, FiAlertCircle, FiLoader, FiUser } from 'react-icons/fi';
 import API from '../../api/axios';
 
 const StudentExams = () => {
@@ -124,6 +124,9 @@ const StudentExams = () => {
                         </span>
                         <span className="px-2 py-0.5 rounded bg-[var(--input-bg)] text-xs font-bold border border-[var(--border-color)]">
                           🏫 Venue: {exam.roomNumber || 'Hall-1'}
+                        </span>
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <FiUser className="text-green-500" /> {exam.invigilator || 'TBD'}
                         </span>
                       </div>
                     </div>

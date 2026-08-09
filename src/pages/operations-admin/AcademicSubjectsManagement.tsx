@@ -10,6 +10,7 @@ const SubjectsManagement = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
+  const [subjectToDelete, setSubjectToDelete] = useState<any>(null);
   
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,17 +87,21 @@ const SubjectsManagement = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (subjectId) => {
-    if (window.confirm('Are you sure you want to delete this subject?')) {
-      try {
-        await API.delete(`/api/academic-admin/subjects/${subjectId}`);
-        alert('Subject deleted successfully');
-        fetchSubjects();
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to delete subject');
-      }
+  const handleDelete = (subjectId: string) => {
+    setSubjectToDelete(subjectId);
+  };
+
+  const confirmDeleteSubject = async () => {
+    if (!subjectToDelete) return;
+    try {
+      await API.delete(`/api/academic-admin/subjects/${subjectToDelete}`);
+      alert('Subject deleted successfully');
+      fetchSubjects();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to delete subject');
     }
+    setSubjectToDelete(null);
   };
 
   const handleNewSubject = () => {
@@ -383,6 +388,24 @@ const SubjectsManagement = () => {
           )}
 
         </div>
+
+        {/* Custom Delete Confirm Modal */}
+        {subjectToDelete && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ background: 'var(--card-bg)', padding: '24px', borderRadius: '12px', width: '350px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+              <div style={{ color: '#ef4444', marginBottom: '16px' }}>
+                <FiTrash2 size={40} />
+              </div>
+              <h3 style={{ margin: '0 0 8px 0' }}>Delete Subject</h3>
+              <p style={{ margin: '0 0 24px 0', color: 'var(--text-muted)', fontSize: '14px' }}>Are you sure you want to delete this subject? This action cannot be undone.</p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => setSubjectToDelete(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
+                <button onClick={confirmDeleteSubject} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );
