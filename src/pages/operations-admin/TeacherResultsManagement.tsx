@@ -19,6 +19,11 @@ interface StudentResultItem {
   grade: string;
   remark: string;
   isSubmitted?: boolean;
+  overallGpa?: string;
+  overallGrade?: string;
+  totalMarks?: string;
+  status?: string;
+  subjectsList?: any[];
 }
 
 const TeacherResultsManagement = () => {
@@ -32,6 +37,10 @@ const TeacherResultsManagement = () => {
   const [students, setStudents] = useState<StudentResultItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [viewingFullReportCardModal, setViewingFullReportCardModal] = useState<{
+    isOpen: boolean;
+    student: StudentResultItem;
+  } | null>(null);
 
   // Shared state for Teacher Admin Exam Result Orders
   const [examOrders, setExamOrders] = useSharedState<any[]>('erp_exam_result_orders', [
@@ -106,13 +115,24 @@ const TeacherResultsManagement = () => {
       const formattedListPromises = list.map(async (st: any, idx: number) => {
         let marksObtained = 0;
         let remarkText = '';
+        let overallGpa = '–';
+        let overallGrade = '–';
+        let totalMarks = '–';
+        let statusVal = 'PENDING';
+        let subjectsList: any[] = [];
 
         try {
           const res = await API.get(`/api/admin/student-admin/results/${st._id}`);
           const resultsData = res.data?.data || {};
           const termData = resultsData[termKey];
-          if (termData && termData.subjects) {
-            const subjectEntry = termData.subjects.find((sub: any) => matchSubjectName(sub.name) === targetSubjectName);
+          if (termData) {
+            overallGpa = termData.overallGpa || '–';
+            overallGrade = termData.grade || '–';
+            totalMarks = termData.totalMarks || '–';
+            statusVal = termData.status || 'PENDING';
+            subjectsList = termData.subjects || [];
+
+            const subjectEntry = subjectsList.find((sub: any) => matchSubjectName(sub.name) === targetSubjectName);
             if (subjectEntry) {
               marksObtained = subjectEntry.marks;
               remarkText = subjectEntry.remarks;
@@ -123,12 +143,14 @@ const TeacherResultsManagement = () => {
         }
 
         const gradeDetails = getGradeDetails(marksObtained);
+        const resolvedName = st.user?.name || st.name || `Student ${st.rollNumber || idx + 1}`;
+        const resolvedEmail = st.user?.email || st.email || `${resolvedName.toLowerCase().replace(/\s+/g, '.')}@school.edu`;
 
         return {
           studentId: st._id,
           rollNumber: st.rollNumber || `100${idx + 1}`,
-          name: st.user?.name || 'Student Name',
-          email: st.user?.email || 'student@school.edu',
+          name: resolvedName,
+          email: resolvedEmail,
           className: selectedClass,
           section: selectedSection,
           subjectName: subjectName,
@@ -137,7 +159,12 @@ const TeacherResultsManagement = () => {
           marksObtained: marksObtained,
           grade: gradeDetails.grade,
           remark: remarkText || gradeDetails.remarks,
-          isSubmitted: false
+          isSubmitted: false,
+          overallGpa,
+          overallGrade,
+          totalMarks,
+          status: statusVal,
+          subjectsList
         };
       });
 
@@ -539,11 +566,12 @@ const TeacherResultsManagement = () => {
                     <tr className="bg-slate-200/90 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-black uppercase tracking-wider border-b-2 border-indigo-200 dark:border-indigo-900">
                       <th className="px-6 py-4 font-black w-24">Roll No</th>
                       <th className="px-6 py-4 font-black">Student Name</th>
-                      <th className="px-6 py-4 font-black w-36">Subject Code</th>
+                      <th className="px-6 py-4 font-black w-32">Subject Code</th>
                       <th className="px-6 py-4 font-black w-28">Max Marks</th>
                       <th className="px-6 py-4 font-black w-36">Marks Obtained</th>
-                      <th className="px-6 py-4 font-black w-44">Grade</th>
-                      <th className="px-6 py-4 font-black">Teacher Audit Remark</th>
+                      <th className="px-6 py-4 font-black w-32">Subject Grade</th>
+                      <th className="px-6 py-4 font-black">Overall Performance</th>
+                      <th className="px-6 py-4 font-black text-center">Full Report Card</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-color)] text-sm">
@@ -554,8 +582,15 @@ const TeacherResultsManagement = () => {
                             <span className="bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white px-3 py-1 rounded-lg border border-slate-300 dark:border-slate-700">{st.rollNumber}</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="font-extrabold text-slate-900 dark:text-white text-base">{st.name}</div>
-                            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">{st.email}</div>
+                            <div className="flex items-center gap-3">
+                              <div className="h-9 w-9 bg-indigo-600 text-white rounded-xl font-black text-sm flex items-center justify-center shadow-xs">
+                                {(st.name || 'S').slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-extrabold text-slate-900 dark:text-white text-base">{st.name}</div>
+                                <div className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{st.email}</div>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap font-black text-indigo-700 dark:text-indigo-400">
                             {st.subjectCode}
@@ -584,19 +619,29 @@ const TeacherResultsManagement = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <input
-                              type="text"
-                              placeholder="Add teacher remark..."
-                              value={st.remark}
-                              onChange={e => handleRemarkChange(st.studentId, e.target.value)}
-                              className="w-full min-w-[220px] px-3.5 py-2 border-2 border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
-                            />
+                            <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                              <div>Marks: <strong className="text-indigo-600 dark:text-indigo-400">{st.totalMarks || '–'}</strong></div>
+                              <div>GPA: <strong className="text-emerald-600 dark:text-emerald-400">{st.overallGpa || '–'}</strong></div>
+                              <span className={`inline-block px-2 py-0.5 mt-1 rounded-full text-[10px] font-black ${
+                                st.status === 'PASSED' ? 'bg-emerald-100 text-emerald-800' : st.status === 'FAILED' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+                              }`}>
+                                {st.status || 'PENDING'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center">
+                            <button
+                              onClick={() => setViewingFullReportCardModal({ isOpen: true, student: st })}
+                              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 mx-auto"
+                            >
+                              👁️ View Report Card
+                            </button>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-slate-500 font-bold">
+                        <td colSpan={8} className="px-6 py-12 text-center text-slate-500 font-bold">
                           No students found for this class.
                         </td>
                       </tr>
@@ -622,6 +667,123 @@ const TeacherResultsManagement = () => {
 
           </div>
         </div>
+
+        {/* ── View Full Student Report Card Modal ── */}
+        {viewingFullReportCardModal && viewingFullReportCardModal.isOpen && (() => {
+          const st = viewingFullReportCardModal.student;
+          const subjects = st.subjectsList || [];
+
+          return (
+            <div onClick={() => setViewingFullReportCardModal(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
+              <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '20px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxShadow: '0 25px 50px rgba(0,0,0,0.4)' }}>
+                
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--border-color)', paddingBottom: '16px', marginBottom: '20px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '800', backgroundColor: '#4338ca', color: 'white', padding: '2px 8px', borderRadius: '6px' }}>OFFICIAL ACADEMIC REPORT CARD</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>{examType}</span>
+                    </div>
+                    <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: 'var(--text-main)' }}>
+                      {st.name}
+                    </h2>
+                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                      Roll No: <strong style={{ color: '#4338ca' }}>{st.rollNumber}</strong> | Class: <strong>Class {selectedClass}-{selectedSection}</strong> | Email: <strong>{st.email}</strong>
+                    </p>
+                  </div>
+                  <button onClick={() => setViewingFullReportCardModal(null)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+                </div>
+
+                {/* Performance Summary Banner */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', backgroundColor: 'var(--input-bg)', padding: '16px', borderRadius: '14px', marginBottom: '24px', border: '1px solid var(--border-color)' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Total Score</span>
+                    <div style={{ fontSize: '18px', fontWeight: '900', color: 'var(--text-main)', marginTop: '2px' }}>
+                      {st.totalMarks || '0 / 500'}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Overall GPA</span>
+                    <div style={{ fontSize: '18px', fontWeight: '900', color: '#10b981', marginTop: '2px' }}>
+                      {st.overallGpa || '0.0 / 10'}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Overall Grade</span>
+                    <div style={{ fontSize: '18px', fontWeight: '900', color: '#8b5cf6', marginTop: '2px' }}>
+                      {st.overallGrade || 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Status</span>
+                    <div style={{ marginTop: '2px' }}>
+                      <span className={`badge ${st.status === 'PASSED' ? 'approved' : st.status === 'FAILED' ? 'danger' : 'pending'}`}>
+                        {st.status || 'PENDING'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subject Details Table */}
+                <h4 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: '800' }}>📚 All Subjects Marks &amp; Grades Breakdown</h4>
+                {subjects.length > 0 ? (
+                  <div className="table-container" style={{ marginBottom: '24px' }}>
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Subject</th>
+                          <th>Marks Obtained</th>
+                          <th>Max Marks</th>
+                          <th>Grade</th>
+                          <th>Teacher Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subjects.map((sub: any, idx: number) => (
+                          <tr key={idx}>
+                            <td><strong style={{ color: 'var(--text-main)' }}>{sub.name}</strong></td>
+                            <td><span style={{ fontSize: '15px', fontWeight: '800', color: '#4338ca' }}>{sub.marks}</span></td>
+                            <td style={{ color: 'var(--text-muted)' }}>{sub.maxMarks || 100}</td>
+                            <td>
+                              <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '800', backgroundColor: sub.grade === 'O' || sub.grade === 'A+' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)', color: sub.grade === 'O' || sub.grade === 'A+' ? '#10b981' : '#2563eb' }}>
+                                {sub.grade || 'Pass'}
+                              </span>
+                            </td>
+                            <td style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '13px' }}>
+                              ⭐ {sub.remarks || 'Good Effort'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '30px', backgroundColor: 'var(--input-bg)', borderRadius: '12px', color: 'var(--text-muted)', marginBottom: '24px' }}>
+                    No subject marks entered yet for {examType}.
+                  </div>
+                )}
+
+                {/* Footer Controls */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => window.print()}
+                    style={{ flex: 1, padding: '11px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    🖨️ Print / Download Report Card
+                  </button>
+                  <button
+                    onClick={() => setViewingFullReportCardModal(null)}
+                    style={{ flex: 1, padding: '11px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    Close
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          );
+        })()}
+
       </main>
     </div>
   );

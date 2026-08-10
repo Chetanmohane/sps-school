@@ -7,7 +7,7 @@ exports.getStudentsForAttendance = async (req, res) => {
    try {
         const { className, section } = req.query;
         const students = await Student.find({ className, section })
-            .populate('user', 'name'); 
+            .populate('user', 'name email phone'); 
       
         if (!students || students.length === 0) {
             return res.status(200).json([]); 
