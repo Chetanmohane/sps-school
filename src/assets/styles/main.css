@@ -338,10 +338,11 @@ body {
   font-weight: 600;
   color: white;
 }
-.badge.approved { background-color: var(--success); }
-.badge.pending { background-color: var(--warning); }
+.badge.approved { background-color: var(--success); color: #ffffff !important; }
+.badge.pending { background-color: var(--warning); color: #ffffff !important; }
+.badge.danger, .badge.failed, .badge.rejected { background-color: var(--danger, #ef4444); color: #ffffff !important; }
 .badge.review { background-color: var(--review); color: #854D0E; }
-.badge.management { background-color: var(--primary); }
+.badge.management { background-color: var(--primary); color: #ffffff !important; }
 
 /* Responsive */
 @media (max-width: 768px) {

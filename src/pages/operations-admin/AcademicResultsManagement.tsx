@@ -619,7 +619,18 @@ const AcademicResultsManagement = () => {
                             <span className="badge approved" style={{ fontWeight: '800' }}>{gpaStr}</span>
                           </td>
                           <td style={{ padding: '14px' }}>
-                            <span className={`badge ${statusVal === 'PASSED' ? 'approved' : 'danger'}`}>
+                            <span 
+                              className={`badge ${statusVal === 'PASSED' ? 'approved' : 'danger'}`}
+                              style={{
+                                backgroundColor: statusVal === 'PASSED' ? '#10b981' : '#ef4444',
+                                color: '#ffffff',
+                                fontWeight: '800',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                display: 'inline-block'
+                              }}
+                            >
                               {statusVal}
                             </span>
                           </td>
