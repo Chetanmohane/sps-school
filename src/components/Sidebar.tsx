@@ -157,7 +157,7 @@ const Sidebar = () => {
       { path: '/teacher/myclasses', name: 'My Classes & Timetable', icon: <FiUsers /> },
       { path: '/teacher/attendanceMark', name: 'Subject Period Attendance', icon: <FiCheckSquare /> },
       { path: '/teacher/results', name: 'Subject Exam Results Upload', icon: <FiAward /> },
-      { path: '/teacher/exam-timetable', name: 'Exam Duty & Invigilation', icon: <FiCalendar /> },
+      { path: '/teacher/exam-timetable', name: 'Exam Timetable', icon: <FiCalendar /> },
       { path: '/teacher/assignments', name: 'Assignments & Homework', icon: <FiEdit3 /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },

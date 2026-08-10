@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
-import { FiCalendar, FiClock, FiMapPin, FiSearch, FiDownload, FiUserCheck, FiBookOpen, FiLoader } from 'react-icons/fi';
+import { FiCalendar, FiClock, FiMapPin, FiSearch, FiDownload, FiBookOpen, FiLoader } from 'react-icons/fi';
 import API from '../../api/axios';
 
 const statusColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -125,10 +125,10 @@ const TeacherExamTimetable = () => {
                 📅 Academic Examination Schedule
               </span>
               <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <FiCalendar style={{ color: '#fcd34d' }} /> Exam Timetable & Invigilation Duties
+                <FiCalendar style={{ color: '#fcd34d' }} /> Exam Timetable & Schedule
               </h1>
               <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#bfdbfe', fontWeight: 500 }}>
-                View exam dates, time slots, exam halls, and supervision duties for your assigned classes.
+                View exam dates, time slots, exam halls, and schedule for your assigned classes.
               </p>
             </div>
             <button
@@ -347,25 +347,7 @@ const TeacherExamTimetable = () => {
                         </div>
                       </div>
 
-                      {/* Invigilation Duty */}
-                      {isMyDuty && <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#3b82f6', background: '#dbeafe', padding: '4px 8px', borderRadius: '6px', display: 'inline-block', marginTop: '10px' }}>★ Assigned to You</div>}
-                      <div style={{ fontSize: '11px', color: '#6b7280' }}>Scheduled By: {item.createdBy}</div>
-                      <div style={{
-                        background: '#f0fdf4',
-                        border: '1.5px solid #86efac',
-                        borderRadius: '12px',
-                        padding: '10px 14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        marginTop: '2px'
-                      }}>
-                        <FiUserCheck size={18} style={{ color: '#16a34a', flexShrink: 0 }} />
-                        <div>
-                          <div style={{ fontSize: '10px', fontWeight: 900, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invigilation Duty</div>
-                          <div style={{ fontSize: '13px', fontWeight: 800, color: '#14532d' }}>{item.invigilator}</div>
-                        </div>
-                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginTop: '4px' }}>Scheduled By: {item.createdBy}</div>
                     </div>
                   </div>
                 );
