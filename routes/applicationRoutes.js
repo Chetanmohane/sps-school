@@ -7,6 +7,7 @@ router.post("/send", controller.sendApplication);
 router.get("/all", controller.getAllApplications);
 router.get("/by-class", controller.getByClass);
 router.patch("/status/:id", controller.updateStatus);
+router.put("/status/:id", controller.updateStatus);
 router.delete("/:id", controller.deleteApplication);
 
 module.exports = router;

@@ -3,7 +3,7 @@ import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
 import { 
   FiSend, FiFileText, FiCalendar, FiClock, 
-  FiLoader, FiMessageCircle 
+  FiLoader, FiMessageCircle, FiCheckCircle, FiAlertCircle
 } from 'react-icons/fi';
 import API from '../../api/axios'; 
 
@@ -11,6 +11,7 @@ const Application = () => {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [applications, setApplications] = useState<any[]>([]);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   
   const email = localStorage.getItem('userEmail') || '';
   const [formData, setFormData] = useState({
@@ -26,6 +27,11 @@ const Application = () => {
     fetchStudentAndApplications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const showFeedback = (text: string, type: 'success' | 'error') => {
+    setFeedbackMsg({ text, type });
+    setTimeout(() => setFeedbackMsg(null), 4000);
+  };
 
   const fetchStudentAndApplications = async () => {
     try {
@@ -58,20 +64,20 @@ const Application = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.type) {
-      alert("Please choose an application type");
+      showFeedback("Please choose an application category", "error");
       return;
     }
     setLoadingSubmit(true);
     try {
       await API.post('/api/application/send', formData);
-      alert("Application Submitted Successfully!");
+      showFeedback("Application Submitted Successfully!", "success");
       setFormData({ type: '', subject: '', description: '', startDate: '', endDate: '', email });
       
       // Refresh the application list
       await fetchStudentAndApplications();
     } catch (err) {
       console.error(err);
-      alert("Failed to submit application");
+      showFeedback("Failed to submit application. Please try again.", "error");
     } finally {
       setLoadingSubmit(false);
     }
@@ -102,6 +108,17 @@ const Application = () => {
                   <h3 className="font-bold text-lg text-[var(--text-main)]">New Request</h3>
                   <p className="text-xs text-[var(--text-muted)]">Fill out details below to send request to administration.</p>
                 </div>
+
+                {feedbackMsg && (
+                  <div className={`p-3.5 rounded-2xl flex items-center gap-2.5 text-xs font-bold border transition-all animate-in fade-in duration-200 ${
+                    feedbackMsg.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                  }`}>
+                    {feedbackMsg.type === 'success' ? <FiCheckCircle size={16} className="flex-shrink-0 text-emerald-600" /> : <FiAlertCircle size={16} className="flex-shrink-0 text-rose-600" />}
+                    <span>{feedbackMsg.text}</span>
+                  </div>
+                )}
                 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Application Type Selection */}

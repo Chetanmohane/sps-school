@@ -4,7 +4,7 @@ import Navbar from '../../components/Navbar';
 import API from '../../api/axios';
 import {
   FiCheck, FiX, FiClock, FiFileText, FiCalendar,
-  FiTrash2, FiUser, FiAlertTriangle
+  FiTrash2, FiUser, FiAlertTriangle, FiCheckCircle, FiXCircle, FiMessageSquare
 } from 'react-icons/fi';
 
 const TeacherApplicationReview = () => {
@@ -14,6 +14,27 @@ const TeacherApplicationReview = () => {
   const [isClassTeacher, setIsClassTeacher] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // Custom Modal State for Remarks
+  const [actionModal, setActionModal] = useState<{
+    isOpen: boolean;
+    appId: string;
+    newStatus: 'Approved' | 'Rejected';
+    studentName: string;
+    subject: string;
+  } | null>(null);
+  const [remarks, setRemarks] = useState('');
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+
+  // Custom Toast State
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
 
   const email = localStorage.getItem('userEmail') || '';
 
@@ -66,22 +87,41 @@ const TeacherApplicationReview = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Approve / Reject
-  const handleStatusUpdate = async (id: string, newStatus: string) => {
-    const remarks = prompt(`Enter remarks for ${newStatus}:`);
-    if (remarks === null) return; // cancelled
-    const userName = localStorage.getItem('userName') || 'Admin';
-    const userRole = (localStorage.getItem('role') || 'Admin').replace('-', ' ').toUpperCase();
+  // Open Modal for Approve / Reject
+  const openActionModal = (app: any, newStatus: 'Approved' | 'Rejected') => {
+    const studentName = app.student?.user?.name || app.studentName || 'Student';
+    setActionModal({
+      isOpen: true,
+      appId: app._id,
+      newStatus,
+      studentName,
+      subject: app.subject || 'Leave Application',
+    });
+    setRemarks('');
+  };
+
+  // Submit status update with teacher remarks
+  const submitStatusUpdate = async () => {
+    if (!actionModal) return;
+    setIsSubmittingAction(true);
+    const userName = localStorage.getItem('userName') || 'Class Teacher';
+    const userRole = (localStorage.getItem('role') || 'Teacher').replace('-', ' ').toUpperCase();
     const processedBy = `${userName} (${userRole})`;
+
     try {
-      await API.patch(`/api/application/status/${id}`, {
-        status: newStatus,
-        teacherRemarks: remarks,
+      await API.patch(`/api/application/status/${actionModal.appId}`, {
+        status: actionModal.newStatus,
+        teacherRemarks: remarks.trim() || (actionModal.newStatus === 'Approved' ? 'Approved by Class Teacher' : 'Rejected by Class Teacher'),
         processedBy,
       });
+      showToast(`Leave application successfully ${actionModal.newStatus.toLowerCase()}!`, 'success');
+      setActionModal(null);
       await fetchApplications(classInfo);
     } catch (err) {
-      alert('Error updating status');
+      console.error('Error updating status', err);
+      showToast('Error updating status. Please try again.', 'error');
+    } finally {
+      setIsSubmittingAction(false);
     }
   };
 
@@ -91,8 +131,9 @@ const TeacherApplicationReview = () => {
     try {
       await API.delete(`/api/application/${id}`);
       setApplications(prev => prev.filter(a => a._id !== id));
+      showToast('Application deleted successfully!', 'success');
     } catch (err) {
-      alert('Error deleting application');
+      showToast('Error deleting application', 'error');
     } finally {
       setDeletingId(null);
       setConfirmDeleteId(null);
@@ -248,16 +289,16 @@ const TeacherApplicationReview = () => {
                         {app.status === 'Pending' && (
                           <div className="flex gap-2">
                             <button
-                              onClick={() => handleStatusUpdate(app._id, 'Approved')}
-                              className="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all shadow-sm"
+                              onClick={() => openActionModal(app, 'Approved')}
+                              className="flex items-center gap-1.5 bg-emerald-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all shadow-sm active:scale-95"
                             >
-                              <FiCheck size={13} /> Approve
+                              <FiCheck size={14} /> Approve
                             </button>
                             <button
-                              onClick={() => handleStatusUpdate(app._id, 'Rejected')}
-                              className="flex items-center gap-1.5 bg-white text-rose-600 border border-rose-300 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-rose-50 transition-all shadow-sm"
+                              onClick={() => openActionModal(app, 'Rejected')}
+                              className="flex items-center gap-1.5 bg-white text-rose-600 border border-rose-300 px-3.5 py-2 rounded-xl text-xs font-bold hover:bg-rose-50 transition-all shadow-sm active:scale-95"
                             >
-                              <FiX size={13} /> Reject
+                              <FiX size={14} /> Reject
                             </button>
                           </div>
                         )}
@@ -298,6 +339,99 @@ const TeacherApplicationReview = () => {
           </div>
         </div>
       </main>
+
+      {/* Action Modal for Remarks */}
+      {actionModal && actionModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-3xl p-6 shadow-2xl border border-[var(--border-color)] max-w-md w-full animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-3 rounded-2xl flex items-center justify-center ${
+                actionModal.newStatus === 'Approved' 
+                  ? 'bg-emerald-100 text-emerald-600' 
+                  : 'bg-rose-100 text-rose-600'
+              }`}>
+                {actionModal.newStatus === 'Approved' ? <FiCheckCircle size={24} /> : <FiXCircle size={24} />}
+              </div>
+              <div>
+                <h3 className="font-bold text-lg leading-tight text-[var(--text-main)]">
+                  {actionModal.newStatus === 'Approved' ? 'Approve Application' : 'Reject Application'}
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                  For student: <span className="font-bold text-indigo-600">{actionModal.studentName}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[var(--input-bg)] p-3.5 rounded-2xl border border-[var(--border-color)] mb-4 text-xs">
+              <span className="text-[var(--text-muted)] font-semibold block mb-0.5">Subject:</span>
+              <span className="font-bold text-[var(--text-main)]">{actionModal.subject}</span>
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-xs font-bold text-[var(--text-muted)] mb-1.5 flex items-center gap-1">
+                <FiMessageSquare size={13} />
+                Teacher Remarks / Reason (Optional)
+              </label>
+              <textarea
+                rows={3}
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)}
+                placeholder={
+                  actionModal.newStatus === 'Approved'
+                    ? "e.g. Approved. Please complete missed homework."
+                    : "e.g. Rejected due to upcoming examination schedule."
+                }
+                className="w-full p-3 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none transition-all"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setActionModal(null)}
+                disabled={isSubmittingAction}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-[var(--text-muted)] hover:bg-[var(--input-bg)] transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitStatusUpdate}
+                disabled={isSubmittingAction}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-md transition-all flex items-center gap-2 ${
+                  actionModal.newStatus === 'Approved'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-rose-600 hover:bg-rose-700'
+                } disabled:opacity-50`}
+              >
+                {isSubmittingAction ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {actionModal.newStatus === 'Approved' ? <FiCheck size={14} /> : <FiX size={14} />}
+                    Confirm {actionModal.newStatus}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-sm font-bold animate-in slide-in-from-top-3 duration-300 ${
+          toast.type === 'success' 
+            ? 'bg-emerald-600 text-white border-emerald-500 shadow-emerald-900/20' 
+            : 'bg-rose-600 text-white border-rose-500 shadow-rose-900/20'
+        }`}>
+          {toast.type === 'success' ? <FiCheckCircle size={18} /> : <FiAlertTriangle size={18} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 };
