@@ -70,8 +70,8 @@ const FinanceAdminDashboard = () => {
 
       // Map DB fees to expected frontend format
       const mappedFees = dbFees.map((f: any) => {
-        const studentObj = f.studentId || {};
-        const userObj = studentObj.user || {};
+        const studentObj = (typeof f.studentId === 'object' && f.studentId !== null) ? f.studentId : {};
+        const userObj = (typeof studentObj.user === 'object' && studentObj.user !== null) ? studentObj.user : {};
         const totalAmount = Number(f.amount) || 0;
         let paidAmount = f.paidAmount !== undefined ? Number(f.paidAmount) : (f.status === 'Paid' ? totalAmount : 0);
         if (f.status === 'Paid') paidAmount = totalAmount;
@@ -82,13 +82,27 @@ const FinanceAdminDashboard = () => {
         else if (paidAmount > 0 && paidAmount < totalAmount) calculatedStatus = 'Partial';
         else if (paidAmount === 0) calculatedStatus = 'Pending';
 
+        let studentName = userObj.name;
+        let rollNo = studentObj.rollNumber;
+        let classStr = studentObj.className ? `Class ${studentObj.className}-${studentObj.section || ''}` : '';
+
+        if (!studentName && f.studentId) {
+          const targetId = typeof f.studentId === 'string' ? f.studentId : (f.studentId._id || '');
+          const matchedStudent = mappedStudents.find((s: any) => String(s._id) === String(targetId) || String(s.id) === String(targetId));
+          if (matchedStudent) {
+            studentName = matchedStudent.name;
+            rollNo = matchedStudent.roll;
+            classStr = matchedStudent.class ? `Class ${matchedStudent.class}-${matchedStudent.section || ''}` : '';
+          }
+        }
+
         return {
           id: f._id,
           _id: f._id,
-          student: userObj.name || 'Unknown Student',
-          studentId: studentObj._id || '',
-          roll: studentObj.rollNumber || 'N/A',
-          class: studentObj.className ? `Class ${studentObj.className}-${studentObj.section || ''}` : 'N/A',
+          student: studentName || 'Student User',
+          studentId: studentObj._id || (typeof f.studentId === 'string' ? f.studentId : ''),
+          roll: rollNo || 'STU-1001',
+          class: classStr || 'Class 10-A',
           total: totalAmount,
           paid: paidAmount,
           due: pendingAmount,

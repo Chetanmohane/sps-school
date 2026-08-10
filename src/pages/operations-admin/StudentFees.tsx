@@ -105,14 +105,20 @@ const StudentFees = () => {
     setIsProcessingPay(true);
 
     try {
-      if (!payingFee._id.startsWith('default_fee_')) {
-        await API.post(`/api/finance/pay/${payingFee._id}`, { paymentAmount: payingFee.amount });
-      }
+      const res = await API.post(`/api/finance/pay/${payingFee._id}`, { 
+        paymentAmount: payingFee.amount,
+        title: payingFee.title || payingFee.remarks,
+        amount: payingFee.amount,
+        email: savedEmail
+      });
       
+      const serverFee = res.data?.fee;
+
       const updatedFees = fees.map(f => {
-        if (f._id === payingFee._id) {
+        if (f._id === payingFee._id || (serverFee && (f._id === serverFee._id || f.title === serverFee.remarks))) {
           return {
             ...f,
+            _id: serverFee?._id || f._id,
             status: 'Paid',
             paidAmount: f.amount,
             paymentDate: new Date().toISOString(),
@@ -124,11 +130,16 @@ const StudentFees = () => {
 
       setFees(updatedFees);
       setPaymentSuccessMsg(`Payment of ₹${payingFee.amount.toLocaleString('en-IN')} completed successfully!`);
+      
+      // Refetch from server to sync state with MongoDB
+      fetchData();
+
       setTimeout(() => {
         setPayingFee(null);
         setPaymentSuccessMsg(null);
       }, 1800);
     } catch (err: any) {
+      console.error("Payment API Error:", err);
       const updatedFees = fees.map(f => {
         if (f._id === payingFee._id) {
           return {
@@ -269,7 +280,7 @@ const StudentFees = () => {
                       return (
                         <tr key={index} className="hover:bg-[var(--input-bg)] transition-colors">
                           <td className="px-6 py-4">
-                            <p className="font-bold text-sm text-[var(--text-main)]">{item.title || 'Tuition & Academic Fee'}</p>
+                            <p className="font-bold text-sm text-[var(--text-main)]">{item.title || item.remarks || 'Tuition & Academic Fee'}</p>
                             {item.transactionId && (
                               <span className="text-[10px] text-[var(--text-muted)] font-mono">
                                 Txn ID: {item.transactionId}
