@@ -50,13 +50,18 @@ const ClassTeacherDashboard = () => {
   const [editingStudentResultModal, setEditingStudentResultModal] = useState<{
     isOpen: boolean;
     student: any;
-    marks: {
-      math: number;
-      science: number;
-      english: number;
-      social: number;
-      computer: number;
-    };
+    term: string;
+    subjects: Array<{
+      name: string;
+      marks: number;
+      maxMarks: number;
+      remarks: string;
+    }>;
+  } | null>(null);
+  const [viewingStudentResultModal, setViewingStudentResultModal] = useState<{
+    isOpen: boolean;
+    student: any;
+    term: string;
   } | null>(null);
   const [savingClassResults, setSavingClassResults] = useState(false);
 
@@ -209,26 +214,45 @@ const ClassTeacherDashboard = () => {
     }
   };
 
+  const getGradeDetails = (m: number) => {
+    if (m >= 95) return { grade: "O", remarks: "Outstanding" };
+    if (m >= 85) return { grade: "A+", remarks: "Excellent" };
+    if (m >= 75) return { grade: "A", remarks: "Very Good" };
+    if (m >= 60) return { grade: "B+", remarks: "Good" };
+    if (m >= 50) return { grade: "B", remarks: "Average" };
+    if (m >= 40) return { grade: "C", remarks: "Pass" };
+    return { grade: "F", remarks: "Needs Improvement" };
+  };
+
   const handleOpenEditResultsModal = (st: any) => {
     const studentRes = studentResultsMap[st._id] || {};
     const termData = studentRes[resultsExamTerm] || {};
-    const subjects = termData.subjects || [];
+    const existingSubjects = termData.subjects || [];
 
-    const getMark = (namePattern: string, defaultMark = 75) => {
-      const sub = subjects.find((s: any) => (s.name || '').toLowerCase().includes(namePattern));
-      return sub ? Number(sub.marks) || 0 : defaultMark;
-    };
+    let initialSubjects: Array<{ name: string; marks: number; maxMarks: number; remarks: string }> = [];
+
+    if (existingSubjects.length > 0) {
+      initialSubjects = existingSubjects.map((s: any) => ({
+        name: s.name || 'Subject',
+        marks: Number(s.marks) || 0,
+        maxMarks: Number(s.maxMarks) || 100,
+        remarks: s.remarks || getGradeDetails(Number(s.marks) || 0).remarks
+      }));
+    } else {
+      initialSubjects = [
+        { name: "Mathematics", marks: 85, maxMarks: 100, remarks: "Excellent" },
+        { name: "Science & Tech", marks: 82, maxMarks: 100, remarks: "Very Good" },
+        { name: "English Literature", marks: 88, maxMarks: 100, remarks: "Excellent" },
+        { name: "Social Science", marks: 79, maxMarks: 100, remarks: "Very Good" },
+        { name: "Computer Applications", marks: 92, maxMarks: 100, remarks: "Outstanding" }
+      ];
+    }
 
     setEditingStudentResultModal({
       isOpen: true,
       student: st,
-      marks: {
-        math: getMark('math', 85),
-        science: getMark('science', 82),
-        english: getMark('english', 88),
-        social: getMark('social', 79),
-        computer: getMark('computer', 92),
-      }
+      term: resultsExamTerm,
+      subjects: initialSubjects
     });
   };
 
@@ -236,39 +260,29 @@ const ClassTeacherDashboard = () => {
     if (!editingStudentResultModal) return;
     try {
       setSavingClassResults(true);
-      const { student, marks } = editingStudentResultModal;
+      const { student, term, subjects } = editingStudentResultModal;
       const studentId = student._id;
 
-      const getGradeDetails = (m: number) => {
-        if (m >= 95) return { grade: "O", remarks: "Outstanding" };
-        if (m >= 85) return { grade: "A+", remarks: "Excellent" };
-        if (m >= 75) return { grade: "A", remarks: "Very Good" };
-        if (m >= 60) return { grade: "B+", remarks: "Good" };
-        if (m >= 50) return { grade: "B", remarks: "Average" };
-        if (m >= 40) return { grade: "C", remarks: "Pass" };
-        return { grade: "F", remarks: "Needs Improvement" };
-      };
-
-      const termKey = resultsExamTerm;
+      const termKey = term;
       const termName = termKey === 'Term-1' ? "Term-1 Examinations (Mid-Term)" : "Term-2 Examinations (Final Exam)";
 
-      const mathGrade = getGradeDetails(marks.math);
-      const sciGrade = getGradeDetails(marks.science);
-      const engGrade = getGradeDetails(marks.english);
-      const sstGrade = getGradeDetails(marks.social);
-      const csGrade = getGradeDetails(marks.computer);
+      const processedSubjects = subjects.map(s => {
+        const marksNum = Number(s.marks) || 0;
+        const maxMarksNum = Number(s.maxMarks) || 100;
+        const pct = maxMarksNum > 0 ? (marksNum / maxMarksNum) * 100 : 0;
+        const gradeDetails = getGradeDetails(pct);
+        return {
+          name: s.name.trim() || "Subject",
+          marks: marksNum,
+          maxMarks: maxMarksNum,
+          grade: gradeDetails.grade,
+          remarks: s.remarks || gradeDetails.remarks
+        };
+      });
 
-      const subjectsList = [
-        { name: "Mathematics", marks: marks.math, maxMarks: 100, grade: mathGrade.grade, remarks: mathGrade.remarks },
-        { name: "Science & Tech", marks: marks.science, maxMarks: 100, grade: sciGrade.grade, remarks: sciGrade.remarks },
-        { name: "English Literature", marks: marks.english, maxMarks: 100, grade: engGrade.grade, remarks: engGrade.remarks },
-        { name: "Social Science", marks: marks.social, maxMarks: 100, grade: sstGrade.grade, remarks: sstGrade.remarks },
-        { name: "Computer Applications", marks: marks.computer, maxMarks: 100, grade: csGrade.grade, remarks: csGrade.remarks },
-      ];
-
-      const totalMarksSum = subjectsList.reduce((sum, s) => sum + s.marks, 0);
-      const totalMax = 500;
-      const avgPct = (totalMarksSum / totalMax) * 100;
+      const totalMarksSum = processedSubjects.reduce((sum, s) => sum + s.marks, 0);
+      const totalMaxSum = processedSubjects.reduce((sum, s) => sum + s.maxMarks, 0);
+      const avgPct = totalMaxSum > 0 ? (totalMarksSum / totalMaxSum) * 100 : 0;
       const overallGpa = (avgPct / 10).toFixed(1);
       const overallGrade = getGradeDetails(avgPct).grade;
       const passStatus = avgPct >= 40 ? "PASSED" : "FAILED";
@@ -278,11 +292,11 @@ const ClassTeacherDashboard = () => {
         ...existingFullRes,
         [termKey]: {
           termName,
-          totalMarks: `${totalMarksSum} / ${totalMax}`,
+          totalMarks: `${totalMarksSum} / ${totalMaxSum}`,
           overallGpa: `${overallGpa} / 10`,
           grade: overallGrade,
           status: passStatus,
-          subjects: subjectsList
+          subjects: processedSubjects
         }
       };
 
@@ -940,15 +954,26 @@ const ClassTeacherDashboard = () => {
                     <tr>
                       <th>Roll No</th>
                       <th>Student Name</th>
-                      <th>Math</th>
-                      <th>Science</th>
-                      <th>English</th>
-                      <th>SST</th>
-                      <th>CS</th>
+                      {(() => {
+                        const subsSet = new Set<string>();
+                        students.forEach((st: any) => {
+                          const stRes = studentResultsMap[st._id] || {};
+                          const termData = stRes[resultsExamTerm] || {};
+                          (termData.subjects || []).forEach((sub: any) => {
+                            if (sub.name) subsSet.add(sub.name);
+                          });
+                        });
+                        const subList = subsSet.size > 0 
+                          ? Array.from(subsSet) 
+                          : ["Mathematics", "Science & Tech", "English Literature", "Social Science", "Computer Applications"];
+                        return subList.map(subName => (
+                          <th key={subName}>{subName}</th>
+                        ));
+                      })()}
                       <th>Total Marks</th>
                       <th>GPA / Grade</th>
                       <th>Status</th>
-                      <th>Action</th>
+                      <th style={{ textAlign: 'center' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -959,12 +984,19 @@ const ClassTeacherDashboard = () => {
                         const termData = stRes[resultsExamTerm] || {};
                         const subs = termData.subjects || [];
 
-                        const getM = (pat: string) => {
-                          const s = subs.find((sub: any) => (sub.name || '').toLowerCase().includes(pat));
-                          return s ? Number(s.marks) || 0 : '–';
-                        };
+                        const subsSet = new Set<string>();
+                        students.forEach((s: any) => {
+                          const r = studentResultsMap[s._id] || {};
+                          const t = r[resultsExamTerm] || {};
+                          (t.subjects || []).forEach((sub: any) => {
+                            if (sub.name) subsSet.add(sub.name);
+                          });
+                        });
+                        const subList = subsSet.size > 0 
+                          ? Array.from(subsSet) 
+                          : ["Mathematics", "Science & Tech", "English Literature", "Social Science", "Computer Applications"];
 
-                        const totalStr = termData.totalMarks || '– / 500';
+                        const totalStr = termData.totalMarks || '–';
                         const gpaStr = termData.overallGpa ? `${termData.overallGpa} (${termData.grade || 'N/A'})` : '–';
                         const statusVal = termData.status || 'PENDING';
 
@@ -972,11 +1004,16 @@ const ClassTeacherDashboard = () => {
                           <tr key={stId}>
                             <td><strong>{st.rollNumber || 'R01'}</strong></td>
                             <td><strong style={{ color: 'var(--text-main)' }}>{st.user?.name || st.name}</strong></td>
-                            <td><span style={{ fontWeight: '700' }}>{getM('math')}</span></td>
-                            <td><span style={{ fontWeight: '700' }}>{getM('science')}</span></td>
-                            <td><span style={{ fontWeight: '700' }}>{getM('english')}</span></td>
-                            <td><span style={{ fontWeight: '700' }}>{getM('social')}</span></td>
-                            <td><span style={{ fontWeight: '700' }}>{getM('computer')}</span></td>
+                            {subList.map(subName => {
+                              const found = subs.find((s: any) => (s.name || '').toLowerCase().trim() === subName.toLowerCase().trim());
+                              return (
+                                <td key={subName}>
+                                  <span style={{ fontWeight: '700' }}>
+                                    {found ? `${found.marks}/${found.maxMarks || 100}` : '–'}
+                                  </span>
+                                </td>
+                              );
+                            })}
                             <td><strong>{totalStr}</strong></td>
                             <td><span className="badge approved">{gpaStr}</span></td>
                             <td>
@@ -985,21 +1022,44 @@ const ClassTeacherDashboard = () => {
                               </span>
                             </td>
                             <td>
-                              <button
-                                onClick={() => handleOpenEditResultsModal(st)}
-                                style={{
-                                  padding: '6px 14px',
-                                  borderRadius: '6px',
-                                  border: 'none',
-                                  backgroundColor: 'var(--primary)',
-                                  color: 'white',
-                                  fontWeight: '700',
-                                  fontSize: '11px',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                ✏️ Edit Report Card
-                              </button>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                  onClick={() => setViewingStudentResultModal({ isOpen: true, student: st, term: resultsExamTerm })}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    backgroundColor: '#3b82f6',
+                                    color: 'white',
+                                    fontWeight: '700',
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  👁️ View Report Card
+                                </button>
+                                <button
+                                  onClick={() => handleOpenEditResultsModal(st)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    backgroundColor: 'var(--primary)',
+                                    color: 'white',
+                                    fontWeight: '700',
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  ✏️ Edit Report Card
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1197,46 +1257,216 @@ const ClassTeacherDashboard = () => {
           </div>
         )}
 
-        {/* ── Edit Student Results Modal ── */}
+        {/* ── View Full Student Report Card Modal ── */}
+        {viewingStudentResultModal && viewingStudentResultModal.isOpen && (() => {
+          const st = viewingStudentResultModal.student;
+          const stRes = studentResultsMap[st._id] || {};
+          const termData = stRes[viewingStudentResultModal.term] || {};
+          const subjects = termData.subjects || [];
+
+          return (
+            <div onClick={() => setViewingStudentResultModal(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
+              <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '20px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxShadow: '0 25px 50px rgba(0,0,0,0.4)' }}>
+                
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid var(--border-color)', paddingBottom: '16px', marginBottom: '20px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '11px', fontWeight: '800', backgroundColor: 'var(--primary)', color: 'white', padding: '2px 8px', borderRadius: '6px' }}>OFFICIAL ACADEMIC REPORT CARD</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>{termData.termName || viewingStudentResultModal.term}</span>
+                    </div>
+                    <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: 'var(--text-main)' }}>
+                      {st.user?.name || st.name}
+                    </h2>
+                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                      Roll No: <strong style={{ color: 'var(--primary)' }}>{st.rollNumber || 'R01'}</strong> | Class: <strong>{classInfo?.className}-{classInfo?.section}</strong> | Email: <strong>{st.user?.email || st.email}</strong>
+                    </p>
+                  </div>
+                  <button onClick={() => setViewingStudentResultModal(null)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: 'var(--text-muted)' }}><FiX /></button>
+                </div>
+
+                {/* Performance Summary Banner */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', backgroundColor: 'var(--input-bg)', padding: '16px', borderRadius: '14px', marginBottom: '24px', border: '1px solid var(--border-color)' }}>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Total Score</span>
+                    <div style={{ fontSize: '18px', fontWeight: '900', color: 'var(--text-main)', marginTop: '2px' }}>
+                      {termData.totalMarks || '0 / 500'}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Overall GPA</span>
+                    <div style={{ fontSize: '18px', fontWeight: '900', color: '#10b981', marginTop: '2px' }}>
+                      {termData.overallGpa || '0.0 / 10'}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Overall Grade</span>
+                    <div style={{ fontSize: '18px', fontWeight: '900', color: '#8b5cf6', marginTop: '2px' }}>
+                      {termData.grade || 'N/A'}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase' }}>Status</span>
+                    <div style={{ marginTop: '2px' }}>
+                      <span className={`badge ${termData.status === 'PASSED' ? 'approved' : termData.status === 'FAILED' ? 'danger' : 'pending'}`}>
+                        {termData.status || 'PENDING'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subject Details Table */}
+                <h4 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: '800' }}>📚 Subject-wise Marks &amp; Grades Breakdown</h4>
+                {subjects.length > 0 ? (
+                  <div className="table-container" style={{ marginBottom: '24px' }}>
+                    <table className="data-table">
+                      <thead>
+                        <tr>
+                          <th>Subject</th>
+                          <th>Marks Obtained</th>
+                          <th>Max Marks</th>
+                          <th>Grade</th>
+                          <th>Teacher Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subjects.map((sub: any, idx: number) => (
+                          <tr key={idx}>
+                            <td><strong style={{ color: 'var(--text-main)' }}>{sub.name}</strong></td>
+                            <td><span style={{ fontSize: '15px', fontWeight: '800', color: 'var(--primary)' }}>{sub.marks}</span></td>
+                            <td style={{ color: 'var(--text-muted)' }}>{sub.maxMarks || 100}</td>
+                            <td>
+                              <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '800', backgroundColor: sub.grade === 'O' || sub.grade === 'A+' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)', color: sub.grade === 'O' || sub.grade === 'A+' ? '#10b981' : '#2563eb' }}>
+                                {sub.grade || 'Pass'}
+                              </span>
+                            </td>
+                            <td style={{ fontStyle: 'italic', color: 'var(--text-muted)', fontSize: '13px' }}>
+                              ⭐ {sub.remarks || 'Good Effort'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '30px', backgroundColor: 'var(--input-bg)', borderRadius: '12px', color: 'var(--text-muted)', marginBottom: '24px' }}>
+                    No subject marks entered yet for {viewingStudentResultModal.term}. Click "Edit Report Card" to add subject marks.
+                  </div>
+                )}
+
+                {/* Footer Controls */}
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    onClick={() => window.print()}
+                    style={{ flex: 1, padding: '11px', backgroundColor: '#2563eb', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    🖨️ Print / Download Report Card
+                  </button>
+                  <button
+                    onClick={() => setViewingStudentResultModal(null)}
+                    style={{ flex: 1, padding: '11px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    Close
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Dynamic Edit Student Results Modal ── */}
         {editingStudentResultModal && editingStudentResultModal.isOpen && (
-          <div onClick={() => setEditingStudentResultModal(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
-            <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '24px', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div onClick={() => setEditingStudentResultModal(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
+            <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '20px', width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', padding: '26px', boxShadow: '0 25px 50px rgba(0,0,0,0.4)' }}>
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
-                    🏆 Edit Class Student Report Card ({resultsExamTerm})
+                    🏆 Edit Student Report Card ({editingStudentResultModal.term})
                   </h3>
-                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--primary)', fontWeight: '700' }}>
                     Student: {editingStudentResultModal.student.user?.name || editingStudentResultModal.student.name} (Roll: {editingStudentResultModal.student.rollNumber || 'R01'})
                   </p>
                 </div>
-                <button onClick={() => setEditingStudentResultModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}><FiX /></button>
+                <button onClick={() => setEditingStudentResultModal(null)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: 'var(--text-muted)' }}><FiX /></button>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-                {[
-                  { key: 'math', label: 'Mathematics Marks (out of 100)' },
-                  { key: 'science', label: 'Science & Tech Marks (out of 100)' },
-                  { key: 'english', label: 'English Literature Marks (out of 100)' },
-                  { key: 'social', label: 'Social Science Marks (out of 100)' },
-                  { key: 'computer', label: 'Computer Applications Marks (out of 100)' },
-                ].map(sub => (
-                  <div key={sub.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)' }}>
-                    <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-main)' }}>{sub.label}</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-main)' }}>Subject Marks &amp; Remarks Entry</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingStudentResultModal(prev => prev ? ({
+                        ...prev,
+                        subjects: [...prev.subjects, { name: '', marks: 75, maxMarks: 100, remarks: 'Good Effort' }]
+                      }) : null);
+                    }}
+                    style={{ padding: '5px 12px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' }}
+                  >
+                    + Add New Subject
+                  </button>
+                </div>
+
+                {editingStudentResultModal.subjects.map((sub, idx) => (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 30px', gap: '8px', alignItems: 'center', padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)' }}>
                     <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      value={(editingStudentResultModal.marks as any)[sub.key]}
+                      type="text"
+                      placeholder="Subject Name (e.g. Mathematics)"
+                      value={sub.name}
                       onChange={(e) => {
-                        const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                        const val = e.target.value;
                         setEditingStudentResultModal(prev => prev ? ({
                           ...prev,
-                          marks: { ...prev.marks, [sub.key]: val }
+                          subjects: prev.subjects.map((s, i) => i === idx ? { ...s, name: val } : s)
                         }) : null);
                       }}
-                      style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: '800', textAlign: 'center', outline: 'none' }}
+                      style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: '700', outline: 'none' }}
                     />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <input
+                        type="number"
+                        min={0}
+                        max={sub.maxMarks || 100}
+                        value={sub.marks}
+                        onChange={(e) => {
+                          const val = Number(e.target.value) || 0;
+                          setEditingStudentResultModal(prev => prev ? ({
+                            ...prev,
+                            subjects: prev.subjects.map((s, i) => i === idx ? { ...s, marks: val } : s)
+                          }) : null);
+                        }}
+                        style={{ width: '60px', padding: '7px 8px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: '800', textAlign: 'center', outline: 'none' }}
+                      />
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>/ {sub.maxMarks || 100}</span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Teacher Remark"
+                      value={sub.remarks}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditingStudentResultModal(prev => prev ? ({
+                          ...prev,
+                          subjects: prev.subjects.map((s, i) => i === idx ? { ...s, remarks: val } : s)
+                        }) : null);
+                      }}
+                      style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '12px', outline: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingStudentResultModal(prev => prev ? ({
+                          ...prev,
+                          subjects: prev.subjects.filter((_, i) => i !== idx)
+                        }) : null);
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: '800', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      title="Remove subject"
+                    >
+                      <FiX />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1246,14 +1476,14 @@ const ClassTeacherDashboard = () => {
                   type="button"
                   onClick={handleSaveStudentResults}
                   disabled={savingClassResults}
-                  style={{ flex: 1, padding: '11px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', opacity: savingClassResults ? 0.6 : 1 }}
+                  style={{ flex: 1, padding: '12px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', opacity: savingClassResults ? 0.6 : 1 }}
                 >
                   {savingClassResults ? 'Saving Results...' : '💾 Save Class Report Card'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditingStudentResultModal(null)}
-                  style={{ flex: 1, padding: '11px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+                  style={{ flex: 1, padding: '12px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
                 >
                   Cancel
                 </button>
