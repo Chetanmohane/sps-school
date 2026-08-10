@@ -298,14 +298,7 @@ const TeacherDashboard = () => {
       color: '#8b5cf6',
       gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
     },
-    {
-      label: 'Exam Timetable & Duty',
-      desc: 'View exam dates, halls & invigilation duties',
-      icon: '📝',
-      path: '/teacher/exam-timetable',
-      color: '#ec4899',
-      gradient: 'linear-gradient(135deg, #ec4899, #be185d)',
-    },
+
     {
       label: 'Subject Assignments',
       desc: 'Create & grade subject homework assignments',
@@ -482,26 +475,6 @@ const TeacherDashboard = () => {
               ✅ Period Roll Call
             </button>
 
-            <button
-              onClick={() => navigate('/teacher/exam-timetable')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '12px',
-                border: '1px solid rgba(37, 99, 235, 0.4)',
-                fontWeight: '800',
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: '#2563eb',
-                color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              📅 Exam Duties
-            </button>
 
             <button
               onClick={() => navigate('/teacher/myclasses')}
@@ -542,21 +515,6 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            {/* Card 2: Exam Timetable */}
-            <div 
-              onClick={() => navigate('/teacher/exam-timetable')}
-              className="p-5 rounded-2xl cursor-pointer transition-all hover:scale-[1.02] shadow-md border flex items-center justify-between"
-              style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}
-            >
-              <div>
-                <span className="px-2.5 py-0.5 bg-blue-300 text-slate-950 font-black text-[10px] uppercase rounded-full tracking-wider">SCHEDULE</span>
-                <h3 className="text-lg font-black mt-1">📅 Exam Timetable</h3>
-                <p className="text-xs text-blue-200 mt-0.5">View Exam Dates & Duties</p>
-              </div>
-              <div className="w-12 h-12 bg-white/15 rounded-2xl flex items-center justify-center text-2xl">
-                📅
-              </div>
-            </div>
 
             {/* Card 3: Period Attendance */}
             <div 

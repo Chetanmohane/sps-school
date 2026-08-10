@@ -36,7 +36,6 @@ import TeacherApplicationReview from './pages/operations-admin/TeacherApplicatio
 import TeacherAssignments from "./pages/operations-admin/TeacherAssignments";
 import TeacherMyClasses from "./pages/operations-admin/TeacherMyClasses";
 import TeacherResultsManagement from './pages/operations-admin/TeacherResultsManagement';
-import TeacherExamTimetable from './pages/operations-admin/TeacherExamTimetable';
 import Settings from './pages/auth/Settings';
 
 import Events from "./pages/operations-admin/Events";
@@ -189,11 +188,6 @@ const AppRoutes = () => {
         <Route path="/teacher/results" element={
           <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <TeacherResultsManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/teacher/exam-timetable" element={
-          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
-            <TeacherExamTimetable />
           </ProtectedRoute>
         } />
         
