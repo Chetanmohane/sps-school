@@ -198,18 +198,10 @@ const StudentProfiles = () => {
     }
   };
 
-  const handleDeleteStudent = async (studentId: string) => {
-    if (!window.confirm("Are you sure you want to delete this student?")) return;
-    try {
-      setLoading(true);
-      await API.delete(`/api/admin/student-admin/students/${studentId}`);
-      alert("Student deleted successfully!");
-      fetchStudents();
-    } catch (error: any) {
-      alert("Failed to delete student: " + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
-    }
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDeleteStudent = (studentId: string) => {
+    setDeleteConfirmId(studentId);
   };
 
   const handleAddStudent = async (e: any) => {
@@ -1036,6 +1028,72 @@ const StudentProfiles = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setDeleteConfirmId(null)} 
+          style={{ 
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            zIndex: 9999, padding: '16px' 
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', 
+              borderRadius: '20px', padding: '24px', width: '380px', maxWidth: '95%', 
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' 
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div style={{ background: 'var(--danger-bg)', padding: '10px', borderRadius: '12px', color: 'var(--danger)', display: 'flex' }}>
+                <span style={{ fontSize: '22px' }}>🗑️</span>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>Delete Student Profile</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Action cannot be undone</p>
+              </div>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+              Are you sure you want to delete this student record from the system database?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                style={{ padding: '9px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  const id = deleteConfirmId;
+                  setDeleteConfirmId(null);
+                  try {
+                    setLoading(true);
+                    await API.delete(`/api/admin/student-admin/students/${id}`);
+                    showStatus("Student deleted successfully!", "success");
+                    if ((window as any).showToast) (window as any).showToast("Student deleted successfully!", "success");
+                    fetchStudents();
+                  } catch (error: any) {
+                    showStatus("Failed to delete student", "error");
+                    if ((window as any).showToast) (window as any).showToast("Failed to delete student", "error");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                style={{ padding: '9px 18px', borderRadius: '10px', border: 'none', background: 'var(--danger)', color: 'white', fontWeight: 900, fontSize: '13px', cursor: 'pointer' }}
+              >
+                Delete Student
+              </button>
+            </div>
           </div>
         </div>
       )}

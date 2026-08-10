@@ -182,18 +182,10 @@ const FinanceAdminDashboard = () => {
     }
   };
 
-  const handleDeleteFee = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this fee record?")) return;
-    try {
-      setLoading(true);
-      await API.delete(`/api/finance/delete/${id}`);
-      alert("Fee record deleted successfully!");
-      await fetchData();
-    } catch (err: any) {
-      alert("Error deleting fee: " + (err.response?.data?.message || err.message));
-    } finally {
-      setLoading(false);
-    }
+  const [deleteFeeConfirmId, setDeleteFeeConfirmId] = useState<string | null>(null);
+
+  const handleDeleteFee = (id: string) => {
+    setDeleteFeeConfirmId(id);
   };
 
   const handleEditClick = (tx: any) => {
@@ -965,6 +957,68 @@ const FinanceAdminDashboard = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+        {deleteFeeConfirmId && (
+          <div 
+            className="modal-overlay" 
+            onClick={() => setDeleteFeeConfirmId(null)} 
+            style={{ 
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+              backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              zIndex: 9999, padding: '16px' 
+            }}
+          >
+            <div 
+              className="modal-content" 
+              onClick={e => e.stopPropagation()} 
+              style={{ 
+                backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', 
+                borderRadius: '20px', padding: '24px', width: '380px', maxWidth: '95%', 
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' 
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                <div style={{ background: 'var(--danger-bg)', padding: '10px', borderRadius: '12px', color: 'var(--danger)', display: 'flex' }}>
+                  <span style={{ fontSize: '22px' }}>💸</span>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>Delete Fee Record</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Action cannot be undone</p>
+                </div>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                Are you sure you want to delete this fee record from finance records?
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button 
+                  onClick={() => setDeleteFeeConfirmId(null)}
+                  style={{ padding: '9px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={async () => {
+                    const id = deleteFeeConfirmId;
+                    setDeleteFeeConfirmId(null);
+                    try {
+                      setLoading(true);
+                      await API.delete(`/api/finance/delete/${id}`);
+                      await fetchData();
+                      if ((window as any).showToast) (window as any).showToast("Fee record deleted successfully!", "success");
+                    } catch (err: any) {
+                      if ((window as any).showToast) (window as any).showToast("Failed to delete fee record", "error");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  style={{ padding: '9px 18px', borderRadius: '10px', border: 'none', background: 'var(--danger)', color: 'white', fontWeight: 900, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Delete Record
+                </button>
+              </div>
             </div>
           </div>
         )}

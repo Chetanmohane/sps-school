@@ -218,17 +218,10 @@ const ClassAssignmentsManagement = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (classId) => {
-    if (window.confirm('Are you sure you want to delete this class?')) {
-      try {
-        await API.delete(`/api/academic-admin/classes/${classId}`);
-        alert('Class deleted successfully');
-        fetchData();
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to delete class');
-      }
-    }
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleDelete = (classId: string) => {
+    setDeleteConfirmId(classId);
   };
 
   const handleNewClass = () => {
@@ -879,6 +872,66 @@ const ClassAssignmentsManagement = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {deleteConfirmId && (
+          <div 
+            className="modal-overlay" 
+            onClick={() => setDeleteConfirmId(null)} 
+            style={{ 
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+              backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', 
+              zIndex: 9999, padding: '16px' 
+            }}
+          >
+            <div 
+              className="modal-content" 
+              onClick={e => e.stopPropagation()} 
+              style={{ 
+                backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', 
+                borderRadius: '20px', padding: '24px', width: '380px', maxWidth: '95%', 
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' 
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+                <div style={{ background: 'var(--danger-bg)', padding: '10px', borderRadius: '12px', color: 'var(--danger)', display: 'flex' }}>
+                  <span style={{ fontSize: '22px' }}>🏫</span>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>Delete Class Assignment</h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Action cannot be undone</p>
+                </div>
+              </div>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                Are you sure you want to delete this class section assignment?
+              </p>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button 
+                  onClick={() => setDeleteConfirmId(null)}
+                  style={{ padding: '9px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={async () => {
+                    const id = deleteConfirmId;
+                    setDeleteConfirmId(null);
+                    try {
+                      await API.delete(`/api/academic-admin/classes/${id}`);
+                      fetchData();
+                      if ((window as any).showToast) (window as any).showToast("Class deleted successfully!", "success");
+                    } catch (error) {
+                      if ((window as any).showToast) (window as any).showToast("Failed to delete class", "error");
+                    }
+                  }}
+                  style={{ padding: '9px 18px', borderRadius: '10px', border: 'none', background: 'var(--danger)', color: 'white', fontWeight: 900, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Delete Class
+                </button>
+              </div>
             </div>
           </div>
         )}

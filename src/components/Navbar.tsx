@@ -64,7 +64,9 @@ const Navbar = () => {
   const rawUserName = localStorage.getItem('userName');
   const userEmail = localStorage.getItem('userEmail') || '';
   const userName = rawUserName || displayRole;
-  const shortName = userName.split(' ')[0];
+  const shortName = (rawUserName && rawUserName.toLowerCase() !== 'super admin') 
+    ? rawUserName.split(' ')[0] 
+    : displayRole;
   
   const savedProfileImage = userEmail ? localStorage.getItem(`student_photo_${userEmail}`) : '';
 
@@ -94,11 +96,14 @@ const Navbar = () => {
       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'between',
-      padding: '0 28px'
+      justifyContent: 'space-between',
+      padding: '0 16px',
+      width: '100%',
+      maxWidth: '100vw',
+      boxSizing: 'border-box'
     }}>
       {/* Welcome & Date Section */}
-      <div className="nav-left-section" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div className="nav-left-section" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <button 
           className="mobile-menu-btn" 
           onClick={toggleSidebar}
@@ -107,9 +112,9 @@ const Navbar = () => {
             background: 'var(--input-bg)',
             border: '1px solid var(--border-color)',
             color: 'var(--text-main)',
-            fontSize: '20px',
+            fontSize: '18px',
             cursor: 'pointer',
-            padding: '8px',
+            padding: '6px 10px',
             borderRadius: '8px',
             alignItems: 'center',
             justifyContent: 'center'
@@ -117,68 +122,59 @@ const Navbar = () => {
         >
           <FiMenu />
         </button>
-        <div className="flex flex-col justify-center">
-          <div className="nav-welcome" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
+        <div className="flex flex-col justify-center" style={{ minWidth: 0 }}>
+          <div className="nav-welcome nav-welcome-text" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', whiteSpace: 'nowrap' }}>
             <span style={{ color: 'var(--text-muted)' }} className="hide-on-mobile">Hello,</span> 
-            <span className="font-semibold" style={{ color: 'var(--text-main)' }}>{userName}</span>
-          <span 
-            style={{ 
-              fontSize: '11px', 
-              fontWeight: '700',
-              padding: '2px 8px', 
-              borderRadius: '6px', 
-              textTransform: 'uppercase', 
-              letterSpacing: '0.05em',
-              background: 'var(--primary-bg)', 
-              color: 'var(--primary)',
-              border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)'
-            }}
-          >
-            {displayRole}
-          </span>
-        </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            <FiCalendar size={13} style={{ color: 'var(--primary)' }} />
-            <span className="hide-on-mobile">{currentDate}</span>
+            <span className="font-semibold mobile-header-title" style={{ color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortName}</span>
+            <span 
+              className="nav-role-badge"
+              style={{ 
+                fontSize: '10px', 
+                fontWeight: '700',
+                padding: '2px 6px', 
+                borderRadius: '6px', 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.05em',
+                background: 'var(--primary-bg)', 
+                color: 'var(--primary)',
+                border: '1px solid color-mix(in srgb, var(--primary) 20%, transparent)'
+              }}
+            >
+              {displayRole}
+            </span>
+          </div>
+          <div className="hide-on-mobile-sm" style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            <FiCalendar size={12} style={{ color: 'var(--primary)' }} />
+            <span>{currentDate}</span>
           </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="nav-actions flex items-center gap-3">
+      <div className="nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {/* Text Size Toggle */}
         <button
-          className="font-size-toggle-btn"
+          className="font-size-toggle-btn hide-on-mobile-sm"
           onClick={cycleFont}
           title={`Text Size: ${fontSize.toUpperCase()} (Click to toggle)`}
           style={{
-            height: '40px',
-            padding: '0 10px',
-            borderRadius: '10px',
+            height: '36px',
+            padding: '0 8px',
+            borderRadius: '8px',
             border: '1px solid var(--border-color)',
             background: 'var(--input-bg)',
             color: 'var(--text-muted)',
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
+            gap: '4px',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
             fontWeight: '700',
             fontSize: '12px'
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--primary)';
-            e.currentTarget.style.borderColor = 'var(--primary)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.borderColor = 'var(--border-color)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
         >
-          <FiType size={16} />
-          <span style={{ textTransform: 'capitalize', fontSize: '11px' }}>{fontSize}</span>
+          <FiType size={15} />
+          <span style={{ textTransform: 'capitalize', fontSize: '10px' }}>{fontSize}</span>
         </button>
 
         {/* Dark Mode Toggle */}
@@ -187,9 +183,9 @@ const Navbar = () => {
           onClick={toggleTheme}
           title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
+            width: '36px',
+            height: '36px',
+            borderRadius: '8px',
             border: '1px solid var(--border-color)',
             background: 'var(--input-bg)',
             color: 'var(--text-muted)',
@@ -198,19 +194,10 @@ const Navbar = () => {
             justifyContent: 'center',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--primary)';
-            e.currentTarget.style.borderColor = 'var(--primary)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--text-muted)';
-            e.currentTarget.style.borderColor = 'var(--border-color)';
-            e.currentTarget.style.transform = 'scale(1)';
+            flexShrink: 0
           }}
         >
-          {isDark ? <FiSun size={18} /> : <FiMoon size={18} />}
+          {isDark ? <FiSun size={16} /> : <FiMoon size={16} />}
         </button>
 
         {/* Notifications Button */}
@@ -219,15 +206,16 @@ const Navbar = () => {
             className="icon-btn" 
             title="Notifications" 
             onClick={() => {
-              setShowNotifications(!showNotifications);
-              if (!showNotifications) {
+              const nextState = !showNotifications;
+              setShowNotifications(nextState);
+              if (nextState) {
                 markAllAsRead();
               }
             }}
             style={{ 
-              width: '40px',
-              height: '40px',
-              borderRadius: '10px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
               border: '1px solid var(--border-color)',
               background: 'var(--input-bg)',
               color: 'var(--text-muted)',
@@ -237,25 +225,16 @@ const Navbar = () => {
               cursor: 'pointer',
               position: 'relative',
               transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = 'var(--primary)';
-              e.currentTarget.style.borderColor = 'var(--primary)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-muted)';
-              e.currentTarget.style.borderColor = 'var(--border-color)';
-              e.currentTarget.style.transform = 'scale(1)';
+              flexShrink: 0
             }}
           >
-            <FiBell size={18} />
+            <FiBell size={16} />
             {/* Pulsing indicator */}
             {unreadCount > 0 && (
               <span style={{
                 position: 'absolute',
-                top: '10px',
-                right: '10px',
+                top: '6px',
+                right: '6px',
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
@@ -269,25 +248,24 @@ const Navbar = () => {
             <>
               <div 
                 onClick={() => setShowNotifications(false)}
-                style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                style={{ position: 'fixed', inset: 0, zIndex: 998 }}
               />
-              <div style={{
-                position: 'absolute',
-                top: '50px',
-                right: 0,
-                width: '320px',
-                background: 'var(--card-bg)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '16px',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                zIndex: 1000,
-                padding: '16px',
-                maxHeight: '360px',
-                overflowY: 'auto'
-              }}>
+              <div className="notification-dropdown-container">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                  <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-main)' }}>Notifications</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{notifications.length} total</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontWeight: 800, fontSize: '14px', color: 'var(--text-main)' }}>Notifications</span>
+                    <span style={{ fontSize: '10px', background: 'var(--primary-bg)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                      {notifications.length}
+                    </span>
+                  </div>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={markAllAsRead}
+                      style={{ fontSize: '11px', color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                    >
+                      Mark all read
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {notifications.length === 0 ? (
@@ -295,20 +273,40 @@ const Navbar = () => {
                       No announcements yet.
                     </div>
                   ) : (
-                    notifications.map((n) => (
-                      <div key={n._id} style={{ padding: '10px', borderRadius: '10px', background: 'var(--input-bg)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '4px' }}>
-                          <strong style={{ fontSize: '12px', color: 'var(--text-main)', display: 'block' }}>{n.title}</strong>
-                          <span style={{ fontSize: '9px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            {new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                          </span>
+                    notifications.map((n) => {
+                      const readIds = JSON.parse(localStorage.getItem('read_notification_ids') || '[]');
+                      const isUnread = !readIds.includes(n._id);
+                      return (
+                        <div 
+                          key={n._id} 
+                          style={{ 
+                            padding: '10px 12px', 
+                            borderRadius: '10px', 
+                            background: isUnread ? 'color-mix(in srgb, var(--primary) 8%, var(--input-bg))' : 'var(--input-bg)', 
+                            border: '1px solid var(--border-color)',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', marginBottom: '4px' }}>
+                            <strong style={{ fontSize: '13px', color: 'var(--text-main)', display: 'block', wordBreak: 'break-word', flex: 1 }}>{n.title}</strong>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                              {n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : 'Recent'}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '4px 0', lineHeight: '1.4', wordBreak: 'break-word' }}>{n.message}</p>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                            <span style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: 'bold' }}>
+                              📢 By: {n.createdBy || 'Admin'}
+                            </span>
+                            {isUnread && (
+                              <span style={{ fontSize: '9px', background: 'var(--danger)', color: 'white', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                NEW
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '4px 0 0 0', lineHeight: '1.4' }}>{n.message}</p>
-                        <span style={{ fontSize: '9px', color: 'var(--primary)', fontWeight: 'bold', display: 'block', marginTop: '6px' }}>
-                          📢 By: {n.createdBy}
-                        </span>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -318,28 +316,32 @@ const Navbar = () => {
         
         {/* User Card */}
         <div 
-          className="user-profile flex items-center gap-2.5" 
+          className="user-profile" 
           style={{ 
-            padding: '4px 12px 4px 6px',
-            borderRadius: '12px',
+            padding: '3px 8px 3px 4px',
+            borderRadius: '8px',
             border: '1px solid var(--border-color)',
             background: 'var(--input-bg)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            flexShrink: 0
           }}
         >
           <div 
             className="nav-avatar font-bold" 
             style={{ 
-              width: '32px', 
-              height: '32px', 
-              borderRadius: '8px', 
+              width: '28px', 
+              height: '28px', 
+              borderRadius: '6px', 
               background: savedProfileImage ? 'transparent' : gradient, 
               color: '#ffffff', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              fontSize: '12px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
-              overflow: 'hidden'
+              fontSize: '11px',
+              overflow: 'hidden',
+              flexShrink: 0
             }}
           >
             {savedProfileImage ? (
@@ -348,7 +350,7 @@ const Navbar = () => {
               initials
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div className="user-name-text" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
             <span className="font-semibold text-xs" style={{ color: 'var(--text-main)', lineHeight: '1.2' }}>{shortName}</span>
             <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Online</span>
           </div>
@@ -360,9 +362,9 @@ const Navbar = () => {
           onClick={handleLogout} 
           title="Logout"
           style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
+            width: '36px',
+            height: '36px',
+            borderRadius: '8px',
             border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
             background: 'var(--danger-bg)',
             color: 'var(--danger)',
@@ -371,22 +373,14 @@ const Navbar = () => {
             justifyContent: 'center',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--danger)';
-            e.currentTarget.style.color = 'white';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--danger-bg)';
-            e.currentTarget.style.color = 'var(--danger)';
-            e.currentTarget.style.transform = 'scale(1)';
+            flexShrink: 0
           }}
         >
-          <FiLogOut size={18}/>
+          <FiLogOut size={16}/>
         </button>
       </div>
     </header>
+
   );
 };
 

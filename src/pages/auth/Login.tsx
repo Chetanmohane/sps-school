@@ -26,18 +26,40 @@ const Login = () => {
       localStorage.setItem("userName", response.data.name);
       localStorage.setItem("userEmail", response.data.email);
 
-      const userRole = response.data.role;
-      const userEmail = response.data.email || "";
-      const userName = response.data.name || "";
+      const userRole = (response.data.role || "").toLowerCase();
+      const userEmail = (response.data.email || "").toLowerCase();
+      const userName = (response.data.name || "").toLowerCase();
 
-      if (userRole === "teacher" && (userEmail === "classteacher@sps.edu" || userName.toLowerCase().includes("class teacher"))) {
+      // Explicit Class Teacher Redirection
+      if (
+        userRole === "class-teacher" ||
+        userRole === "class_teacher" ||
+        userEmail.includes("classteacher") ||
+        userEmail.includes("chetanmohane5") ||
+        userName.includes("class teacher")
+      ) {
+        localStorage.setItem("role", "class-teacher");
         navigate("/class-teacher");
         return;
       }
 
-      const rolePaths = {
+      // Explicit Subject Teacher Redirection
+      if (
+        userRole === "teacher" ||
+        userRole === "subject-teacher" ||
+        userRole === "subject_teacher" ||
+        userEmail.includes("subjectteacher") ||
+        userEmail.includes("chetanmohane2729")
+      ) {
+        localStorage.setItem("role", "teacher");
+        navigate("/teacher");
+        return;
+      }
+
+      const rolePaths: Record<string, string> = {
         admin: "/admin",
         teacher: "/teacher",
+        "class-teacher": "/class-teacher",
         student: "/student",
         "finance-admin": "/finance-admin",
         "super-admin": "/super-admin",
@@ -47,7 +69,7 @@ const Login = () => {
       };
 
       navigate(rolePaths[userRole] || "/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       setError(err.response?.data?.message || "Invalid Email or Password");
     } finally {
       setLoading(false);
@@ -66,10 +88,11 @@ const Login = () => {
               color: "#ef4444",
               backgroundColor: "#fee2e2",
               padding: "10px",
-              borderRadius: "5px",
+              borderRadius: "8px",
               marginBottom: "15px",
               fontSize: "13px",
               textAlign: "center",
+              fontWeight: "600"
             }}
           >
             {error}

@@ -1,11 +1,17 @@
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL =
-  process.env.REACT_APP_API_URL !== undefined
-    ? process.env.REACT_APP_API_URL
-    : process.env.NODE_ENV === "production"
-    ? window.location.origin
-    : "http://localhost:5001";
+const getSocketUrl = () => {
+  if (process.env.REACT_APP_API_URL !== undefined) {
+    return process.env.REACT_APP_API_URL;
+  }
+  if (process.env.NODE_ENV === "production") {
+    return window.location.origin;
+  }
+  const hostname = window.location.hostname || "localhost";
+  return `http://${hostname}:5000`;
+};
+
+const SOCKET_URL = getSocketUrl();
 
 let socket: Socket | null = null;
 

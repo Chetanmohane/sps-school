@@ -15,15 +15,15 @@ exports.login = async (req, res) => {
     const KNOWN_ACCOUNTS = {
       // User's custom requested logins
       'chetanmohane27@gmail.com': { name: 'Teacher Admin', role: 'academic-admin', pass: 'T123@' },
-      'chetanmohane5@gmail.com': { name: 'Class Teacher Admin', role: 'teacher', pass: 'C123@' },
-      'chetanmohane2729@gmail.com': { name: 'Subject Teacher', role: 'teacher', pass: 'B123@' },
-      'chetanmohane2729@hmail.com': { name: 'Subject Teacher', role: 'teacher', pass: 'B123@' },
+      'chetanmohane5@gmail.com': { name: 'Class Teacher In-Charge', role: 'class-teacher', pass: 'C123@' },
+      'chetanmohane2729@gmail.com': { name: 'Subject Teacher Instructor', role: 'teacher', pass: 'B123@' },
+      'chetanmohane2729@hmail.com': { name: 'Subject Teacher Instructor', role: 'teacher', pass: 'B123@' },
 
       // Defaults
       'teacher1@sps.edu': { name: 'Subject Teacher', role: 'teacher', pass: 'Password@123' },
       'teacher@sps.edu': { name: 'Subject Teacher', role: 'teacher', pass: 'Teacher@123' },
       'subjectteacher@sps.edu': { name: 'Subject Teacher', role: 'teacher', pass: 'Password@123' },
-      'classteacher@sps.edu': { name: 'Class Teacher', role: 'teacher', pass: 'Teacher@123' },
+      'classteacher@sps.edu': { name: 'Class Teacher In-Charge', role: 'class-teacher', pass: 'Teacher@123' },
       'teacheradmin@sps.edu': { name: 'Teacher & Student Admin', role: 'academic-admin', pass: 'TeacherAdmin@123' },
       'admin@sps.edu': { name: 'Super Admin', role: 'super-admin', pass: 'Admin@123' },
       'manager@sps.edu': { name: 'Manager Admin', role: 'manager-admin', pass: 'Manager@123' },

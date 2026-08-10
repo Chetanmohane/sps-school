@@ -11,8 +11,31 @@ const connectDB = require("./config/db");
 dotenv.config();
 const app = express();
 console.log("✅ Event routes loaded...");
+const allowedOrigins = [
+  "https://sps-school-frontend.onrender.com",
+  "https://sps-school.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:5000",
+  "http://localhost:5001",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:5000"
+];
+
 app.use(cors({
-  origin: ["https://sps-school-frontend.onrender.com", "http://localhost:3000"], 
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.includes("localhost") ||
+      origin.includes("127.0.0.1") ||
+      origin.includes("vercel.app") ||
+      origin.includes("onrender.com")
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  }, 
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"]

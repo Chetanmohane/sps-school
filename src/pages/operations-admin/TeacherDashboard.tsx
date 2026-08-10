@@ -314,6 +314,14 @@ const TeacherDashboard = () => {
       color: '#f59e0b',
       gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
     },
+    {
+      label: 'Student Leave Requests',
+      desc: 'Review & approve student leave applications',
+      icon: '✉️',
+      path: '/teacher/application',
+      color: '#ec4899',
+      gradient: 'linear-gradient(135deg, #ec4899, #be185d)',
+    },
   ];
 
   // Use live API schedule; fall back to empty if not loaded yet
@@ -336,30 +344,31 @@ const TeacherDashboard = () => {
         <Navbar />
         <div className="dashboard-container" style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
 
-          {/* ── HERO BANNER WITH ROLE BADGE ── */}
+          {/* ── HERO BANNER WITH DISTINCT SUBJECT TEACHER BRANDING ── */}
           <div style={{
-            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e40af 100%)',
-            borderRadius: '20px',
+            background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%)',
+            borderRadius: '22px',
             padding: '30px 36px',
             color: 'white',
-            marginBottom: '24px',
-            boxShadow: '0 12px 36px rgba(15,23,42,0.25)',
+            marginBottom: '20px',
+            boxShadow: '0 14px 40px rgba(49, 46, 129, 0.35)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             position: 'relative',
             overflow: 'hidden',
+            border: '1px solid rgba(129, 140, 248, 0.35)'
           }}>
-            <div style={{ position: 'absolute', top: '-50px', right: '180px', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
-            <div style={{ position: 'absolute', bottom: '-50px', right: '30px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)', borderRadius: '50%' }} />
+            <div style={{ position: 'absolute', top: '-50px', right: '180px', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(129,140,248,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />
+            <div style={{ position: 'absolute', bottom: '-50px', right: '30px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />
 
             <div style={{ zIndex: 2, display: 'flex', alignItems: 'center', gap: '20px' }}>
               <div style={{
                 width: '64px', height: '64px', borderRadius: '18px',
-                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                background: 'linear-gradient(135deg, #6366f1, #4338ca)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: '800', fontSize: '24px', color: '#fff',
-                boxShadow: '0 8px 20px rgba(37,99,235,0.4)',
+                boxShadow: '0 8px 20px rgba(99,102,241,0.4)',
                 border: '2px solid rgba(255,255,255,0.2)'
               }}>
                 {initials(teacherName)}
@@ -367,13 +376,13 @@ const TeacherDashboard = () => {
 
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#93c5fd' }}>
-                    SPS Faculty Portal
+                  <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#a5b4fc', backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+                    FACULTY INSTRUCTOR PORTAL
                   </span>
                   <span style={{
-                    backgroundColor: 'rgba(139,92,246,0.25)',
-                    border: '1px solid rgba(139,92,246,0.5)',
-                    color: '#c084fc',
+                    backgroundColor: 'rgba(99,102,241,0.3)',
+                    border: '1px solid rgba(165,180,252,0.5)',
+                    color: '#e0e7ff',
                     padding: '4px 12px',
                     borderRadius: '20px',
                     fontSize: '11px',
@@ -382,26 +391,26 @@ const TeacherDashboard = () => {
                     alignItems: 'center',
                     gap: '6px'
                   }}>
-                    <FiBookOpen size={13} /> 📚 SUBJECT TEACHER PORTAL
+                    <FiBookOpen size={13} /> 📖 SUBJECT TEACHER CONTROL CENTER
                   </span>
                 </div>
 
-                <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '900', letterSpacing: '-0.02em' }}>
+                <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '900', letterSpacing: '-0.02em', color: '#ffffff' }}>
                   SUBJECT TEACHER PORTAL — {teacherName}
                 </h1>
-                <p style={{ margin: '6px 0 0', opacity: 0.9, fontSize: '14px', color: '#cbd5e1' }}>
-                  Subject Instructor Control Center • {schedule.length} periods scheduled today across assigned classes
+                <p style={{ margin: '6px 0 0', opacity: 0.95, fontSize: '14px', color: '#c7d2fe' }}>
+                  Manage assigned subject periods, record subject attendance, upload exam marks &amp; grade assignments.
                 </p>
               </div>
             </div>
 
             <div style={{ textAlign: 'right', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
               <div style={{ fontSize: '32px', fontWeight: '800', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', color: '#f8fafc' }}>{timeStr}</div>
-              <div style={{ fontSize: '12px', opacity: 0.75, color: '#cbd5e1' }}>{dateStr}</div>
+              <div style={{ fontSize: '12px', opacity: 0.85, color: '#c7d2fe' }}>{dateStr}</div>
             </div>
           </div>
 
-          {/* ── PORTAL VIEW SWITCHER TABS ── */}
+          {/* ── PORTAL NAVIGATION QUICK TABS ── */}
           <div style={{
             display: 'flex',
             gap: '10px',
@@ -416,19 +425,19 @@ const TeacherDashboard = () => {
                 padding: '10px 20px',
                 borderRadius: '12px',
                 border: 'none',
-                fontWeight: '700',
+                fontWeight: '800',
                 fontSize: '13px',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                backgroundColor: activeTab === 'overview' ? 'var(--primary)' : 'var(--card-bg)',
+                backgroundColor: activeTab === 'overview' ? '#4338ca' : 'var(--card-bg)',
                 color: activeTab === 'overview' ? '#fff' : 'var(--text-muted)',
-                boxShadow: activeTab === 'overview' ? '0 4px 12px rgba(37,99,235,0.25)' : 'none',
+                boxShadow: activeTab === 'overview' ? '0 4px 14px rgba(67,56,202,0.35)' : 'none',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
             >
-              <FiActivity size={15} /> Subject Teacher Overview
+              <FiActivity size={15} /> 📖 Subject Teacher Overview
             </button>
 
             <button
@@ -449,7 +458,28 @@ const TeacherDashboard = () => {
                 gap: '8px'
               }}
             >
-              🏆 Subject Exam Results
+              🏆 Upload Subject Results
+            </button>
+
+            <button
+              onClick={() => navigate('/teacher/attendanceMark')}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '12px',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                fontWeight: '800',
+                fontSize: '13px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                backgroundColor: '#059669',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              ✅ Period Roll Call
             </button>
 
             <button
@@ -470,7 +500,7 @@ const TeacherDashboard = () => {
                 gap: '8px'
               }}
             >
-              📅 Exam Timetable & Duties
+              📅 Exam Duties
             </button>
 
             <button
@@ -478,7 +508,7 @@ const TeacherDashboard = () => {
               style={{
                 padding: '10px 20px',
                 borderRadius: '12px',
-                border: 'none',
+                border: '1px solid var(--border-color)',
                 fontWeight: '700',
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -490,7 +520,7 @@ const TeacherDashboard = () => {
                 gap: '8px'
               }}
             >
-              <FiCalendar size={15} /> My Timetable & Classes
+              <FiCalendar size={15} /> My Timetable &amp; Classes
             </button>
           </div>
 

@@ -86,20 +86,26 @@ const AcademicResultsManagement = () => {
     }
   };
 
+  const cleanClass = (cls: any) => {
+    if (!cls) return '';
+    return cls.toString().replace(/class/i, '').replace(/th|st|nd|rd/i, '').trim();
+  };
+
   // Run filters
   useEffect(() => {
     let result = students;
     if (classFilter !== 'all') {
-      result = result.filter(s => s.class === classFilter);
+      const targetCls = cleanClass(classFilter);
+      result = result.filter(s => cleanClass(s.class) === targetCls);
     }
     if (sectionFilter !== 'all') {
-      result = result.filter(s => s.section === sectionFilter);
+      result = result.filter(s => (s.section || '').toUpperCase() === sectionFilter.toUpperCase());
     }
     if (searchTerm) {
       result = result.filter(s => 
         s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        s.roll.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        s.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (s.roll && s.roll.toLowerCase().includes(searchTerm.toLowerCase())) || 
+        (s.email && s.email.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     setFilteredStudents(result);
@@ -423,85 +429,124 @@ const AcademicResultsManagement = () => {
             boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
           }}>
             
-            {/* Filter controls */}
+            {/* Filter controls & Term Selector */}
             <div style={{ 
               display: 'flex', 
               flexWrap: 'wrap', 
               gap: '15px', 
               alignItems: 'center',
+              justifyContent: 'space-between',
               marginBottom: '24px',
               paddingBottom: '20px',
               borderBottom: '1px solid var(--border-color)'
             }}>
-              
-              <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
-                <FiSearch style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Search by student name, roll number..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 14px 12px 42px',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--input-bg)',
-                    color: 'var(--text-main)',
-                    fontSize: '14px',
-                    outline: 'none',
-                    transition: 'all 0.2s',
-                    boxSizing: 'border-box'
-                  }}
-                  className="focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                />
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignItems: 'center', flex: 1 }}>
+                <div style={{ position: 'relative', minWidth: '240px', flex: 1 }}>
+                  <FiSearch style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
+                  <input 
+                    type="text" 
+                    placeholder="Search by student name, roll number..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px 12px 42px',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '12px',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-main)',
+                      fontSize: '14px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <select 
+                    value={classFilter} 
+                    onChange={(e) => setClassFilter(e.target.value)}
+                    style={{
+                      padding: '12px 18px',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '12px',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-main)',
+                      fontSize: '14px',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      fontWeight: '700'
+                    }}
+                  >
+                    <option value="all">All Classes</option>
+                    {classesList.map(c => <option key={c} value={c}>Class {c}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <select 
+                    value={sectionFilter} 
+                    onChange={(e) => setSectionFilter(e.target.value)}
+                    style={{
+                      padding: '12px 18px',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '12px',
+                      backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-main)',
+                      fontSize: '14px',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      fontWeight: '700'
+                    }}
+                  >
+                    <option value="all">All Sections</option>
+                    <option value="A">Section A</option>
+                    <option value="B">Section B</option>
+                    <option value="C">Section C</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <select 
-                  value={classFilter} 
-                  onChange={(e) => setClassFilter(e.target.value)}
+              {/* Term Selector Toggle */}
+              <div style={{ display: 'flex', gap: '8px', backgroundColor: 'var(--input-bg)', padding: '4px', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTerm('Term-1')}
                   style={{
-                    padding: '12px 18px',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--input-bg)',
-                    color: 'var(--text-main)',
-                    fontSize: '14px',
-                    outline: 'none',
-                    cursor: 'pointer'
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    fontWeight: '800',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    backgroundColor: selectedTerm === 'Term-1' ? '#4f46e5' : 'transparent',
+                    color: selectedTerm === 'Term-1' ? '#ffffff' : 'var(--text-muted)',
+                    transition: 'all 0.2s'
                   }}
                 >
-                  <option value="all">All Classes</option>
-                  {classesList.map(c => <option key={c} value={c}>Class {c}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <select 
-                  value={sectionFilter} 
-                  onChange={(e) => setSectionFilter(e.target.value)}
+                  📝 Term-1 (Mid-Term)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTerm('Term-2')}
                   style={{
-                    padding: '12px 18px',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '12px',
-                    backgroundColor: 'var(--input-bg)',
-                    color: 'var(--text-main)',
-                    fontSize: '14px',
-                    outline: 'none',
-                    cursor: 'pointer'
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    fontWeight: '800',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    backgroundColor: selectedTerm === 'Term-2' ? '#4f46e5' : 'transparent',
+                    color: selectedTerm === 'Term-2' ? '#ffffff' : 'var(--text-muted)',
+                    transition: 'all 0.2s'
                   }}
                 >
-                  <option value="all">All Sections</option>
-                  <option value="A">Section A</option>
-                  <option value="B">Section B</option>
-                  <option value="C">Section C</option>
-                </select>
+                  🏅 Term-2 (Final Exam)
+                </button>
               </div>
-
             </div>
 
-            {/* Students results table */}
+            {/* Students results table showing ALL Subject Marks */}
             {loading ? (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
                 <FiLoader className="animate-spin" style={{ color: '#4f46e5', margin: '0 auto' }} size={40} />
@@ -512,27 +557,47 @@ const AcademicResultsManagement = () => {
                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)' }}>
-                      <th style={{ padding: '16px' }}>Roll No</th>
-                      <th style={{ padding: '16px' }}>Student Name</th>
-                      <th style={{ padding: '16px' }}>Class & Section</th>
-                      <th style={{ padding: '16px' }}>Email Address</th>
-                      <th style={{ padding: '16px' }}>Term-1 (Mid-Term)</th>
-                      <th style={{ padding: '16px' }}>Term-2 (Final Exam)</th>
-                      <th style={{ padding: '16px', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '14px' }}>Roll No</th>
+                      <th style={{ padding: '14px' }}>Student Name</th>
+                      <th style={{ padding: '14px' }}>Class</th>
+                      <th style={{ padding: '14px' }}>Math</th>
+                      <th style={{ padding: '14px' }}>Science</th>
+                      <th style={{ padding: '14px' }}>English</th>
+                      <th style={{ padding: '14px' }}>SST</th>
+                      <th style={{ padding: '14px' }}>CS</th>
+                      <th style={{ padding: '14px' }}>Total Marks</th>
+                      <th style={{ padding: '14px' }}>GPA / Grade</th>
+                      <th style={{ padding: '14px' }}>Status</th>
+                      <th style={{ padding: '14px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredStudents.map((student, idx) => {
                       const studentResults = getOrInitializeStudentResults(student.id);
-                      const t1 = studentResults['Term-1'];
-                      const t2 = studentResults['Term-2'];
+                      const termData = studentResults[selectedTerm] || {};
+                      const subjects = termData.subjects || [];
+
+                      const getSubjectMark = (pat: string) => {
+                        const sub = subjects.find((s: any) => (s.name || '').toLowerCase().includes(pat));
+                        return sub ? Number(sub.marks) || 0 : '–';
+                      };
+
+                      const mathM = getSubjectMark('math');
+                      const sciM = getSubjectMark('science');
+                      const engM = getSubjectMark('english');
+                      const sstM = getSubjectMark('social');
+                      const csM = getSubjectMark('computer');
+
+                      const totalStr = termData.totalMarks || '– / 500';
+                      const gpaStr = termData.overallGpa ? `${termData.overallGpa.split(' ')[0]} (${termData.grade || 'N/A'})` : '–';
+                      const statusVal = termData.status || 'PASSED';
 
                       return (
                         <tr key={student.id} style={{ 
                           borderBottom: '1px solid var(--border-color)',
                           backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(243, 244, 246, 0.15)' 
                         }}>
-                          <td style={{ padding: '16px' }}>
+                          <td style={{ padding: '14px' }}>
                             <span style={{ 
                               backgroundColor: 'rgba(79, 70, 229, 0.08)',
                               color: '#4f46e5',
@@ -542,53 +607,28 @@ const AcademicResultsManagement = () => {
                               fontSize: '13px'
                             }}>{student.roll || 'N/A'}</span>
                           </td>
-                          <td style={{ padding: '16px', fontWeight: '700', color: 'var(--text-main)' }}>{student.name}</td>
-                          <td style={{ padding: '16px', color: 'var(--text-muted)' }}>Class {student.class} - {student.section}</td>
-                          <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '13px' }}>{student.email}</td>
-                          <td style={{ padding: '16px' }}>
-                            {t1 ? (
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                padding: '4px 10px',
-                                borderRadius: '100px',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                backgroundColor: '#ecfdf5',
-                                color: '#047857',
-                                border: '1px solid #d1fae5'
-                              }}>
-                                {t1.grade} Grade ({t1.overallGpa.split(' ')[0]} GPA)
-                              </span>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Not Uploaded</span>
-                            )}
+                          <td style={{ padding: '14px', fontWeight: '700', color: 'var(--text-main)' }}>{student.name}</td>
+                          <td style={{ padding: '14px', color: 'var(--text-muted)', fontWeight: '600' }}>Class {student.class}-{student.section}</td>
+                          <td style={{ padding: '14px' }}><strong style={{ color: '#3b82f6' }}>{mathM}</strong></td>
+                          <td style={{ padding: '14px' }}><strong style={{ color: '#10b981' }}>{sciM}</strong></td>
+                          <td style={{ padding: '14px' }}><strong style={{ color: '#8b5cf6' }}>{engM}</strong></td>
+                          <td style={{ padding: '14px' }}><strong style={{ color: '#f59e0b' }}>{sstM}</strong></td>
+                          <td style={{ padding: '14px' }}><strong style={{ color: '#06b6d4' }}>{csM}</strong></td>
+                          <td style={{ padding: '14px' }}><strong>{totalStr}</strong></td>
+                          <td style={{ padding: '14px' }}>
+                            <span className="badge approved" style={{ fontWeight: '800' }}>{gpaStr}</span>
                           </td>
-                          <td style={{ padding: '16px' }}>
-                            {t2 ? (
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                padding: '4px 10px',
-                                borderRadius: '100px',
-                                fontSize: '12px',
-                                fontWeight: 'bold',
-                                backgroundColor: '#ecfdf5',
-                                color: '#047857',
-                                border: '1px solid #d1fae5'
-                              }}>
-                                {t2.grade} Grade ({t2.overallGpa.split(' ')[0]} GPA)
-                              </span>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Not Uploaded</span>
-                            )}
+                          <td style={{ padding: '14px' }}>
+                            <span className={`badge ${statusVal === 'PASSED' ? 'approved' : 'danger'}`}>
+                              {statusVal}
+                            </span>
                           </td>
-                          <td style={{ padding: '16px', textAlign: 'right' }}>
+                          <td style={{ padding: '14px', textAlign: 'right' }}>
                             <button 
                               onClick={() => handleEditGradesClick(student)}
-                              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all ml-auto active:scale-95"
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all ml-auto active:scale-95 whitespace-nowrap"
                             >
-                              <FiEdit2 size={12} /> Manage Grades
+                              <FiEdit2 size={12} /> Edit Marks
                             </button>
                           </td>
                         </tr>

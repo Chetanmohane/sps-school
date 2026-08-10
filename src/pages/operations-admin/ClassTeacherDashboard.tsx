@@ -25,7 +25,7 @@ const ClassTeacherDashboard = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
 
   const [searchStudent, setSearchStudent] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'attendance' | 'applications' | 'subjectTeachers' | 'announcements'>('roster');
+  const [activeSubTab, setActiveSubTab] = useState<'roster' | 'attendance' | 'applications' | 'results' | 'subjectTeachers' | 'announcements'>('roster');
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [showAnnounceModal, setShowAnnounceModal] = useState(false);
   const [newNotice, setNewNotice] = useState({ title: '', text: '' });
@@ -43,6 +43,22 @@ const ClassTeacherDashboard = () => {
     return days[new Date().getDay()];
   });
   const [timetableLoading, setTimetableLoading] = useState(false);
+
+  // Exam Results state for Class Teacher's assigned class
+  const [resultsExamTerm, setResultsExamTerm] = useState<'Term-1' | 'Term-2'>('Term-1');
+  const [studentResultsMap, setStudentResultsMap] = useState<Record<string, any>>({});
+  const [editingStudentResultModal, setEditingStudentResultModal] = useState<{
+    isOpen: boolean;
+    student: any;
+    marks: {
+      math: number;
+      science: number;
+      english: number;
+      social: number;
+      computer: number;
+    };
+  } | null>(null);
+  const [savingClassResults, setSavingClassResults] = useState(false);
 
   useEffect(() => {
     fetchClassData();
@@ -66,6 +82,28 @@ const ClassTeacherDashboard = () => {
   const triggerMsg = (msg: string) => {
     setStatusMsg(msg);
     setTimeout(() => setStatusMsg(null), 3500);
+  };
+
+  const fetchClassResultsData = async (studentList: any[]) => {
+    try {
+      const resultsMap: Record<string, any> = {};
+      await Promise.all(
+        studentList.map(async (st: any) => {
+          try {
+            const stId = st._id;
+            const res = await API.get(`/api/admin/student-admin/results/${stId}`);
+            if (res.data?.data) {
+              resultsMap[stId] = res.data.data;
+            }
+          } catch (e) {
+            // ignore individual fetch errors
+          }
+        })
+      );
+      setStudentResultsMap(resultsMap);
+    } catch (e) {
+      console.error('Error fetching class results data', e);
+    }
   };
 
   const fetchClassData = async () => {
@@ -109,8 +147,13 @@ const ClassTeacherDashboard = () => {
         setSubjectTeachers([]);
       }
 
-      // Fetch timetable for this class from API
+      // Fetch class timetable
       await fetchClassTimetable(clsData.className, clsData.section);
+
+      // Fetch exam results for students in this class
+      if (loadedStudents.length > 0) {
+        await fetchClassResultsData(loadedStudents);
+      }
 
     } catch (err) {
       console.error('Error loading class teacher data:', err);
@@ -163,6 +206,98 @@ const ClassTeacherDashboard = () => {
       console.error('Error updating application:', err);
       triggerMsg(`Updated status to ${status}.`);
       setApplications(prev => prev.map(a => a._id === id ? { ...a, status } : a));
+    }
+  };
+
+  const handleOpenEditResultsModal = (st: any) => {
+    const studentRes = studentResultsMap[st._id] || {};
+    const termData = studentRes[resultsExamTerm] || {};
+    const subjects = termData.subjects || [];
+
+    const getMark = (namePattern: string, defaultMark = 75) => {
+      const sub = subjects.find((s: any) => (s.name || '').toLowerCase().includes(namePattern));
+      return sub ? Number(sub.marks) || 0 : defaultMark;
+    };
+
+    setEditingStudentResultModal({
+      isOpen: true,
+      student: st,
+      marks: {
+        math: getMark('math', 85),
+        science: getMark('science', 82),
+        english: getMark('english', 88),
+        social: getMark('social', 79),
+        computer: getMark('computer', 92),
+      }
+    });
+  };
+
+  const handleSaveStudentResults = async () => {
+    if (!editingStudentResultModal) return;
+    try {
+      setSavingClassResults(true);
+      const { student, marks } = editingStudentResultModal;
+      const studentId = student._id;
+
+      const getGradeDetails = (m: number) => {
+        if (m >= 95) return { grade: "O", remarks: "Outstanding" };
+        if (m >= 85) return { grade: "A+", remarks: "Excellent" };
+        if (m >= 75) return { grade: "A", remarks: "Very Good" };
+        if (m >= 60) return { grade: "B+", remarks: "Good" };
+        if (m >= 50) return { grade: "B", remarks: "Average" };
+        if (m >= 40) return { grade: "C", remarks: "Pass" };
+        return { grade: "F", remarks: "Needs Improvement" };
+      };
+
+      const termKey = resultsExamTerm;
+      const termName = termKey === 'Term-1' ? "Term-1 Examinations (Mid-Term)" : "Term-2 Examinations (Final Exam)";
+
+      const mathGrade = getGradeDetails(marks.math);
+      const sciGrade = getGradeDetails(marks.science);
+      const engGrade = getGradeDetails(marks.english);
+      const sstGrade = getGradeDetails(marks.social);
+      const csGrade = getGradeDetails(marks.computer);
+
+      const subjectsList = [
+        { name: "Mathematics", marks: marks.math, maxMarks: 100, grade: mathGrade.grade, remarks: mathGrade.remarks },
+        { name: "Science & Tech", marks: marks.science, maxMarks: 100, grade: sciGrade.grade, remarks: sciGrade.remarks },
+        { name: "English Literature", marks: marks.english, maxMarks: 100, grade: engGrade.grade, remarks: engGrade.remarks },
+        { name: "Social Science", marks: marks.social, maxMarks: 100, grade: sstGrade.grade, remarks: sstGrade.remarks },
+        { name: "Computer Applications", marks: marks.computer, maxMarks: 100, grade: csGrade.grade, remarks: csGrade.remarks },
+      ];
+
+      const totalMarksSum = subjectsList.reduce((sum, s) => sum + s.marks, 0);
+      const totalMax = 500;
+      const avgPct = (totalMarksSum / totalMax) * 100;
+      const overallGpa = (avgPct / 10).toFixed(1);
+      const overallGrade = getGradeDetails(avgPct).grade;
+      const passStatus = avgPct >= 40 ? "PASSED" : "FAILED";
+
+      const existingFullRes = studentResultsMap[studentId] || {};
+      const updatedResultsData = {
+        ...existingFullRes,
+        [termKey]: {
+          termName,
+          totalMarks: `${totalMarksSum} / ${totalMax}`,
+          overallGpa: `${overallGpa} / 10`,
+          grade: overallGrade,
+          status: passStatus,
+          subjects: subjectsList
+        }
+      };
+
+      await API.post(`/api/admin/student-admin/results/${studentId}`, {
+        results: updatedResultsData
+      });
+
+      setStudentResultsMap(prev => ({ ...prev, [studentId]: updatedResultsData }));
+      setEditingStudentResultModal(null);
+      triggerMsg(`Exam results for ${student.user?.name || student.name} updated successfully!`);
+    } catch (e: any) {
+      console.error('Failed to save student results', e);
+      triggerMsg('Error saving student exam results.');
+    } finally {
+      setSavingClassResults(false);
     }
   };
 
@@ -322,53 +457,6 @@ const ClassTeacherDashboard = () => {
             </div>
           )}
 
-          {/* Portal Switcher Tabs */}
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            marginBottom: '20px',
-            borderBottom: '1px solid var(--border-color)',
-            paddingBottom: '12px'
-          }}>
-            <button
-              onClick={() => navigate('/class-teacher')}
-              style={{
-                padding: '12px 24px',
-                borderRadius: '12px',
-                border: 'none',
-                fontWeight: '800',
-                fontSize: '14px',
-                cursor: 'pointer',
-                backgroundColor: '#059669',
-                color: '#fff',
-                boxShadow: '0 4px 14px rgba(5,150,105,0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <FiStar size={16} /> ⭐ CLASS TEACHER PORTAL (Class {classInfo?.className || '10'}-{classInfo?.section || 'A'})
-            </button>
-            <button
-              onClick={() => navigate('/teacher')}
-              style={{
-                padding: '12px 24px',
-                borderRadius: '12px',
-                border: '1px solid var(--border-color)',
-                fontWeight: '700',
-                fontSize: '14px',
-                cursor: 'pointer',
-                backgroundColor: 'var(--card-bg)',
-                color: 'var(--text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
-            >
-              <FiBookOpen size={16} /> 📚 Subject Teacher Portal
-            </button>
-          </div>
-
           {/* Header Hero Banner */}
           <div 
             style={{
@@ -452,6 +540,7 @@ const ClassTeacherDashboard = () => {
               { id: 'roster', label: '👥 Student Directory', count: students.length },
               { id: 'attendance', label: '📋 Daily Roll Call Register', count: null },
               { id: 'applications', label: '📩 Leave Request Approvals', count: pendingApps.length },
+              { id: 'results', label: '🏆 Class Student Exam Results', count: null },
               { id: 'subjectTeachers', label: '📚 Class Timetable & Faculty Matrix', count: subjectTeachers.length },
               { id: 'announcements', label: '📢 Class Notices & Board', count: announcements.length },
             ].map(tab => (
@@ -681,58 +770,250 @@ const ClassTeacherDashboard = () => {
           ══════════════════════════════════ */}
           {activeSubTab === 'applications' && (
             <div>
-              <h3 style={{ margin: '0 0 16px', fontSize: '18px', fontWeight: '800' }}>📩 Student Leave &amp; Bonafide Request Approvals</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>📩 Student Leave &amp; Certificate Request Approvals</h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                    Approve or reject leave applications submitted by students of Class {classInfo?.className}-{classInfo?.section}.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate('/teacher/application')}
+                  style={{ padding: '9px 16px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--primary)', color: 'white', fontWeight: '700', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  📄 Open Full Leave Review Page →
+                </button>
+              </div>
+
               {classApplications.length > 0 ? (
                 <div style={{ display: 'grid', gap: '14px' }}>
-                  {classApplications.map((app: any) => (
-                    <div key={app._id} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-                      <div>
-                        {(() => {
-                          const classNameVal = app.student?.className 
-                            ? `${app.student.className}${app.student.section ? `-${app.student.section}` : ''}`
-                            : (app.applyingClass || app.allocatedClass || (classInfo ? `${classInfo.className}-${classInfo.section}` : ''));
-                          return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                              <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>{app.student?.user?.name || app.studentName || 'Student Application'}</strong>
-                              {classNameVal && (
-                                <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', fontWeight: '700', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                                  Class: {classNameVal}
-                                </span>
-                              )}
-                              <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: app.status === 'Approved' ? 'rgba(16,185,129,0.15)' : app.status === 'Rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: app.status === 'Approved' ? '#10b981' : app.status === 'Rejected' ? '#ef4444' : '#d97706', fontWeight: '700' }}>
-                                {app.status || 'Pending'}
-                              </span>
-                            </div>
-                          );
-                        })()}
-                        <p style={{ margin: '0 0 6px', fontSize: '14px', color: 'var(--text-main)', fontWeight: '500' }}>Reason: {app.reason || 'Medical Leave Request'}</p>
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Applied Date: {app.date ? new Date(app.date).toLocaleDateString('en-GB') : '2026-08-01'}</span>
-                      </div>
+                  {classApplications.map((app: any) => {
+                    const st = (app.status || 'Pending').toLowerCase();
+                    const appliedDate = app.appliedDate || app.date || Date.now();
+                    const classNameVal = app.student?.className 
+                      ? `${app.student.className}${app.student.section ? `-${app.student.section}` : ''}`
+                      : (app.applyingClass || app.allocatedClass || (classInfo ? `${classInfo.className}-${classInfo.section}` : ''));
 
-                      {app.status === 'Pending' && (
-                        <div style={{ display: 'flex', gap: '10px' }}>
+                    return (
+                      <div key={app._id} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                        <div style={{ flex: 1, minWidth: '260px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                            <strong style={{ fontSize: '15px', color: 'var(--text-main)' }}>
+                              {app.student?.user?.name || app.studentName || 'Student Application'}
+                            </strong>
+                            {classNameVal && (
+                              <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#2563eb', fontWeight: '700', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                                Class: {classNameVal}
+                              </span>
+                            )}
+                            <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: 'rgba(99,102,241,0.15)', color: '#6366f1', fontWeight: '700' }}>
+                              {app.type || 'Leave'}
+                            </span>
+                            <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '12px', backgroundColor: st === 'approved' ? 'rgba(16,185,129,0.15)' : st === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)', color: st === 'approved' ? '#10b981' : st === 'rejected' ? '#ef4444' : '#d97706', fontWeight: '700' }}>
+                              {app.status || 'Pending'}
+                            </span>
+                          </div>
+
+                          <h4 style={{ margin: '4px 0', fontSize: '14px', fontWeight: '700', color: 'var(--text-main)' }}>
+                            Subject: {app.subject || 'Leave Application'}
+                          </h4>
+
+                          <p style={{ margin: '0 0 6px', fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic', backgroundColor: 'var(--input-bg)', padding: '8px 12px', borderRadius: '8px' }}>
+                            "{app.description || app.reason || 'No detailed reason specified.'}"
+                          </p>
+
+                          {app.startDate && (
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: '#2563eb', marginTop: '6px' }}>
+                              📅 Leave Period: {new Date(app.startDate).toLocaleDateString('en-GB')} {app.endDate ? ` to ${new Date(app.endDate).toLocaleDateString('en-GB')}` : ''}
+                            </div>
+                          )}
+
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                            Filed Date: {new Date(appliedDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <button
                             onClick={() => handleApplicationAction(app._id, 'Approved')}
-                            style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', backgroundColor: '#10b981', color: 'white', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              backgroundColor: st === 'approved' ? '#059669' : '#10b981',
+                              color: 'white',
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 2px 6px rgba(16,185,129,0.3)'
+                            }}
                           >
-                            <FiCheckCircle size={15} /> Approve
+                            <FiCheckCircle size={15} /> {st === 'approved' ? 'Approved ✓' : 'Approve'}
                           </button>
                           <button
                             onClick={() => handleApplicationAction(app._id, 'Rejected')}
-                            style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '8px',
+                              border: '1px solid rgba(239,68,68,0.4)',
+                              backgroundColor: st === 'rejected' ? '#dc2626' : 'rgba(239,68,68,0.1)',
+                              color: st === 'rejected' ? 'white' : '#ef4444',
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
                           >
-                            <FiXCircle size={15} /> Reject
+                            <FiXCircle size={15} /> {st === 'rejected' ? 'Rejected ✗' : 'Reject'}
                           </button>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div style={{ textAlign: 'center', padding: '45px', backgroundColor: 'var(--card-bg)', borderRadius: '14px', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
                   No student leave requests pending review for Class {classInfo?.className}-{classInfo?.section}.
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ══════════════════════════════════
+               SUB-TAB 4: CLASS EXAM RESULTS
+          ══════════════════════════════════ */}
+          {activeSubTab === 'results' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
+                    🏆 Class {classInfo?.className}-{classInfo?.section} Student Exam Results &amp; Report Cards
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                    View &amp; update overall exam marks, subject grades, GPAs and pass/fail statuses for students in your class.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <button
+                    onClick={() => setResultsExamTerm('Term-1')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontWeight: '800',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      backgroundColor: resultsExamTerm === 'Term-1' ? 'var(--primary)' : 'var(--input-bg)',
+                      color: resultsExamTerm === 'Term-1' ? 'white' : 'var(--text-muted)'
+                    }}
+                  >
+                    📝 Term-1 (Mid-Term)
+                  </button>
+                  <button
+                    onClick={() => setResultsExamTerm('Term-2')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontWeight: '800',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      backgroundColor: resultsExamTerm === 'Term-2' ? 'var(--primary)' : 'var(--input-bg)',
+                      color: resultsExamTerm === 'Term-2' ? 'white' : 'var(--text-muted)'
+                    }}
+                  >
+                    🏅 Term-2 (Final Exam)
+                  </button>
+                </div>
+              </div>
+
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Roll No</th>
+                      <th>Student Name</th>
+                      <th>Math</th>
+                      <th>Science</th>
+                      <th>English</th>
+                      <th>SST</th>
+                      <th>CS</th>
+                      <th>Total Marks</th>
+                      <th>GPA / Grade</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.length > 0 ? (
+                      students.map((st: any) => {
+                        const stId = st._id;
+                        const stRes = studentResultsMap[stId] || {};
+                        const termData = stRes[resultsExamTerm] || {};
+                        const subs = termData.subjects || [];
+
+                        const getM = (pat: string) => {
+                          const s = subs.find((sub: any) => (sub.name || '').toLowerCase().includes(pat));
+                          return s ? Number(s.marks) || 0 : '–';
+                        };
+
+                        const totalStr = termData.totalMarks || '– / 500';
+                        const gpaStr = termData.overallGpa ? `${termData.overallGpa} (${termData.grade || 'N/A'})` : '–';
+                        const statusVal = termData.status || 'PENDING';
+
+                        return (
+                          <tr key={stId}>
+                            <td><strong>{st.rollNumber || 'R01'}</strong></td>
+                            <td><strong style={{ color: 'var(--text-main)' }}>{st.user?.name || st.name}</strong></td>
+                            <td><span style={{ fontWeight: '700' }}>{getM('math')}</span></td>
+                            <td><span style={{ fontWeight: '700' }}>{getM('science')}</span></td>
+                            <td><span style={{ fontWeight: '700' }}>{getM('english')}</span></td>
+                            <td><span style={{ fontWeight: '700' }}>{getM('social')}</span></td>
+                            <td><span style={{ fontWeight: '700' }}>{getM('computer')}</span></td>
+                            <td><strong>{totalStr}</strong></td>
+                            <td><span className="badge approved">{gpaStr}</span></td>
+                            <td>
+                              <span className={`badge ${statusVal === 'PASSED' ? 'approved' : statusVal === 'FAILED' ? 'danger' : 'pending'}`}>
+                                {statusVal}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                onClick={() => handleOpenEditResultsModal(st)}
+                                style={{
+                                  padding: '6px 14px',
+                                  borderRadius: '6px',
+                                  border: 'none',
+                                  backgroundColor: 'var(--primary)',
+                                  color: 'white',
+                                  fontWeight: '700',
+                                  fontSize: '11px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                ✏️ Edit Report Card
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={11} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                          No students enrolled in Class {classInfo?.className}-{classInfo?.section}.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
@@ -912,6 +1193,71 @@ const ClassTeacherDashboard = () => {
                   <button type="button" onClick={() => setShowAnnounceModal(false)} style={{ flex: 1, padding: '10px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── Edit Student Results Modal ── */}
+        {editingStudentResultModal && editingStudentResultModal.isOpen && (
+          <div onClick={() => setEditingStudentResultModal(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '16px' }}>
+            <div onClick={e => e.stopPropagation()} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '24px', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
+                    🏆 Edit Class Student Report Card ({resultsExamTerm})
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>
+                    Student: {editingStudentResultModal.student.user?.name || editingStudentResultModal.student.name} (Roll: {editingStudentResultModal.student.rollNumber || 'R01'})
+                  </p>
+                </div>
+                <button onClick={() => setEditingStudentResultModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}><FiX /></button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+                {[
+                  { key: 'math', label: 'Mathematics Marks (out of 100)' },
+                  { key: 'science', label: 'Science & Tech Marks (out of 100)' },
+                  { key: 'english', label: 'English Literature Marks (out of 100)' },
+                  { key: 'social', label: 'Social Science Marks (out of 100)' },
+                  { key: 'computer', label: 'Computer Applications Marks (out of 100)' },
+                ].map(sub => (
+                  <div key={sub.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)' }}>
+                    <label style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-main)' }}>{sub.label}</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={(editingStudentResultModal.marks as any)[sub.key]}
+                      onChange={(e) => {
+                        const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+                        setEditingStudentResultModal(prev => prev ? ({
+                          ...prev,
+                          marks: { ...prev.marks, [sub.key]: val }
+                        }) : null);
+                      }}
+                      style={{ width: '80px', padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: '800', textAlign: 'center', outline: 'none' }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={handleSaveStudentResults}
+                  disabled={savingClassResults}
+                  style={{ flex: 1, padding: '11px', backgroundColor: 'var(--primary)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', opacity: savingClassResults ? 0.6 : 1 }}
+                >
+                  {savingClassResults ? 'Saving Results...' : '💾 Save Class Report Card'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingStudentResultModal(null)}
+                  style={{ flex: 1, padding: '11px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '10px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}

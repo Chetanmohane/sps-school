@@ -32,7 +32,7 @@ const StudentAdminTabs = () => {
         flexWrap: 'wrap',
         gap: '8px',
         position: 'sticky',
-        top: '0',
+        top: '56px',
         zIndex: 10
       }}
     >

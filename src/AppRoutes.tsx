@@ -68,6 +68,8 @@ const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode;
       'finance-admin': "/finance-admin",
       'operations-admin': "/operations-admin",
       'teacher': "/teacher",
+      'subject-teacher': "/teacher",
+      'class-teacher': "/class-teacher",
       'student': "/student",
     };
     return <Navigate to={rolePaths[role.toLowerCase()] || "/login"} replace />;
@@ -86,7 +88,7 @@ const AppRoutes = () => {
         <Route path="/forgot-password" element={<ResetPassword />} />
         <Route path="/update-username" element={<UpdateUsername />} />
         <Route path="/settings" element={
-          <ProtectedRoute allowedRoles={['super-admin', 'manager-admin', 'student-admin', 'academic-admin', 'finance-admin', 'operations-admin', 'teacher', 'student']}>
+          <ProtectedRoute allowedRoles={['super-admin', 'manager-admin', 'student-admin', 'academic-admin', 'finance-admin', 'operations-admin', 'teacher', 'subject-teacher', 'class-teacher', 'student']}>
             <Settings />
           </ProtectedRoute>
         } />
@@ -105,7 +107,7 @@ const AppRoutes = () => {
         } />
 
         <Route path="/academic-admin" element={
-          <ProtectedRoute allowedRoles={['academic-admin', 'teacher-admin', 'student-admin', 'super-admin', 'manager-admin', 'teacher']}>
+          <ProtectedRoute allowedRoles={['academic-admin', 'teacher-admin', 'student-admin', 'super-admin', 'manager-admin', 'teacher', 'class-teacher']}>
             <AcademicAdminDashboard />
           </ProtectedRoute>
         } />
@@ -150,47 +152,47 @@ const AppRoutes = () => {
         } />
       
         <Route path="/teacher" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <TeacherDashboard />
           </ProtectedRoute>
         } />
         <Route path="/class-teacher" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['class-teacher', 'teacher', 'subject-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <ClassTeacherDashboard />
           </ProtectedRoute>
         } />
         <Route path="/teacher/attendanceMark" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <TeacherAttendanceMark />
           </ProtectedRoute>
         } />
         <Route path="/teacher/application" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <TeacherApplicationReview/>
           </ProtectedRoute>
         } />
         <Route path="/teacher/assignments" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <TeacherAssignments />
           </ProtectedRoute>
         } />
         <Route path="/teacher/myclasses" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <TeacherMyClasses />
           </ProtectedRoute>
         } />
         <Route path="/teacher/subjects" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <SubjectsCatalog />
           </ProtectedRoute>
         } />
         <Route path="/teacher/results" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <TeacherResultsManagement />
           </ProtectedRoute>
         } />
         <Route path="/teacher/exam-timetable" element={
-          <ProtectedRoute allowedRoles={['teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
+          <ProtectedRoute allowedRoles={['teacher', 'subject-teacher', 'class-teacher', 'super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'operations-admin']}>
             <TeacherExamTimetable />
           </ProtectedRoute>
         } />

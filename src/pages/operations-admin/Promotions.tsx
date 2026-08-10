@@ -17,6 +17,7 @@ const Promotions = () => {
   const [sections] = useState(["A", "B", "C", "D"]);
   const [studentsList, setStudentsList] = useState([]);
   const [selectedStudents, setSelectedStudents] = useState([]);
+  const [showPromoteConfirmModal, setShowPromoteConfirmModal] = useState(false);
 
   useEffect(() => {
     fetchClassNames(); // Fetch available classes on component mount
@@ -112,9 +113,11 @@ const Promotions = () => {
       return;
     }
 
-    if (!window.confirm(`Are you sure you want to promote ${selectedStudents.length} selected students? This action cannot be undone.`)) {
-      return;
-    }
+    setShowPromoteConfirmModal(true);
+  };
+
+  const executeBulkPromotion = async () => {
+    setShowPromoteConfirmModal(false);
 
     try {
       setLoading(true);
@@ -511,6 +514,56 @@ const Promotions = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showPromoteConfirmModal && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowPromoteConfirmModal(false)} 
+          style={{ 
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(4px)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+            zIndex: 9999, padding: '16px' 
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', 
+              borderRadius: '20px', padding: '24px', width: '400px', maxWidth: '95%', 
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)' 
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div style={{ background: 'var(--primary-bg)', padding: '10px', borderRadius: '12px', color: 'var(--primary)', display: 'flex' }}>
+                <span style={{ fontSize: '22px' }}>🚀</span>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>Confirm Student Promotion</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Action cannot be undone</p>
+              </div>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+              Are you sure you want to promote <strong>{selectedStudents.length}</strong> selected students from Class {bulkPromotionData.currentClass} ({bulkPromotionData.currentSection}) to Class {bulkPromotionData.newClass} ({bulkPromotionData.newSection})?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setShowPromoteConfirmModal(false)}
+                style={{ padding: '9px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeBulkPromotion}
+                style={{ padding: '9px 18px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 900, fontSize: '13px', cursor: 'pointer' }}
+              >
+                Confirm & Promote
+              </button>
+            </div>
           </div>
         </div>
       )}

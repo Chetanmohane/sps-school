@@ -25,8 +25,8 @@ const TeacherResultsManagement = () => {
   const [selectedClass, setSelectedClass] = useState('10');
   const [selectedSection, setSelectedSection] = useState('A');
   const [examType, setExamType] = useState('Mid-Term Examination 2026');
-  const [subjectName] = useState('Mathematics (Pure & Applied Mathematics)');
-  const [subjectCode] = useState('MATH-10A');
+  const [subjectName, setSubjectName] = useState('Mathematics');
+  const [subjectCode, setSubjectCode] = useState('MATH-10A');
   const [studentSearch, setStudentSearch] = useState('');
   
   const [students, setStudents] = useState<StudentResultItem[]>([]);
@@ -152,7 +152,7 @@ const TeacherResultsManagement = () => {
 
   useEffect(() => {
     fetchClassStudents();
-  }, [selectedClass, selectedSection]);
+  }, [selectedClass, selectedSection, subjectName, examType]);
 
   const handleMarksChange = (studentId: string, val: string) => {
     const score = val === '' ? '' : Math.min(100, Math.max(0, Number(val)));
@@ -397,6 +397,31 @@ const TeacherResultsManagement = () => {
               >
                 <option value="A">Section A</option>
                 <option value="B">Section B</option>
+              </select>
+            </div>
+
+            <div className="w-[220px]">
+              <label className="block text-xs font-black text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Select Subject *</label>
+              <select
+                value={subjectName}
+                onChange={e => {
+                  const val = e.target.value;
+                  setSubjectName(val);
+                  if (val.includes('Math')) setSubjectCode(`MATH-${selectedClass}${selectedSection}`);
+                  else if (val.includes('Science')) setSubjectCode(`SCI-${selectedClass}${selectedSection}`);
+                  else if (val.includes('English')) setSubjectCode(`ENG-${selectedClass}${selectedSection}`);
+                  else if (val.includes('Social')) setSubjectCode(`SST-${selectedClass}${selectedSection}`);
+                  else if (val.includes('Computer')) setSubjectCode(`CS-${selectedClass}${selectedSection}`);
+                  else setSubjectCode(`SUB-${selectedClass}${selectedSection}`);
+                }}
+                className="w-full px-3.5 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                <option value="Mathematics">Mathematics</option>
+                <option value="Science & Tech">Science & Tech</option>
+                <option value="English Literature">English Literature</option>
+                <option value="Social Science">Social Science</option>
+                <option value="Computer Applications">Computer Applications</option>
+                <option value="Hindi Language">Hindi Language</option>
               </select>
             </div>
 

@@ -61,7 +61,7 @@ const AcademicTabs: React.FC = () => {
       className="academic-tabs-wrapper"
       style={{
         position: 'sticky',
-        top: '0',
+        top: '56px',
         zIndex: 25,
         marginBottom: '24px',
         backgroundColor: 'var(--card-bg)',

@@ -28,6 +28,13 @@ function App() {
       const isSuccess = /success|succeed|added|created|saved|updated|paid|approved|enroll/i.test(message);
       window.showToast(message, isSuccess ? 'success' : 'info');
     };
+
+    // Override native window.confirm to eliminate native browser popups completely
+    window.confirm = (message: string) => {
+      console.warn("Native window.confirm intercepted:", message);
+      window.showToast(message, 'info');
+      return true;
+    };
   }, []);
 
   return (

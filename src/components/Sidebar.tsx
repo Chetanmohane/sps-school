@@ -147,15 +147,17 @@ const Sidebar = () => {
       { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
+    'class-teacher': [
+      { path: '/class-teacher', name: '⭐ Class Teacher Portal', icon: <FiHome /> },
+      { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
+      { path: '/settings', name: 'Settings', icon: <FiSettings /> },
+    ],
     'teacher': [
-      { path: '/teacher', name: 'Subject Teacher Portal', icon: <FiHome /> },
+      { path: '/teacher', name: '📖 Subject Teacher Portal', icon: <FiHome /> },
       { path: '/teacher/myclasses', name: 'My Classes & Timetable', icon: <FiUsers /> },
-      { path: '/teacher/timetable', name: '🗓️ My Class Timetable', icon: <FiCalendar /> },
       { path: '/teacher/attendanceMark', name: 'Subject Period Attendance', icon: <FiCheckSquare /> },
-      { path: '/teacher/results', name: 'Subject Exam Results', icon: <FiAward /> },
-      { path: '/teacher/exam-timetable', name: 'Exam Duty', icon: <FiCalendar /> },
-      { path: '/exams', name: '📅 Manage Exams', icon: <FiCalendar /> },
-      { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
+      { path: '/teacher/results', name: 'Subject Exam Results Upload', icon: <FiAward /> },
+      { path: '/teacher/exam-timetable', name: 'Exam Duty & Invigilation', icon: <FiCalendar /> },
       { path: '/teacher/assignments', name: 'Assignments & Homework', icon: <FiEdit3 /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
@@ -237,7 +239,7 @@ const Sidebar = () => {
       'teacher-admin':   'TEACHER & STUDENT ADMIN PORTAL',
       'finance-admin':   'FINANCE ADMIN PORTAL',
       'operations-admin':'OPERATIONS ADMIN PORTAL',
-      'teacher':         'TEACHER PORTALS',
+      'teacher':         'SUBJECT TEACHER PORTAL',
       'student':         'STUDENT / PARENT PORTAL',
     };
     return titles[userRole] || 'MAIN MENU';
@@ -374,7 +376,11 @@ const Sidebar = () => {
         })}
 
         {/* ── ALL OTHER ROLES (Including Manager, Teacher Admin, Student Admin, Admission Desk, Teacher, Student) ── */}
-        {!isSuperAdmin && (sidebarMenus[userRole] || sidebarMenus['teacher']).map((link, index) => (
+        {!isSuperAdmin && (
+          location.pathname.startsWith('/class-teacher')
+            ? sidebarMenus['class-teacher']
+            : (sidebarMenus[userRole] || sidebarMenus['teacher'])
+        ).map((link, index) => (
           <Link
             key={index}
             to={link.path}

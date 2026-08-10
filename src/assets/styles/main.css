@@ -1366,18 +1366,25 @@ html.dark-mode .theme-toggle-btn:hover {
   /* Navbar adjustments */
   .navbar {
     padding: 0 12px !important;
+    height: 58px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 900 !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100vw !important;
   }
   .mobile-menu-btn {
     display: flex !important;
   }
-  .hide-on-mobile {
+  .hide-on-mobile, .nav-role-badge, .hide-on-mobile-sm, .user-name-text {
     display: none !important;
   }
   .nav-left-section {
-    gap: 8px !important;
+    gap: 6px !important;
   }
   .nav-actions {
-    gap: 10px !important;
+    gap: 6px !important;
   }
 
   /* Dashboard and Cards */
@@ -1505,3 +1512,96 @@ html.dark-mode .theme-toggle-btn:hover {
     z-index: 999 !important;
   }
 }
+
+/* ===== NOTIFICATION DROPDOWN & NAVBAR MOBILE RESPONSIVE ===== */
+.notification-dropdown-container {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 340px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  z-index: 1000;
+  padding: 16px;
+  max-height: 420px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    padding: 0 10px !important;
+    height: 60px !important;
+  }
+  .nav-welcome-text {
+    font-size: 13px !important;
+  }
+  .nav-role-badge {
+    display: none !important;
+  }
+  .nav-actions {
+    gap: 6px !important;
+  }
+  .hide-on-mobile-sm {
+    display: none !important;
+  }
+  .user-name-text {
+    display: none !important;
+  }
+  .notification-dropdown-container {
+    position: fixed !important;
+    top: 65px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: 75vh !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+    z-index: 9999 !important;
+  }
+}
+
+/* ===== EXAM TIMETABLE & SUBJECT ROW RESPONSIVE ===== */
+.subject-row-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 40px;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+  padding: 14px;
+  background-color: var(--input-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.exam-filter-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 992px) {
+  .subject-row-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .subject-row-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .exam-filter-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+  .exam-filter-row > div,
+  .exam-filter-row > button {
+    width: 100% !important;
+  }
+}
+
+

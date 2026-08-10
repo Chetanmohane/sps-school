@@ -72,10 +72,10 @@ const ExamTimetableTab: React.FC = () => {
   };
 
   const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`Delete exam "${title}"?`)) return;
     try {
       await API.delete(`/api/exams/${id}`);
       setStatusMsg(`🗑️ Exam "${title}" deleted.`); setStatusType('success');
+      if (window.showToast) window.showToast(`Exam "${title}" deleted successfully`, 'success');
       fetchExams();
     } catch { setStatusMsg('Failed to delete exam.'); setStatusType('error'); }
   };
@@ -351,7 +351,6 @@ const SuperAdminDashboard = () => {
   };
 
   const deleteAnnouncement = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this notice?")) return;
     try {
       await API.delete(`/api/notifications/${id}`);
       fetchAnnouncements();
@@ -359,7 +358,9 @@ const SuperAdminDashboard = () => {
         window.showToast("Notice deleted successfully!", "info");
       }
     } catch (err: any) {
-      window.alert("Failed to delete notice: " + (err.response?.data?.message || err.message));
+      if (window.showToast) {
+        window.showToast("Failed to delete notice: " + (err.response?.data?.message || err.message), "error");
+      }
     }
   };
 
@@ -1164,11 +1165,11 @@ const SuperAdminDashboard = () => {
       trigger(errorMsg, 'danger');
     }
   };
-  const deleteAdmin = async (id) => {
-    if(!window.confirm('Remove this admin?')) return;
+  const deleteAdmin = async (id: string) => {
     try {
       await API.delete(`/api/super-admin/delete-admin/${id}`);
       trigger('Admin removed.');
+      if (window.showToast) window.showToast('Admin account removed', 'info');
       fetchAdmins();
     } catch (err) {
       console.error(err);

@@ -69,6 +69,9 @@ const Exams = () => {
   const [endDateFilter, setEndDateFilter] = useState('');
   const [filterClass, setFilterClass] = useState('');
 
+  // Delete confirm modal
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const fetchTeachers = async () => {
     try {
       const res = await API.get('/api/academic-admin/teachers');
@@ -155,14 +158,8 @@ const Exams = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this exam?')) return;
-    try {
-      await API.delete(`/api/exams/${id}`);
-      fetchExams();
-    } catch (error) {
-      console.error('Error deleting exam:', error);
-    }
+  const handleDelete = (id: string) => {
+    setDeleteConfirmId(id);
   };
 
   const filteredExams = exams.filter((e) => {
@@ -285,17 +282,7 @@ const Exams = () => {
                 <label style={{ ...labelStyle, marginBottom: '10px' }}>Subjects & Exam Dates *</label>
 
                 {subjectRows.map((row, idx) => (
-                  <div key={idx} style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1.5fr 1fr 1fr 1fr 1fr 1fr 1fr 40px',
-                    gap: '10px',
-                    alignItems: 'end',
-                    marginBottom: '10px',
-                    padding: '14px',
-                    backgroundColor: 'var(--input-bg)',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
-                  }}>
+                  <div key={idx} className="subject-row-grid">
                     {/* Subject */}
                     <div>
                       <label style={labelStyle}>Subject *</label>
@@ -404,11 +391,11 @@ const Exams = () => {
             <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <h3 style={{ margin: 0, fontWeight: 900, fontSize: '15px' }}>📋 Scheduled Exam Timetable</h3>
 
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+              <div className="exam-filter-row">
                 {/* Filter by Class */}
                 <div>
                   <label style={labelStyle}>Filter by Class</label>
-                  <select value={filterClass} onChange={e => setFilterClass(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: '120px' }}>
+                  <select value={filterClass} onChange={e => setFilterClass(e.target.value)} style={{ ...inputStyle, width: '100%', minWidth: '120px' }}>
                     <option value="">All Classes</option>
                     {CLASS_LIST.map(c => <option key={c} value={c}>Class {c}</option>)}
                   </select>
@@ -416,15 +403,15 @@ const Exams = () => {
                 {/* Date range */}
                 <div>
                   <label style={labelStyle}>From Date</label>
-                  <input type="date" value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} style={{ ...inputStyle, width: 'auto' }} />
+                  <input type="date" value={startDateFilter} onChange={e => setStartDateFilter(e.target.value)} style={{ ...inputStyle, width: '100%' }} />
                 </div>
                 <div>
                   <label style={labelStyle}>To Date</label>
-                  <input type="date" value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} style={{ ...inputStyle, width: 'auto' }} />
+                  <input type="date" value={endDateFilter} onChange={e => setEndDateFilter(e.target.value)} style={{ ...inputStyle, width: '100%' }} />
                 </div>
                 <button
                   onClick={downloadCSV}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: '#10b981', color: '#fff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 18px', borderRadius: '10px', border: 'none', backgroundColor: '#10b981', color: '#fff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', height: '36px' }}
                 >
                   <FiDownload size={14} /> Export CSV
                 </button>
@@ -434,8 +421,8 @@ const Exams = () => {
             {loading ? (
               <div style={{ textAlign: 'center', padding: '40px' }}><FiLoader className="spin" size={24} /></div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="roster-table" style={{ width: '100%', minWidth: '900px' }}>
+              <div className="table-container" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+                <table className="roster-table data-table" style={{ width: '100%', minWidth: '850px' }}>
                   <thead>
                     <tr>
                       <th>Exam Title</th>
@@ -516,6 +503,75 @@ const Exams = () => {
                   alert('Error updating exam duty');
                 }
               }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#6366f1', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmId && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setDeleteConfirmId(null)} 
+          style={{ 
+            position: 'fixed', 
+            top: 0, left: 0, right: 0, bottom: 0, 
+            backgroundColor: 'rgba(0, 0, 0, 0.65)', 
+            backdropFilter: 'blur(4px)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            zIndex: 9999,
+            padding: '16px'
+          }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              backgroundColor: 'var(--card-bg)', 
+              border: '1px solid var(--border-color)', 
+              borderRadius: '20px', 
+              padding: '24px', 
+              width: '380px', 
+              maxWidth: '95%',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div style={{ background: 'var(--danger-bg)', padding: '10px', borderRadius: '12px', color: 'var(--danger)', display: 'flex' }}>
+                <FiTrash2 size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>Delete Exam Entry</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>Action cannot be undone</p>
+              </div>
+            </div>
+            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+              Are you sure you want to remove this scheduled exam entry from the timetable?
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                style={{ padding: '9px 18px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--input-bg)', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  const id = deleteConfirmId;
+                  setDeleteConfirmId(null);
+                  try {
+                    await API.delete(`/api/exams/${id}`);
+                    fetchExams();
+                    if ((window as any).showToast) (window as any).showToast("Exam entry deleted successfully", "success");
+                  } catch (err: any) {
+                    if ((window as any).showToast) (window as any).showToast("Failed to delete exam entry", "error");
+                  }
+                }}
+                style={{ padding: '9px 18px', borderRadius: '10px', border: 'none', background: 'var(--danger)', color: 'white', fontWeight: 900, fontSize: '13px', cursor: 'pointer' }}
+              >
+                Delete Entry
+              </button>
             </div>
           </div>
         </div>
