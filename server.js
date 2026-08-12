@@ -60,6 +60,7 @@ app.use("/api/admin", require("./routes/adminRoutes"));                //for stu
 app.use("/api/academic-admin", require("./routes/academicAdminRoutes"));
 app.use("/api/exams", require("./routes/examRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/timetable", require("./routes/timetableRoutes"));
 
 // Serve React static files
 app.use(express.static(path.join(__dirname, "build")));
