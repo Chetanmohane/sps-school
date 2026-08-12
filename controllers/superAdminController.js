@@ -50,6 +50,7 @@ exports.createSpecializedAdmin = async (req, res) => {
       name,
       email: cleanEmail,
       password: hashedPassword,
+      visiblePassword: password,
       phone: formattedPhone,
       role,
       createdBy: req.body.createdBy || "Super Admin",
@@ -57,7 +58,7 @@ exports.createSpecializedAdmin = async (req, res) => {
     });
 
     await newAdmin.save();
-    notifyChange("USER_CHANGED", { action: "create", role, user: { _id: newAdmin._id, name, email: cleanEmail, phone: formattedPhone, role, createdBy: newAdmin.createdBy, remarks: newAdmin.remarks } });
+    notifyChange("USER_CHANGED", { action: "create", role, user: { _id: newAdmin._id, name, email: cleanEmail, phone: formattedPhone, role, visiblePassword: password, createdBy: newAdmin.createdBy, remarks: newAdmin.remarks } });
     res.status(201).json({ message: `${role} created successfully`, user: newAdmin });
   } catch (error) {
     console.error("Error creating admin:", error);
@@ -95,6 +96,7 @@ exports.updateAdmin = async (req, res) => {
     if (role) admin.role = role;
     if (password && password.trim().length >= 6) {
       admin.password = await bcrypt.hash(password, 10);
+      admin.visiblePassword = password;
     }
     if (req.body.updatedBy) admin.updatedBy = req.body.updatedBy;
     if (req.body.remarks !== undefined) admin.remarks = req.body.remarks;
@@ -107,10 +109,47 @@ exports.updateAdmin = async (req, res) => {
   }
 };
 
+// Update password for ANY user (Student, Teacher, Admin) by Super Admin
+exports.updateUserPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.trim().length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long." });
+    }
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.password = await bcrypt.hash(password, 10);
+    user.visiblePassword = password;
+    user.updatedBy = req.user?.name ? `${req.user.name} (${req.user.role || 'Super Admin'})` : "Super Admin";
+    await user.save();
+
+    notifyChange("USER_CHANGED", { action: "update-password", userId: user._id, role: user.role });
+    res.status(200).json({
+      message: `Password for ${user.name} (${user.role}) updated successfully!`,
+      data: {
+        userId: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        visiblePassword: user.visiblePassword
+      }
+    });
+  } catch (error) {
+    console.error("Error updating user password:", error);
+    res.status(500).json({ message: "Error updating user password", error: error.message });
+  }
+};
+
 exports.getAuditLogs = async (req, res) => {
   try {
     const logs = await User.find()
-      .select('name email phone role createdBy remarks createdAt')
+      .select('name email phone role visiblePassword createdBy remarks createdAt')
       .sort({ createdAt: -1 });
     res.status(200).json(logs);
   } catch (error) {

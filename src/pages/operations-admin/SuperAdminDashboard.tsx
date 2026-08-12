@@ -527,6 +527,66 @@ const SuperAdminDashboard = () => {
 
   const trigger = (text, type='success') => { setStatusMsg({ text, type }); setTimeout(() => setStatusMsg(null), 4000); };
 
+  // ── PASSWORD VISIBILITY & UPDATE MODAL STATES ──
+  const [visiblePasswordIds, setVisiblePasswordIds] = useState<{ [key: string]: boolean }>({});
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswordIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const [passwordModal, setPasswordModal] = useState<{
+    open: boolean;
+    userId: string;
+    userName: string;
+    userRole: string;
+    currentPassword?: string;
+  }>({ open: false, userId: '', userName: '', userRole: '' });
+
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [modalShowPassword, setModalShowPassword] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
+  const openChangePasswordModal = (user: { userId: string; name: string; role?: string; visiblePassword?: string }) => {
+    setPasswordModal({
+      open: true,
+      userId: user.userId,
+      userName: user.name,
+      userRole: user.role || 'User',
+      currentPassword: user.visiblePassword || ''
+    });
+    setNewPasswordInput(user.visiblePassword || '');
+    setModalShowPassword(false);
+  };
+
+  const handleSaveUserPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPasswordInput || newPasswordInput.trim().length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
+    }
+    try {
+      setUpdatingPassword(true);
+      const res = await API.put(`/api/super-admin/user/${passwordModal.userId}/password`, {
+        password: newPasswordInput.trim()
+      });
+      const msg = res.data?.message || `Password for ${passwordModal.userName} updated successfully!`;
+      if (window.showToast) {
+        window.showToast(msg, 'success');
+      } else {
+        trigger(msg, 'success');
+      }
+      setPasswordModal({ open: false, userId: '', userName: '', userRole: '' });
+      setNewPasswordInput('');
+      fetchStudents();
+      fetchAcademicData();
+      fetchAdmins();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update password.';
+      trigger('Error updating password: ' + errorMsg, 'danger');
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
   // Fetch Attendance Records & Students from MongoDB
   const fetchStudents = async () => {
     try {
@@ -535,9 +595,11 @@ const SuperAdminDashboard = () => {
       const mappedStudents = dbStudents.map((s: any) => ({
         id: s._id,
         _id: s._id,
+        userId: s.user?._id || s.user,
         name: s.user?.name || 'Unknown',
         email: s.user?.email || '',
         phone: s.user?.phone || '',
+        visiblePassword: s.user?.visiblePassword || '',
         class: s.className || '',
         section: s.section || '',
         roll: s.rollNumber || '',
@@ -602,10 +664,12 @@ const SuperAdminDashboard = () => {
       const mappedAdmins = allAdmins.map((a: any) => ({
         id: a._id,
         _id: a._id,
+        userId: a._id,
         name: a.name || 'Unknown',
         email: a.email || '',
         phone: a.phone || '',
         role: a.role || '',
+        visiblePassword: a.visiblePassword || '',
         created: a.createdAt ? a.createdAt.slice(0, 10) : '',
         status: 'Active',
         createdBy: a.createdBy || 'Super Admin',
@@ -670,12 +734,19 @@ const SuperAdminDashboard = () => {
         API.get('/api/academic-admin/teachers'),
         API.get('/api/academic-admin/classes')
       ]);
-      setTeachers(teachersRes.data.data || []);
+      const rawTeachers = teachersRes.data.data || [];
+      const mappedTeachers = rawTeachers.map((t: any) => ({
+        ...t,
+        userId: t.user?._id || t.user,
+        visiblePassword: t.user?.visiblePassword || ''
+      }));
+      setTeachers(mappedTeachers);
       setClasses(classesRes.data.data || []);
     } catch (err) {
       console.error("Error fetching academic data:", err);
     }
   };
+
 
   useEffect(() => {
     fetchStudents();
@@ -1503,6 +1574,7 @@ const SuperAdminDashboard = () => {
                     <th>Section</th>
                     <th>Email</th>
                     <th>Parent Contact</th>
+                    <th>Password</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -1518,36 +1590,83 @@ const SuperAdminDashboard = () => {
                         <td style={{ fontSize: '13px' }}>{s.email}</td>
                         <td style={{ fontSize: '13px' }}>{s.parentPhone || s.phone || '+919876543210'}</td>
                         <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{
+                              fontFamily: 'monospace',
+                              fontWeight: '700',
+                              fontSize: '12px',
+                              backgroundColor: 'var(--input-bg)',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              border: '1px solid var(--border-color)',
+                              minWidth: '85px',
+                              textAlign: 'center',
+                              color: visiblePasswordIds[s.userId || s.id] ? '#8b5cf6' : 'var(--text-muted)'
+                            }}>
+                              {visiblePasswordIds[s.userId || s.id] ? (s.visiblePassword || 'Student@123') : '••••••••'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility(s.userId || s.id)}
+                              title={visiblePasswordIds[s.userId || s.id] ? "Hide Password" : "Show Password"}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px 4px', display: 'flex', alignItems: 'center' }}
+                            >
+                              {visiblePasswordIds[s.userId || s.id] ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                            </button>
+                          </div>
+                        </td>
+                        <td>
                           <span className={`badge ${s.status === 'Active' ? 'approved' : 'pending'}`}>
                             {s.status || 'Active'}
                           </span>
                         </td>
                         <td>
-                          <button
-                            onClick={() => handleViewStudentDetails(s)}
-                            style={{
-                              padding: '5px 12px',
-                              backgroundColor: '#3b82f6',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              fontWeight: '700',
-                              fontSize: '12px'
-                            }}
-                          >
-                            👁️ View Details
-                          </button>
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={() => handleViewStudentDetails(s)}
+                              style={{
+                                padding: '5px 10px',
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: '700',
+                                fontSize: '12px'
+                              }}
+                            >
+                              👁️ View
+                            </button>
+                            <button
+                              onClick={() => openChangePasswordModal({ userId: s.userId || s._id, name: s.name, role: 'Student', visiblePassword: s.visiblePassword })}
+                              style={{
+                                padding: '5px 10px',
+                                backgroundColor: '#8b5cf6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: '700',
+                                fontSize: '12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              🔑 Password
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No student records found.</td>
+                      <td colSpan={9} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No student records found.</td>
                     </tr>
                   )}
                 </tbody>
               </table>
+
             </div>
           </div>
         )}
@@ -1707,21 +1826,49 @@ const SuperAdminDashboard = () => {
                           <th>Email / Contact</th>
                           <th>Specialization</th>
                           <th>Department</th>
+                          <th>Password</th>
                           <th>Experience</th>
                           <th>Class Role</th>
+                          <th>Action</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredTeachers.length > 0 ? (
                           filteredTeachers.map((t: any) => (
                             <tr key={t._id}>
-                              <td><strong style={{ color: 'var(--text-main)' }}>{t.user?.name}</strong></td>
+                              <td><strong style={{ color: 'var(--text-main)' }}>{t.user?.name || t.name}</strong></td>
                               <td>
-                                <div style={{ fontSize: '13px' }}>{t.user?.email}</div>
-                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.user?.phone || 'N/A'}</div>
+                                <div style={{ fontSize: '13px' }}>{t.user?.email || t.email}</div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.user?.phone || t.phone || 'N/A'}</div>
                               </td>
                               <td><span style={{ padding: '3px 8px', borderRadius: '6px', backgroundColor: 'rgba(59,130,246,0.1)', color: '#3b82f6', fontWeight: '600', fontSize: '12px' }}>{t.specialization || 'General'}</span></td>
                               <td>{t.department || 'Science'}</td>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{
+                                    fontFamily: 'monospace',
+                                    fontWeight: '700',
+                                    fontSize: '12px',
+                                    backgroundColor: 'var(--input-bg)',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid var(--border-color)',
+                                    minWidth: '85px',
+                                    textAlign: 'center',
+                                    color: visiblePasswordIds[t.userId || t._id] ? '#8b5cf6' : 'var(--text-muted)'
+                                  }}>
+                                    {visiblePasswordIds[t.userId || t._id] ? (t.visiblePassword || 'Teacher@123') : '••••••••'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => togglePasswordVisibility(t.userId || t._id)}
+                                    title={visiblePasswordIds[t.userId || t._id] ? "Hide Password" : "Show Password"}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px 4px', display: 'flex', alignItems: 'center' }}
+                                  >
+                                    {visiblePasswordIds[t.userId || t._id] ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                                  </button>
+                                </div>
+                              </td>
                               <td><strong>{t.experience || 0} yrs</strong></td>
                               <td>
                                 {t.isClassTeacher ? (
@@ -1734,14 +1881,35 @@ const SuperAdminDashboard = () => {
                                   </span>
                                 )}
                               </td>
+                              <td>
+                                <button
+                                  onClick={() => openChangePasswordModal({ userId: t.userId || t.user?._id || t._id, name: t.user?.name || t.name, role: 'Teacher', visiblePassword: t.visiblePassword })}
+                                  style={{
+                                    padding: '5px 10px',
+                                    backgroundColor: '#8b5cf6',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontWeight: '700',
+                                    fontSize: '12px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  🔑 Password
+                                </button>
+                              </td>
                             </tr>
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No teacher records found.</td>
+                            <td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No teacher records found.</td>
                           </tr>
                         )}
                       </tbody>
+
                     </table>
                   </div>
                 </div>
@@ -2041,8 +2209,10 @@ const SuperAdminDashboard = () => {
                       <th>Email</th>
                       <th>Phone</th>
                       <th>Role</th>
+                      <th>Password</th>
                       <th>Created Date</th>
                       <th>Status</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2057,17 +2227,64 @@ const SuperAdminDashboard = () => {
                               {a.role}
                             </span>
                           </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{
+                                fontFamily: 'monospace',
+                                fontWeight: '700',
+                                fontSize: '12px',
+                                backgroundColor: 'var(--input-bg)',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                border: '1px solid var(--border-color)',
+                                minWidth: '85px',
+                                textAlign: 'center',
+                                color: visiblePasswordIds[a.userId || a._id] ? '#8b5cf6' : 'var(--text-muted)'
+                              }}>
+                                {visiblePasswordIds[a.userId || a._id] ? (a.visiblePassword || 'Admin@123') : '••••••••'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => togglePasswordVisibility(a.userId || a._id)}
+                                title={visiblePasswordIds[a.userId || a._id] ? "Hide Password" : "Show Password"}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px 4px', display: 'flex', alignItems: 'center' }}
+                              >
+                                {visiblePasswordIds[a.userId || a._id] ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                              </button>
+                            </div>
+                          </td>
                           <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{a.created || '2026-08-01'}</td>
                           <td><span className="badge approved">Active</span></td>
+                          <td>
+                            <button
+                              onClick={() => openChangePasswordModal({ userId: a.userId || a._id, name: a.name, role: a.role, visiblePassword: a.visiblePassword })}
+                              style={{
+                                padding: '5px 10px',
+                                backgroundColor: '#8b5cf6',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontWeight: '700',
+                                fontSize: '12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              🔑 Password
+                            </button>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No manager accounts registered yet.</td>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No manager accounts registered yet.</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
+
               </div>
             </div>
           </div>
@@ -3806,8 +4023,98 @@ const SuperAdminDashboard = () => {
         </div>
       </main>
 
+      {/* ── CHANGE PASSWORD MODAL ── */}
+      {passwordModal.open && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)',
+            borderRadius: '20px', width: '100%', maxWidth: '460px', padding: '28px',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🔑 Update Password</span>
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Updating password for <strong style={{ color: '#8b5cf6' }}>{passwordModal.userName}</strong> ({passwordModal.userRole})
+                </p>
+              </div>
+              <button
+                onClick={() => setPasswordModal({ open: false, userId: '', userName: '', userRole: '' })}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUserPassword}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                  New Password *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={modalShowPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    value={newPasswordInput}
+                    onChange={e => setNewPasswordInput(e.target.value)}
+                    placeholder="Enter new password (min 6 characters)"
+                    style={{
+                      width: '100%', padding: '12px 42px 12px 14px', borderRadius: '10px',
+                      border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)',
+                      color: 'var(--text-main)', fontSize: '14px', outline: 'none', boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setModalShowPassword(!modalShowPassword)}
+                    style={{
+                      position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+                      background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer'
+                    }}
+                  >
+                    {modalShowPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setPasswordModal({ open: false, userId: '', userName: '', userRole: '' })}
+                  style={{
+                    padding: '10px 18px', borderRadius: '10px', border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '13px', cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingPassword}
+                  style={{
+                    padding: '10px 22px', borderRadius: '10px', border: 'none',
+                    backgroundColor: '#8b5cf6', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '6px', opacity: updatingPassword ? 0.7 : 1
+                  }}
+                >
+                  {updatingPassword ? 'Updating...' : '🔒 Save New Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Custom Delete Confirm Modal */}
       {studentToDelete && (
+
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <div style={{ background: 'var(--card-bg)', padding: '24px', borderRadius: '12px', width: '350px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', textAlign: 'center' }}>
             <div style={{ color: '#ef4444', marginBottom: '16px' }}>

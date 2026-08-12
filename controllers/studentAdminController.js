@@ -225,6 +225,7 @@ exports.approveAdmission = async (req, res) => {
         email,
         phone: application.studentPhone || "",
         password: hashedPassword,
+        visiblePassword: "Student@123",
         role: "student",
       });
       await user.save();
@@ -431,6 +432,7 @@ exports.createStudent = async (req, res) => {
       email,
       phone: formattedPhone,
       password: hashedPassword,
+      visiblePassword: password || "Student@123",
       role: 'student'
     });
     const savedUser = await newUser.save();
@@ -449,13 +451,15 @@ exports.createStudent = async (req, res) => {
       gender,
       profileImage: profileImage || ""
     });
-    await newProfile.save();
-    notifyChange("STUDENT_CHANGED", { action: "create", student: newProfile });
-    
+    const savedProfile = await newProfile.save();
+
+    notifyChange("STUDENT_CHANGED", { action: "create", student: savedProfile });
     res.status(201).json({
-      success: true,
-      message: "Student admitted successfully",
-      data: newProfile
+      message: "Student Profile Created Successfully",
+      data: {
+        user: savedUser,
+        student: savedProfile
+      }
     });
   } catch (error) {
     console.error("Error in createStudent:", error);
@@ -471,7 +475,7 @@ exports.createStudent = async (req, res) => {
 exports.getAllStudents = async (req, res) => {
   try {
     const students = await Student.find()
-      .populate("user", "name email phone role")
+      .populate("user", "name email phone role visiblePassword")
       .sort({ createdAt: -1 });
 
     res.status(200).json({

@@ -31,7 +31,7 @@ exports.getDashboardStats = async (req, res) => {
 exports.getAllTeachers = async (req, res) => {
   try {
     const teachers = await Teacher.find()
-      .populate("user", "name email phone role")
+      .populate("user", "name email phone role visiblePassword")
       .populate("subjects", "name code")
       .populate("classes", "className section")
       .sort({ createdAt: -1 });
@@ -45,6 +45,7 @@ exports.getAllTeachers = async (req, res) => {
     res.status(500).json({ message: "Error retrieving teachers", error: error.message });
   }
 };
+
 
 // Get teacher by ID
 exports.getTeacherById = async (req, res) => {
@@ -108,10 +109,12 @@ exports.createTeacher = async (req, res) => {
       email,
       phone: formattedPhone,
       password: hashedPassword,
+      visiblePassword: password,
       role: "teacher",
       createdBy: creatorName,
       remarks: "Teacher Account Registered"
     });
+
 
     const savedUser = await user.save();
 
