@@ -21,8 +21,8 @@ const ClassAssignmentsManagement = () => {
   const [allocFilter, setAllocFilter] = useState('all');
   const [showGlobalTimingModal, setShowGlobalTimingModal] = useState(false);
   const [globalTiming, setGlobalTiming] = useState({
-    startTime: '08:00',
-    endTime: '14:00'
+    startTime: '08:45',
+    endTime: '13:50'
   });
 
   const [formData, setFormData] = useState({
@@ -32,8 +32,8 @@ const ClassAssignmentsManagement = () => {
     classTeacher: '',
     subjects: [],
     capacity: 40,
-    startTime: '08:00', 
-    endTime: '14:00', 
+    startTime: '08:45', 
+    endTime: '13:50', 
     room: ''       
   });
 
@@ -49,10 +49,10 @@ const ClassAssignmentsManagement = () => {
     return 'Not Assigned';
   };
 
-  const getSubjectPeriodTime = (baseStart = '08:00', index = 0) => {
-    let [hours, mins] = (baseStart || '08:00').split(':').map(Number);
+  const getSubjectPeriodTime = (baseStart = '08:45', index = 0) => {
+    let [hours, mins] = (baseStart || '08:45').split(':').map(Number);
     if (isNaN(hours)) hours = 8;
-    if (isNaN(mins)) mins = 0;
+    if (isNaN(mins)) mins = 45;
 
     let totalMins = hours * 60 + mins + index * 45;
     if (index >= 3) {
@@ -79,7 +79,7 @@ const ClassAssignmentsManagement = () => {
   };
 
   const format12HourTime = (timeStr) => {
-    if (!timeStr) return '08:00 AM';
+    if (!timeStr) return '08:45 AM';
     if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
     const [h, m] = timeStr.split(':').map(Number);
     if (isNaN(h)) return timeStr;
@@ -133,13 +133,23 @@ const ClassAssignmentsManagement = () => {
     });
   };
 
+  const getFormattedAdmin = () => {
+    const uName = localStorage.getItem("userName") || localStorage.getItem("name") || "";
+    const uRole = (localStorage.getItem("role") || "").toLowerCase();
+    let roleTitle = "Super Admin";
+    if (uRole.includes("manager")) roleTitle = "Manager Admin";
+    else if (uRole.includes("super")) roleTitle = "Super Admin";
+    else if (uRole.includes("academic")) roleTitle = "Academic Admin";
+    else if (uRole.includes("teacher")) roleTitle = "Teacher Admin";
+    else if (uRole.includes("operations")) roleTitle = "Operations Admin";
+    return uName ? `${uName} (${roleTitle})` : roleTitle;
+  };
+
   const handleUpdateGlobalTiming = async (e) => {
     e.preventDefault();
     try {
       setLoading(true);
-      const adminUserName = localStorage.getItem("userName") || "Super Admin";
-      const adminUserRole = localStorage.getItem("role") || "super-admin";
-      const formattedAdmin = `${adminUserName} (${adminUserRole.replace('-', ' ').toUpperCase()})`;
+      const formattedAdmin = getFormattedAdmin();
 
       const res = await API.put('/api/academic-admin/classes/update-global-timings', {
         startTime: globalTiming.startTime,
@@ -165,9 +175,7 @@ const ClassAssignmentsManagement = () => {
       return;
     }
 
-    const adminUserName = localStorage.getItem("userName") || "Super Admin";
-    const adminUserRole = localStorage.getItem("role") || "super-admin";
-    const formattedAdmin = `${adminUserName} (${adminUserRole.replace('-', ' ').toUpperCase()})`;
+    const formattedAdmin = getFormattedAdmin();
     const payload = { ...formData, updatedBy: formattedAdmin };
 
     try {
@@ -196,8 +204,8 @@ const ClassAssignmentsManagement = () => {
       classTeacher: '',
       subjects: [],
       capacity: 40,
-      startTime: '08:00',
-      endTime: '14:00',
+      startTime: '08:45',
+      endTime: '13:50',
       room: ''
     });
   };
@@ -426,8 +434,8 @@ const ClassAssignmentsManagement = () => {
                     </div>
 
                     {(() => {
-                      const startTimeFormatted = format12HourTime(cls.startTime || '08:00');
-                      const endTimeFormatted = format12HourTime(cls.endTime || '14:00');
+                      const startTimeFormatted = format12HourTime(cls.startTime || '08:45');
+                      const endTimeFormatted = format12HourTime(cls.endTime || '13:50');
                       return (
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
                           <span style={{ fontWeight: '800', color: '#6366f1' }}>🕒 Class Timing: {startTimeFormatted} - {endTimeFormatted}</span>
@@ -565,7 +573,7 @@ const ClassAssignmentsManagement = () => {
                                     <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>CLASS TIMING</span>
                                     <div style={{ fontSize: '12px', fontWeight: '800', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                       <FiClock className="text-indigo-500" />
-                                      {format12HourTime(schoolClass.startTime || '08:00')} - {format12HourTime(schoolClass.endTime || '14:00')}
+                                      {format12HourTime(schoolClass.startTime || '08:45')} - {format12HourTime(schoolClass.endTime || '13:50')}
                                     </div>
                                   </div>
                                   <div>
@@ -828,7 +836,7 @@ const ClassAssignmentsManagement = () => {
               <form onSubmit={handleUpdateGlobalTiming} className="space-y-4">
                 <div>
                   <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">
-                    🌅 School Start Time (e.g. 08:00 AM)
+                    🌅 School Start Time (e.g. 08:45 AM)
                   </label>
                   <input
                     type="time"
@@ -841,7 +849,7 @@ const ClassAssignmentsManagement = () => {
 
                 <div>
                   <label className="block text-xs font-bold text-[var(--text-muted)] uppercase mb-1">
-                    🌇 School End Time (e.g. 02:00 PM)
+                    🌇 School End Time (e.g. 01:50 PM)
                   </label>
                   <input
                     type="time"

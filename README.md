@@ -1,4 +1,4 @@
-# 🏫 SPS School Management Portal
+# 🏫 Vasant Valley School Management Portal
 
 A comprehensive, full-stack web application designed to streamline school administration, student management, and academic tracking.
 

@@ -10,7 +10,7 @@ const Settings = () => {
   const [profileData, setProfileData] = useState({
     name: localStorage.getItem('userName') || '',
     email: email,
-    phone: localStorage.getItem('userPhone') || '+91 99999 99999',
+    phone: localStorage.getItem('userPhone') || '0755-4378074',
   });
   const [profileImage, setProfileImage] = useState<string>(
     localStorage.getItem(`student_photo_${email}`) || ''

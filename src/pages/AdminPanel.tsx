@@ -17,7 +17,7 @@ const ROLES = [
     color: "#ef4444",
     bgColor: "rgba(239,68,68,0.1)",
     borderColor: "rgba(239,68,68,0.3)",
-    email: "admin@sps.edu",
+    email: "admin@vasantvalley.edu",
     password: "Admin@123",
     path: "/super-admin",
     desc: "Full system control — manage all admins and portals",
@@ -31,7 +31,7 @@ const ROLES = [
     color: "#3b82f6",
     bgColor: "rgba(59,130,246,0.1)",
     borderColor: "rgba(59,130,246,0.3)",
-    email: "manager@sps.edu",
+    email: "manager@vasantvalley.edu",
     password: "Manager@123",
     path: "/manager-admin",
     desc: "Oversees Teacher & Student Admin branch and Finance",
@@ -45,7 +45,7 @@ const ROLES = [
     color: "#10b981",
     bgColor: "rgba(16,185,129,0.1)",
     borderColor: "rgba(16,185,129,0.3)",
-    email: "finance@sps.edu",
+    email: "finance@vasantvalley.edu",
     password: "Finance@123",
     path: "/finance-admin",
     desc: "Manages fees, payments and financial records",
@@ -101,7 +101,7 @@ const ROLES = [
     color: "#fb923c",
     bgColor: "rgba(251,146,60,0.1)",
     borderColor: "rgba(251,146,60,0.3)",
-    email: "student8a1@sps.edu",
+    email: "student8a1@vasantvalley.edu",
     password: "Password@123",
     path: "/student",
     desc: "Students and parents can track progress, attendance, results",
@@ -268,7 +268,7 @@ const AdminPanel = () => {
             <div style={{ fontWeight: 800, fontSize: "16px", color: "#f1f5f9", letterSpacing: "-0.02em" }}>
               Admin Panel
             </div>
-            <div style={{ fontSize: "11px", color: "#64748b" }}>SPS School ERP • Role Management</div>
+            <div style={{ fontSize: "11px", color: "#64748b" }}>Vasant Valley School ERP • Role Management</div>
           </div>
         </div>
         <button onClick={() => navigate("/")} style={{
@@ -406,7 +406,7 @@ const AdminPanel = () => {
           marginTop: "32px", lineHeight: 1.7,
         }}>
           ⚠️ These are demo credentials for development. Change passwords before deploying to production.<br />
-          © 2026 SPS School ERP System
+          © 2026 Vasant Valley School ERP System
         </p>
       </div>
     </div>

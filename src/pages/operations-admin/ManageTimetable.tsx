@@ -5,7 +5,7 @@ import API from '../../api/axios';
 import { FiPlus, FiTrash2, FiSave, FiLoader, FiClock, FiEdit3, FiCheck, FiCalendar } from 'react-icons/fi';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const SUBJECTS = ['Mathematics', 'Science & Technology', 'English Literature', 'Hindi', 'Social Studies', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'Physical Education', 'Arts & Craft', 'Music', 'Other'];
+const SUBJECTS: string[] = [];
 
 const DEFAULT_PERIOD = {
   period: '',
@@ -30,6 +30,10 @@ const ManageTimetable = () => {
   const [error, setError] = useState('');
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
 
+  // Dynamic Catalog Subjects & Teachers state
+  const [catalogSubjects, setCatalogSubjects] = useState<any[]>([]);
+  const [catalogTeachers, setCatalogTeachers] = useState<any[]>([]);
+
   const role = (localStorage.getItem('role') || '').toLowerCase();
   const canManage = [
     'super-admin', 'super admin', 
@@ -39,6 +43,50 @@ const ManageTimetable = () => {
     'operations-admin', 'operations admin', 
     'teacher', 'teacher-role'
   ].includes(role) || role.includes('admin') || role.includes('teacher') || role.includes('manager');
+
+  // Fetch Academic Subjects Catalog & Teachers
+  const fetchCatalogData = async () => {
+    try {
+      const [subjRes, teacherRes] = await Promise.all([
+        API.get('/api/academic-admin/subjects').catch(() => null),
+        API.get('/api/academic-admin/teachers').catch(() => null)
+      ]);
+      if (subjRes?.data?.data || subjRes?.data) {
+        const subList = subjRes.data.data || subjRes.data || [];
+        if (Array.isArray(subList)) setCatalogSubjects(subList);
+      }
+      if (teacherRes?.data?.data || teacherRes?.data) {
+        const teachList = teacherRes.data.data || teacherRes.data || [];
+        if (Array.isArray(teachList)) setCatalogTeachers(teachList);
+      }
+    } catch (err) {
+      console.error('Error fetching catalog data:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCatalogData();
+  }, []);
+
+  // Compute available subjects STRICTLY from Academic Subjects Catalog (no extra hardcoded subjects)
+  const availableCatalogSubjects = React.useMemo(() => {
+    if (!catalogSubjects || catalogSubjects.length === 0) return [];
+
+    // Filter catalog subjects matching selected class if selectedClass is set
+    if (selectedClass) {
+      const normSelected = selectedClass.replace(/\D/g, ''); // e.g. "10"
+      const matched = catalogSubjects.filter((s: any) => {
+        const clsName = (s.className || s.class || '').toString().toLowerCase();
+        const normCls = clsName.replace(/\D/g, '');
+        return normCls === normSelected || clsName.includes(selectedClass.toLowerCase());
+      });
+      if (matched.length > 0) {
+        return Array.from(new Set(matched.map((s: any) => s.name).filter(Boolean)));
+      }
+    }
+
+    return Array.from(new Set(catalogSubjects.map((s: any) => s.name).filter(Boolean)));
+  }, [catalogSubjects, selectedClass]);
 
   // Fetch saved timetables for the selected class/section
   const fetchSavedSchedules = async () => {
@@ -320,7 +368,10 @@ const ManageTimetable = () => {
                               style={{ width: '100%', padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px' }}
                             >
                               <option value="">Select Subject</option>
-                              {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                              {period.subject && !availableCatalogSubjects.includes(period.subject) && (
+                                <option value={period.subject}>{period.subject}</option>
+                              )}
+                              {availableCatalogSubjects.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                           </div>
 
@@ -330,8 +381,15 @@ const ManageTimetable = () => {
                               value={period.teacher}
                               onChange={e => handlePeriodChange(idx, 'teacher', e.target.value)}
                               placeholder="Teacher Name"
+                              list="timetable-teachers-list"
                               style={{ width: '100%', padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px' }}
                             />
+                            <datalist id="timetable-teachers-list">
+                              {catalogTeachers.map((t: any, ti: number) => {
+                                const tName = t.user?.name || t.name || 'Teacher';
+                                return <option key={t._id || ti} value={tName} />;
+                              })}
+                            </datalist>
                           </div>
 
                           <div>

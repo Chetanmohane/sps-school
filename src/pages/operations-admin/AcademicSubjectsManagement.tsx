@@ -14,13 +14,11 @@ const SubjectsManagement = () => {
   
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
-  const [creditFilter, setCreditFilter] = useState('all');
 
   const [formData, setFormData] = useState({
     name: '',
     code: '',
     description: '',
-    credits: 3,
     syllabus: ''
   });
 
@@ -65,7 +63,6 @@ const SubjectsManagement = () => {
         name: '',
         code: '',
         description: '',
-        credits: 3,
         syllabus: ''
       });
       fetchSubjects();
@@ -81,7 +78,6 @@ const SubjectsManagement = () => {
       name: subject.name,
       code: subject.code,
       description: subject.description,
-      credits: subject.credits,
       syllabus: subject.syllabus
     });
     setShowModal(true);
@@ -110,30 +106,19 @@ const SubjectsManagement = () => {
       name: '',
       code: '',
       description: '',
-      credits: 3,
       syllabus: ''
     });
     setShowModal(true);
   };
-
-  const totalCreditsSum = subjects.reduce((acc: number, curr: any) => acc + (Number(curr.credits) || 0), 0);
-  const avgCredits = subjects.length ? (totalCreditsSum / subjects.length).toFixed(1) : '0.0';
 
   const filteredSubjects = subjects.filter((sub: any) => {
     const name = (sub.name || '').toLowerCase();
     const code = (sub.code || '').toLowerCase();
     const desc = (sub.description || '').toLowerCase();
     const query = searchQuery.toLowerCase();
-    const credits = Number(sub.credits || 0);
 
     const matchSearch = !searchQuery || name.includes(query) || code.includes(query) || desc.includes(query);
-    let matchCredit = true;
-    if (creditFilter === '1') matchCredit = credits === 1;
-    else if (creditFilter === '2') matchCredit = credits === 2;
-    else if (creditFilter === '3') matchCredit = credits === 3;
-    else if (creditFilter === '4+') matchCredit = credits >= 4;
-
-    return matchSearch && matchCredit;
+    return matchSearch;
   });
 
   return (
@@ -149,7 +134,7 @@ const SubjectsManagement = () => {
             <div>
               <h1 style={{ margin: 0, fontSize: '22px', fontWeight: '800' }}>📖 Academic Subjects Catalog</h1>
               <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: '13px' }}>
-                Subjects Catalog — Define course names, codes, credit weights, syllabi, and active statuses.
+                Subjects Catalog — Define course names, codes, syllabi, and active statuses.
               </p>
             </div>
             <button className="btn-primary flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors" onClick={handleNewSubject}>
@@ -163,8 +148,6 @@ const SubjectsManagement = () => {
             {[
               { label: 'Total Subjects Offered', value: subjects.length, color: '#3b82f6', icon: '📖' },
               { label: 'Filtered Subjects', value: filteredSubjects.length, color: '#10b981', icon: '📊' },
-              { label: 'Total Course Credits', value: `${totalCreditsSum} Cr`, color: '#8b5cf6', icon: '🎓' },
-              { label: 'Avg Credits per Subject', value: `${avgCredits} Cr`, color: '#f59e0b', icon: '⚡' },
             ].map((m, idx) => (
               <div key={idx} style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -202,28 +185,10 @@ const SubjectsManagement = () => {
               />
             </div>
 
-            {/* Credits Filter */}
-            <div style={{ width: '160px' }}>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
-                🎓 Course Credits
-              </label>
-              <select
-                value={creditFilter}
-                onChange={e => setCreditFilter(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
-              >
-                <option value="all">All Credits</option>
-                <option value="1">1 Credit</option>
-                <option value="2">2 Credits</option>
-                <option value="3">3 Credits</option>
-                <option value="4+">4+ Credits</option>
-              </select>
-            </div>
-
             {/* Clear Button */}
-            {(searchQuery || creditFilter !== 'all') && (
+            {searchQuery && (
               <button
-                onClick={() => { setSearchQuery(''); setCreditFilter('all'); }}
+                onClick={() => { setSearchQuery(''); }}
                 style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontWeight: '700', fontSize: '12px', cursor: 'pointer', height: '36px' }}
               >
                 🧹 Clear Filters
@@ -239,7 +204,6 @@ const SubjectsManagement = () => {
                 <tr>
                   <th>Subject Name</th>
                   <th>Code</th>
-                  <th>Credits</th>
                   <th>Description</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -251,7 +215,6 @@ const SubjectsManagement = () => {
                     <tr key={subject._id}>
                       <td>{subject.name}</td>
                       <td><strong>{subject.code}</strong></td>
-                      <td>{subject.credits}</td>
                       <td>{subject.description || '-'}</td>
                       <td>
                         <span className={`badge ${subject.status === 'active' ? 'approved' : 'pending'}`}>
@@ -270,7 +233,7 @@ const SubjectsManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '20px' }}>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>
                       No subjects found
                     </td>
                   </tr>
@@ -321,21 +284,6 @@ const SubjectsManagement = () => {
                       onChange={handleInputChange}
                       placeholder="e.g., MATH101"
                       required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium text-[var(--text-main)] mb-1">Credits</label>
-                    <input
-                      type="number"
-                      name="credits"
-                      className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]"
-                      value={formData.credits}
-                      onChange={handleInputChange}
-                      min="1"
-                      max="10"
                     />
                   </div>
                 </div>

@@ -121,7 +121,7 @@ const ClassTeacherDashboard = () => {
       ]);
 
       let loadedStudents: any[] = [];
-      let clsData = { className: '10', section: 'A', room: '204', startTime: '08:00', endTime: '14:00' };
+      let clsData = { className: '10', section: 'A', room: '204', startTime: '08:45', endTime: '13:50' };
 
       if (classRes.status === 'fulfilled' && classRes.value.data?.data?.students?.length > 0) {
         clsData = classRes.value.data.data.classInfo || clsData;
@@ -494,7 +494,7 @@ const ClassTeacherDashboard = () => {
                   CLASS TEACHER PORTAL — Class {classInfo?.className || '10'} ({classInfo?.section || 'A'})
                 </h1>
                 <p style={{ margin: '8px 0 0', opacity: 0.95, fontSize: '14px', color: '#cbd5e1' }}>
-                  Class Teacher In-Charge: <strong style={{ color: '#fff' }}>{teacherName}</strong> • Room {classInfo?.room || '204'} • Timings: {classInfo?.startTime || '08:00'} AM - {classInfo?.endTime || '14:00'} PM
+                  Class Teacher In-Charge: <strong style={{ color: '#fff' }}>{teacherName}</strong> • Room {classInfo?.room || '204'} • Timings: {classInfo?.startTime || '08:45'} AM - {classInfo?.endTime || '01:50'} PM
                 </p>
               </div>
 

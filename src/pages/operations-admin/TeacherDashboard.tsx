@@ -785,7 +785,7 @@ const TeacherDashboard = () => {
                         style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
                       >
                         <option value="">Select Class</option>
-                        {['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'].map(c => <option key={c} value={c}>Class {c}</option>)}
+                        {['Nursery','KG','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'].map(c => <option key={c} value={c}>Class {c}</option>)}
                       </select>
                       <select
                         value={newNotice.targetSection || classInCharge?.section || ''}

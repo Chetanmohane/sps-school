@@ -7,7 +7,6 @@ const role = require("../middleware/roleMiddleware");
 const financeController = require("../controllers/financeController");
 
 const allowedFinanceRoles = ["finance-admin", "super-admin", "manager-admin", "operations-admin"];
-
 const allRoles = ["student", "finance-admin", "super-admin", "manager-admin", "operations-admin"];
 
 router.post("/create-fee", auth, role(allowedFinanceRoles), financeController.createFee);

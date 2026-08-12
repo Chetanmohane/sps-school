@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../api/axios';
 
-const CLASSES = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'];
+const CLASSES = ['Nursery','KG','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'];
 const SECTIONS = ['A','B','C','D','E','F'];
 
 const NoticeBoardAdmin: React.FC = () => {

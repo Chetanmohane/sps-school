@@ -221,7 +221,7 @@ const FinanceAdminDashboard = () => {
     // 1. Branding & Header
     doc.setFontSize(20);
     doc.setTextColor(37, 99, 235); // Blue-600
-    doc.text("SPS School - FEE RECEIPT", 105, 20, { align: "center" });
+    doc.text("Vasant Valley School - FEE RECEIPT", 105, 20, { align: "center" });
 
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -394,6 +394,7 @@ const FinanceAdminDashboard = () => {
 
   const userRole = (localStorage.getItem('role') || '').toLowerCase();
   const isManagerAdmin = userRole === 'manager-admin';
+  const isSuperAdmin = userRole === 'super-admin' || userRole === 'super admin' || userRole.includes('super');
   const adminName = localStorage.getItem('userName') || (isManagerAdmin ? 'Manager Admin' : 'Finance Admin');
 
   return (
@@ -733,13 +734,22 @@ const FinanceAdminDashboard = () => {
                                     📄 Receipt PDF
                                   </button>
                                   {!isManagerAdmin && (
-                                    <button 
-                                      style={{ padding: '4px 8px', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', cursor: 'pointer' }} 
-                                      onClick={() => handleEditClick(tx)}
-                                      title="Edit Fee / Payment"
-                                    >
-                                      ✏️
-                                    </button>
+                                    <>
+                                      <button 
+                                        style={{ padding: '4px 8px', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', cursor: 'pointer' }} 
+                                        onClick={() => handleEditClick(tx)}
+                                        title="Edit Fee / Payment"
+                                      >
+                                        ✏️
+                                      </button>
+                                      <button 
+                                        style={{ padding: '4px 10px', borderRadius: '6px', backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#ef4444', fontWeight: 800, fontSize: '11px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }} 
+                                        onClick={() => handleDeleteFee(tx._id || tx.id)}
+                                        title="Delete Fee Record"
+                                      >
+                                        🗑️ Delete
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                               </td>

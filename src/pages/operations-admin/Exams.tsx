@@ -6,13 +6,7 @@ import { FiDownload, FiPlus, FiTrash2, FiSave, FiLoader, FiCalendar, FiBook } fr
 
 const CLASS_LIST = Array.from({ length: 12 }, (_, i) => String(i + 1));
 const SECTION_LIST = ['A', 'B', 'C', 'D', 'E'];
-const SUBJECT_LIST = [
-  'Mathematics', 'Science', 'Physics', 'Chemistry', 'Biology',
-  'English', 'Hindi', 'Social Studies / SST', 'History', 'Geography',
-  'Computer Science', 'Physical Education', 'Arts & Craft', 'Music',
-  'Economics', 'Political Science', 'Accountancy', 'Business Studies',
-  'Environmental Science', 'Sanskrit'
-];
+const SUBJECT_LIST: string[] = [];
 const EXAM_TYPES = [
   'Unit Test 1', 'Unit Test 2', 'Mid-Term Examination', 'Final Examination',
   'Pre-Board Examination', 'Annual Examination', 'Class Test', 'Half Yearly Exam', 'Other'
@@ -75,8 +69,24 @@ const Exams = () => {
   const fetchTeachers = async () => {
     try {
       const res = await API.get('/api/academic-admin/teachers');
-      if(res.data?.data) setTeachers(res.data.data);
-    } catch (e) { console.error('Error fetching teachers', e); }
+      const list = res.data?.data || res.data || [];
+      if (Array.isArray(list) && list.length > 0) {
+        setTeachers(list);
+      } else {
+        const res2 = await API.get('/api/teacher/all');
+        const list2 = res2.data?.data || res2.data || [];
+        setTeachers(list2);
+      }
+    } catch (e) {
+      console.error('Error fetching teachers', e);
+      try {
+        const res2 = await API.get('/api/teacher/all');
+        const list2 = res2.data?.data || res2.data || [];
+        setTeachers(list2);
+      } catch (err2) {
+        console.error('Fallback error fetching teachers', err2);
+      }
+    }
   };
 
   const fetchExams = async () => {
@@ -91,10 +101,42 @@ const Exams = () => {
     }
   };
 
+  const [catalogSubjects, setCatalogSubjects] = useState<any[]>([]);
+
+  const fetchCatalogSubjects = async () => {
+    try {
+      const res = await API.get('/api/academic-admin/subjects');
+      const list = res.data?.data || res.data || [];
+      if (Array.isArray(list)) setCatalogSubjects(list);
+    } catch (e) {
+      console.error('Error fetching catalog subjects', e);
+    }
+  };
+
   useEffect(() => {
     fetchExams();
     fetchTeachers();
+    fetchCatalogSubjects();
   }, []);
+
+  // Compute available subjects STRICTLY from Academic Subjects Catalog
+  const availableCatalogSubjects = React.useMemo(() => {
+    if (!catalogSubjects || catalogSubjects.length === 0) return [];
+
+    if (selectedClass) {
+      const normSelected = selectedClass.replace(/\D/g, ''); // e.g. "10"
+      const matched = catalogSubjects.filter((s: any) => {
+        const clsName = (s.className || s.class || '').toString().toLowerCase();
+        const normCls = clsName.replace(/\D/g, '');
+        return normCls === normSelected || clsName.includes(selectedClass.toLowerCase());
+      });
+      if (matched.length > 0) {
+        return Array.from(new Set(matched.map((s: any) => s.name).filter(Boolean)));
+      }
+    }
+
+    return Array.from(new Set(catalogSubjects.map((s: any) => s.name).filter(Boolean)));
+  }, [catalogSubjects, selectedClass]);
 
   // Toggle section selection
   const toggleSection = (sec: string) => {
@@ -288,7 +330,10 @@ const Exams = () => {
                       <label style={labelStyle}>Subject *</label>
                       <select value={row.subject} onChange={e => updateSubjectRow(idx, 'subject', e.target.value)} required style={inputStyle}>
                         <option value="">— Select Subject —</option>
-                        {SUBJECT_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                        {row.subject && !availableCatalogSubjects.includes(row.subject) && (
+                          <option value={row.subject}>{row.subject}</option>
+                        )}
+                        {availableCatalogSubjects.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
                     </div>
 
@@ -331,7 +376,10 @@ const Exams = () => {
                       <label style={labelStyle}>Invigilator Duty</label>
                       <select value={row.invigilator} onChange={e => updateSubjectRow(idx, 'invigilator', e.target.value)} style={inputStyle}>
                         <option value="">-- Select Teacher --</option>
-                        {teachers.map((t: any) => <option key={t._id} value={t.name}>{t.name}</option>)}
+                        {teachers.map((t: any, i: number) => {
+                          const name = t.user?.name || t.name || (typeof t.user === 'string' ? t.user : '') || `Teacher ${i + 1}`;
+                          return <option key={t._id || i} value={name}>{name}{t.employeeId ? ` (${t.employeeId})` : ''}</option>;
+                        })}
                       </select>
                     </div>
 
@@ -474,7 +522,10 @@ const Exams = () => {
               <label style={labelStyle}>Invigilator Duty</label>
               <select value={editingExam.invigilator || ''} onChange={e => setEditingExam({...editingExam, invigilator: e.target.value})} style={inputStyle}>
                 <option value="">-- Select Teacher --</option>
-                {teachers.map((t: any) => <option key={t._id} value={t.name}>{t.name}</option>)}
+                {teachers.map((t: any, i: number) => {
+                  const name = t.user?.name || t.name || (typeof t.user === 'string' ? t.user : '') || `Teacher ${i + 1}`;
+                  return <option key={t._id || i} value={name}>{name}{t.employeeId ? ` (${t.employeeId})` : ''}</option>;
+                })}
               </select>
             </div>
             <div style={{ marginBottom: '12px' }}>

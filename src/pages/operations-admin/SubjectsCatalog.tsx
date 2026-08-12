@@ -58,7 +58,6 @@ const SubjectsCatalog = () => {
                 <tr style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '12px 16px' }}>Code</th>
                   <th style={{ padding: '12px 16px' }}>Name</th>
-                  <th style={{ padding: '12px 16px' }}>Credits</th>
                   <th style={{ padding: '12px 16px' }}>Description</th>
                 </tr>
               </thead>
@@ -67,13 +66,12 @@ const SubjectsCatalog = () => {
                   <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--primary)' }}>{sub.code}</td>
                     <td style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-main)' }}>{sub.name}</td>
-                    <td style={{ padding: '12px 16px' }}>{sub.credits}</td>
                     <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{sub.description}</td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No subjects found.</td>
+                    <td colSpan={3} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>No subjects found.</td>
                   </tr>
                 )}
               </tbody>

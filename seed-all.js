@@ -93,8 +93,8 @@ const seedData = async () => {
         academicYear: '2025-2026',
         classTeacher: classTeacher._id,
         subjects: subjects.map(sub => sub._id),
-        startTime: '08:00',
-        endTime: '14:00',
+        startTime: '08:45',
+        endTime: '13:50',
         capacity: 40
       });
       classes.push(cls);

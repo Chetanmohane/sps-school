@@ -63,8 +63,8 @@ const StudentProfile = () => {
     const initialProfile = {
       user: {
         name: localStorage.getItem('userName') || 'Active Student',
-        email: email || 'student@sps.edu',
-        phone: '+918888800001'
+        email: email || 'student@vasantvalley.edu',
+        phone: '0755-4378074'
       },
       className: '10',
       section: 'A',
@@ -269,7 +269,7 @@ const StudentProfile = () => {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('SPS SCHOOL MANAGEMENT PORTAL', 42.8, 7.5, { align: 'center' });
+    doc.text('VASANT VALLEY SCHOOL MANAGEMENT PORTAL', 42.8, 7.5, { align: 'center' });
 
     // Photo Rendering
     if (student.profileImage) {
@@ -308,7 +308,7 @@ const StudentProfile = () => {
     doc.rect(0, 47, 85.6, 7, 'F');
     doc.setFontSize(5);
     doc.setTextColor(107, 114, 128);
-    doc.text('Official Student Identity Card • SPS ERP Authorized System', 42.8, 51.5, { align: 'center' });
+    doc.text('Official Student Identity Card • Vasant Valley School ERP Authorized System', 42.8, 51.5, { align: 'center' });
 
     doc.save(`Student_ID_${student.rollNumber || 'Card'}.pdf`);
     triggerNotification("Student ID Card downloaded as PDF!");
@@ -569,7 +569,7 @@ const StudentProfile = () => {
                         </div>
                         <div>
                           <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">EMAIL ADDRESS</p>
-                          <p className="font-bold text-xs sm:text-sm mt-0.5">{student?.user?.email || 'student@sps.edu'}</p>
+                          <p className="font-bold text-xs sm:text-sm mt-0.5">{student?.user?.email || 'student@vasantvalley.edu'}</p>
                         </div>
                       </div>
 
@@ -579,7 +579,7 @@ const StudentProfile = () => {
                         </div>
                         <div>
                           <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">MOBILE NUMBER</p>
-                          <p className="font-bold text-xs sm:text-sm mt-0.5">{student?.user?.phone || '+918888800001'}</p>
+                          <p className="font-bold text-xs sm:text-sm mt-0.5">{student?.user?.phone || '0755-4378074'}</p>
                         </div>
                       </div>
 
@@ -744,7 +744,7 @@ const StudentProfile = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">STUDENT EMAIL ADDRESS</p>
-                      <p className="font-bold text-sm mt-0.5">{student?.user?.email || 'student@sps.edu'}</p>
+                      <p className="font-bold text-sm mt-0.5">{student?.user?.email || 'student@vasantvalley.edu'}</p>
                     </div>
                   </div>
 
@@ -754,7 +754,17 @@ const StudentProfile = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">RESIDENTIAL ADDRESS</p>
-                      <p className="font-bold text-sm mt-0.5 leading-relaxed">{student?.address || 'School Residential Campus'}</p>
+                      <p className="font-bold text-sm mt-0.5 leading-relaxed">{student?.address || 'Shree Dham Colony, Malikhedi, Bhopal'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-4 p-3.5 rounded-xl bg-[var(--input-bg)] border border-[var(--border-color)]">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center shrink-0">
+                      <FiClock size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">SCHOOL TIMINGS / HOURS</p>
+                      <p className="font-bold text-sm mt-0.5 leading-relaxed">8:45 AM – 1:50 PM</p>
                     </div>
                   </div>
                 </div>

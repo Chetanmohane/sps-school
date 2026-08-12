@@ -10,7 +10,7 @@ import { useSocket } from '../../context/SocketContext';
 
 const StudentFees = () => {
   const { onEvent } = useSocket();
-  const savedEmail = localStorage.getItem('userEmail') || 'student@sps.edu';
+  const savedEmail = localStorage.getItem('userEmail') || 'student@vasantvalley.edu';
   const savedName = localStorage.getItem('userName') || 'Student User';
 
   const [studentProfile, setStudentProfile] = useState<any>({
@@ -473,9 +473,9 @@ const StudentFees = () => {
             {/* Receipt Header */}
             <div className="text-center pb-6 border-b border-slate-200">
               <div className="w-12 h-12 bg-blue-600 text-white rounded-2xl flex items-center justify-center font-black text-xl mx-auto mb-2 shadow-md">
-                SPS
+                VVS
               </div>
-              <h2 className="text-xl font-black tracking-tight text-slate-800">SPS HIGHER SECONDARY SCHOOL</h2>
+              <h2 className="text-xl font-black tracking-tight text-slate-800">VASANT VALLEY HIGHER SECONDARY SCHOOL</h2>
               <p className="text-xs text-slate-500 font-semibold mt-0.5">OFFICIAL FEE PAYMENT RECEIPT</p>
             </div>
 

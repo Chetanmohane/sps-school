@@ -14,9 +14,9 @@ const TimetableSchema = new mongoose.Schema(
         period: { type: String, required: true },
         startTime: { type: String, required: true },
         endTime: { type: String, required: true },
-        subject: { type: String, required: true },
-        teacher: { type: String, required: true },
-        room: { type: String, required: true },
+        subject: { type: String, default: "" },
+        teacher: { type: String, default: "" },
+        room: { type: String, default: "" },
         isBreak: { type: Boolean, default: false }
       }
     ]

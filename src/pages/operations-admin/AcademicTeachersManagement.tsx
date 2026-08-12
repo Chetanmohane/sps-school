@@ -601,8 +601,13 @@ const ClassTeacherAssignment = () => {
     if (!selectedClass) return;
     try {
       setSaving(true);
+      const uName = localStorage.getItem("userName") || localStorage.getItem("name") || "";
+      const uRole = (localStorage.getItem("role") || "admin").replace('-', ' ').toUpperCase();
+      const formattedAdmin = uName ? `${uName} (${uRole})` : uRole;
+
       await API.put(`/api/academic-admin/classes/${selectedClass._id}/assign-class-teacher`, {
-        teacherId: assigningTeacherId || null
+        teacherId: assigningTeacherId || null,
+        updatedBy: formattedAdmin
       });
       alert(assigningTeacherId ? '✅ Class Teacher assigned successfully!' : '✅ Class Teacher unassigned!');
       await fetchData();

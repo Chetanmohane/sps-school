@@ -43,7 +43,7 @@ export const ROLES_DATA: RoleInfo[] = [
     glow: 'rgba(239,68,68,0.4)',
     levelBadge: 'Level 1 — Top Authority',
     levelNum: 1,
-    email: 'admin@sps.edu',
+    email: 'admin@vasantvalley.edu',
     password: 'Admin@123',
     path: '/super-admin',
     reportsTo: null,
@@ -69,7 +69,7 @@ export const ROLES_DATA: RoleInfo[] = [
     glow: 'rgba(59,130,246,0.35)',
     levelBadge: 'Level 2 — Executive Management',
     levelNum: 2,
-    email: 'manager@sps.edu',
+    email: 'manager@vasantvalley.edu',
     password: 'Manager@123',
     path: '/manager-admin',
     reportsTo: 'Super Admin',
@@ -94,7 +94,7 @@ export const ROLES_DATA: RoleInfo[] = [
     glow: 'rgba(16,185,129,0.35)',
     levelBadge: 'Level 2 — Finance Branch',
     levelNum: 2,
-    email: 'finance@sps.edu',
+    email: 'finance@vasantvalley.edu',
     password: 'Finance@123',
     path: '/finance-admin',
     reportsTo: 'Super Admin',
@@ -195,7 +195,7 @@ export const ROLES_DATA: RoleInfo[] = [
     glow: 'rgba(56,189,248,0.35)',
     levelBadge: 'Level 4 — User Portal',
     levelNum: 4,
-    email: 'student8a1@sps.edu',
+    email: 'student8a1@vasantvalley.edu',
     password: 'Password@123',
     path: '/student',
     reportsTo: 'Teacher & Student Admin',
@@ -690,7 +690,7 @@ const RoleHierarchyMap: React.FC<{ compact?: boolean }> = ({ compact = false }) 
           Role Access & Credentials Overview
         </h2>
         <p style={{ color: '#94a3b8', fontSize: '14px', maxWidth: '620px', margin: '0 auto', lineHeight: 1.5 }}>
-          Comprehensive role list for SPS School ERP. Click any role card to inspect permissions or launch its portal directly.
+          Comprehensive role list for Vasant Valley School ERP. Click any role card to inspect permissions or launch its portal directly.
         </p>
       </div>
 

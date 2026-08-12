@@ -259,7 +259,15 @@ const Sidebar = () => {
           <div className="logo-icon" style={{ background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '8px', marginRight: '8px', display: 'inline-flex' }}>
             <FiShield size={18} />
           </div>
-          SPS School ERP
+          Vasant Valley School ERP
+        </div>
+        <div style={{ padding: '0 16px 10px 16px', textAlign: 'center' }}>
+          <div style={{ fontSize: '9px', fontWeight: '800', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', lineHeight: '1.6' }}>
+            LEARN • GROW • LEAD • SERVE
+          </div>
+          <div style={{ fontSize: '8.5px', color: 'rgba(255,255,255,0.35)', fontStyle: 'italic', marginTop: '1px' }}>
+            सीखें • बढ़ें • नेतृत्व करें • सेवा करें
+          </div>
         </div>
 
       <ul className="sidebar-menu">

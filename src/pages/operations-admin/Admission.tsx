@@ -4,7 +4,7 @@ import "../../assets/styles/main.css";
 import {
   FiCheckCircle, FiXCircle, FiClock, FiUserCheck, FiSearch,
   FiUserPlus, FiFileText, FiCalendar, FiUser, FiPhone, FiMail,
-  FiBook, FiSend, FiShield
+  FiBook, FiSend, FiShield, FiTrash2
 } from "react-icons/fi";
 
 const Admissions = () => {
@@ -21,6 +21,62 @@ const Admissions = () => {
   const [rejectReason, setRejectReason] = useState("");
   const [modalAction, setModalAction] = useState<"approve" | "reject" | "">("");
   const [statusMessage, setStatusMessage] = useState("");
+
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [admissionToDelete, setAdmissionToDelete] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteClick = (admission: any) => {
+    setAdmissionToDelete(admission);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAdmission = async () => {
+    if (!admissionToDelete) return;
+    const targetId = admissionToDelete._id || admissionToDelete.id;
+    const studentName = admissionToDelete.studentName || admissionToDelete.student?.user?.name || "Student";
+    try {
+      setDeleting(true);
+      
+      // Attempt deletion via primary student-admin route
+      let deleteSuccess = false;
+      try {
+        await API.delete(`/api/admin/student-admin/admissions/${targetId}`);
+        deleteSuccess = true;
+      } catch (err1: any) {
+        console.warn("Primary endpoint delete failed, attempting application endpoint fallback:", err1);
+        try {
+          await API.delete(`/api/application/${targetId}`);
+          deleteSuccess = true;
+        } catch (err2: any) {
+          console.warn("Application endpoint fallback failed, attempting student endpoint fallback:", err2);
+          const studentId = admissionToDelete.student?._id || admissionToDelete.student || targetId;
+          await API.delete(`/api/admin/student-admin/students/${studentId}`);
+          deleteSuccess = true;
+        }
+      }
+
+      // Instantly filter out deleted record from UI
+      setAdmissions((prev: any[]) => prev.filter(a => a._id !== targetId && a.id !== targetId && a._id !== admissionToDelete._id));
+      setStatusMessage(`🗑️ Admission record for "${studentName}" deleted successfully.`);
+      if ((window as any).showToast) {
+        (window as any).showToast(`Admission record for "${studentName}" deleted successfully.`, "success");
+      }
+      setShowDeleteModal(false);
+      setAdmissionToDelete(null);
+      await fetchAdmissions();
+    } catch (error: any) {
+      console.error("Error deleting admission:", error);
+      const errMsg = error.response?.data?.message || "Failed to delete admission application.";
+      setStatusMessage(errMsg);
+      if ((window as any).showToast) {
+        (window as any).showToast(errMsg, "error");
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // New admission form state
   const [admissionMode, setAdmissionMode] = useState<"standard" | "direct">("standard");
@@ -662,22 +718,35 @@ const Admissions = () => {
                           </td>
                           {isSuperAdmin && (
                             <td>
-                              {isPending ? (
-                                <div style={{ display: "flex", gap: "8px" }}>
-                                  <button onClick={() => handleApproveClick(admission)}
-                                    style={{ padding: "6px 14px", backgroundColor: "#10b981", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 700, fontSize: "12px" }}>
-                                    ✓ Approve
-                                  </button>
-                                  <button onClick={() => handleRejectClick(admission)}
-                                    style={{ padding: "6px 12px", backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 700, fontSize: "12px" }}>
-                                    ✕ Reject
-                                  </button>
-                                </div>
-                              ) : (
-                                <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 600 }}>
-                                  {isApproved ? "✅ Enrolled" : "📦 Archived"}
-                                </span>
-                              )}
+                              <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                {isPending ? (
+                                  <>
+                                    <button onClick={() => handleApproveClick(admission)}
+                                      style={{ padding: "6px 12px", backgroundColor: "#10b981", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 700, fontSize: "12px" }}>
+                                      ✓ Approve
+                                    </button>
+                                    <button onClick={() => handleRejectClick(admission)}
+                                      style={{ padding: "6px 10px", backgroundColor: "#ef4444", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: 700, fontSize: "12px" }}>
+                                      ✕ Reject
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 600, marginRight: "4px" }}>
+                                    {isApproved ? "✅ Enrolled" : "📦 Archived"}
+                                  </span>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteClick(admission)}
+                                  title="Delete Admission"
+                                  style={{
+                                    padding: "6px 10px", backgroundColor: "rgba(239,68,68,0.12)", color: "#ef4444",
+                                    border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", cursor: "pointer",
+                                    fontWeight: 700, fontSize: "12px", display: "flex", alignItems: "center", gap: "4px"
+                                  }}
+                                >
+                                  <FiTrash2 size={13} /> Delete
+                                </button>
+                              </div>
                             </td>
                           )}
                         </tr>
@@ -721,6 +790,7 @@ const Admissions = () => {
                   <th>Approved By 🛡️</th>
                   <th>Approval Date</th>
                   <th>Status</th>
+                  {isSuperAdmin && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -771,12 +841,27 @@ const Admissions = () => {
                             ✅ ADMITTED & ACTIVE
                           </span>
                         </td>
+                        {isSuperAdmin && (
+                          <td>
+                            <button
+                              onClick={() => handleDeleteClick(admission)}
+                              title="Delete Admission"
+                              style={{
+                                padding: "6px 12px", backgroundColor: "rgba(239,68,68,0.12)", color: "#ef4444",
+                                border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", cursor: "pointer",
+                                fontWeight: 700, fontSize: "12px", display: "flex", alignItems: "center", gap: "4px"
+                              }}
+                            >
+                              <FiTrash2 size={13} /> Delete
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
+                    <td colSpan={isSuperAdmin ? 8 : 7} style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)" }}>
                       No approved admissions yet. Pending applications will appear here after Super Admin approval.
                     </td>
                   </tr>
@@ -874,6 +959,54 @@ const Admissions = () => {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          DELETE CONFIRMATION MODAL
+      ══════════════════════════════════════════════════════════════ */}
+      {showDeleteModal && admissionToDelete && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)", display: "flex",
+          justifyContent: "center", alignItems: "center", zIndex: 1000,
+        }}>
+          <div style={{
+            backgroundColor: "var(--card-bg)", border: "1px solid var(--border-color)",
+            padding: "30px", borderRadius: "16px", maxWidth: "440px", width: "90%",
+            boxShadow: "0 25px 50px -12px rgba(0,0,0,0.35)", textAlign: "center"
+          }}>
+            <div style={{ color: "#ef4444", marginBottom: "12px", display: "flex", justifyContent: "center" }}>
+              <FiTrash2 size={44} />
+            </div>
+            <h3 style={{ margin: "0 0 10px 0", color: "var(--text-main)", fontSize: "18px", fontWeight: 800 }}>
+              Delete Admission Record?
+            </h3>
+            <p style={{ margin: "0 0 20px 0", color: "var(--text-muted)", fontSize: "13px", lineHeight: "1.5" }}>
+              Are you sure you want to delete the admission application for{" "}
+              <strong style={{ color: "var(--text-main)" }}>
+                {admissionToDelete.studentName || admissionToDelete.student?.user?.name || "this applicant"}
+              </strong>? This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={() => { setShowDeleteModal(false); setAdmissionToDelete(null); }}
+                style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--border-color)", backgroundColor: "var(--panel-bg)", color: "var(--text-main)", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteAdmission}
+                disabled={deleting}
+                style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", backgroundColor: "#ef4444", color: "white", fontWeight: 800, fontSize: "13px", cursor: deleting ? "not-allowed" : "pointer", opacity: deleting ? 0.7 : 1 }}
+              >
+                {deleting ? "Deleting..." : "Delete Record"}
+              </button>
+            </div>
           </div>
         </div>
       )}

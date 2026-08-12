@@ -32,15 +32,26 @@ exports.createOrUpdateTimetable = async (req, res) => {
     const { className, section, dayOfWeek, periods } = req.body;
 
     if (!className || !section || !dayOfWeek || !periods) {
-      return res.status(400).json({ success: false, message: "Please provide all required fields." });
+      return res.status(400).json({ success: false, message: "Please provide Class, Section, Day, and Periods." });
     }
+
+    // Sanitize periods array so no missing fields crash validation
+    const sanitizedPeriods = (Array.isArray(periods) ? periods : []).map(p => ({
+      period: p.period || '1',
+      startTime: p.startTime || '08:30',
+      endTime: p.endTime || '09:30',
+      subject: p.subject || (p.isBreak ? 'Recess Break' : 'General'),
+      teacher: p.teacher || '',
+      room: p.room || '',
+      isBreak: Boolean(p.isBreak)
+    }));
 
     // Check if timetable already exists
     let timetable = await Timetable.findOne({ className, section, dayOfWeek });
 
     if (timetable) {
       // Update existing
-      timetable.periods = periods;
+      timetable.periods = sanitizedPeriods;
       await timetable.save();
       return res.status(200).json({ success: true, data: timetable, message: "Timetable updated successfully." });
     } else {
@@ -49,13 +60,13 @@ exports.createOrUpdateTimetable = async (req, res) => {
         className,
         section,
         dayOfWeek,
-        periods
+        periods: sanitizedPeriods
       });
       return res.status(201).json({ success: true, data: timetable, message: "Timetable created successfully." });
     }
   } catch (error) {
     console.error("Error saving timetable:", error);
-    res.status(500).json({ success: false, message: "Server error while saving timetable." });
+    res.status(400).json({ success: false, message: error.message || "Server error while saving timetable." });
   }
 };
 

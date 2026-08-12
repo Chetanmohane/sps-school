@@ -1083,8 +1083,9 @@ const StudentProfiles = () => {
                     if ((window as any).showToast) (window as any).showToast("Student deleted successfully!", "success");
                     fetchStudents();
                   } catch (error: any) {
-                    showStatus("Failed to delete student", "error");
-                    if ((window as any).showToast) (window as any).showToast("Failed to delete student", "error");
+                    const errMsg = error.response?.data?.message || "Failed to delete student";
+                    showStatus(errMsg, "error");
+                    if ((window as any).showToast) (window as any).showToast(errMsg, "error");
                   } finally {
                     setLoading(false);
                   }

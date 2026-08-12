@@ -20,7 +20,7 @@ const StudentDashboard = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Data states with instant fallback from localStorage
-  const savedEmail = localStorage.getItem('userEmail') || 'student@sps.edu';
+  const savedEmail = localStorage.getItem('userEmail') || 'student@vasantvalley.edu';
   const savedName = localStorage.getItem('userName') || 'Student User';
   const savedPhoto = localStorage.getItem(`student_photo_${savedEmail}`);
 

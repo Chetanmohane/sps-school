@@ -110,7 +110,7 @@ const StudentAssignments = () => {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(79, 70, 229);
-    doc.text('SPS School Assignment', 20, 20);
+    doc.text('Vasant Valley School Assignment', 20, 20);
     doc.setFontSize(14);
     doc.setTextColor(17, 24, 39);
     doc.text(`Title: ${asg.title}`, 20, 40);

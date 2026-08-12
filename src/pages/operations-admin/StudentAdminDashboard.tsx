@@ -154,11 +154,12 @@ const StudentAdminDashboard = () => {
   const confirmDeleteStudent = async () => {
     if(!studentToDelete) return;
     try {
-      await API.delete(`/api/admin/student-admin/students/${studentToDelete}`);
-      setStudents((p: any[]) => p.filter(s => s.id !== studentToDelete && s._id !== studentToDelete));
+      const targetId = typeof studentToDelete === 'object' ? (studentToDelete._id || studentToDelete.id) : studentToDelete;
+      await API.delete(`/api/admin/student-admin/students/${targetId}`);
+      setStudents((p: any[]) => p.filter(s => s.id !== targetId && s._id !== targetId));
       trigger('Student deleted successfully!');
-    } catch (err) {
-      trigger('Failed to delete student', 'danger');
+    } catch (err: any) {
+      trigger(err.response?.data?.message || 'Failed to delete student', 'danger');
     }
     setStudentToDelete(null);
   };

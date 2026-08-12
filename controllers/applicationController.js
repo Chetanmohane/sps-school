@@ -1,6 +1,9 @@
 const Application = require("../models/Application");
 const Student = require("../models/Student");
 const User = require("../models/User");
+const Fee = require("../models/Fee");
+const Attendance = require("../models/Attendance");
+const Submission = require("../models/Submission");
 const { notifyChange } = require("../config/socket");
 
 exports.sendApplication = async (req, res) => {
@@ -104,10 +107,48 @@ exports.getByClass = async (req, res) => {
 exports.deleteApplication = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await Application.findByIdAndDelete(id);
-    if (!deleted) {
+    const application = await Application.findById(id);
+    if (!application) {
       return res.status(404).json({ message: "Application not found" });
     }
+
+    // Clean up linked student/user profile if this was an admission or student application
+    let rawStudentId = application.student;
+    if (rawStudentId) {
+      const studentId = typeof rawStudentId === "object" && rawStudentId._id ? rawStudentId._id : rawStudentId;
+      try {
+        const studentObj = await Student.findById(studentId);
+        if (studentObj) {
+          if (studentObj.user) {
+            await User.findByIdAndDelete(studentObj.user);
+          }
+          await Fee.deleteMany({ studentId });
+          await Attendance.deleteMany({ student: studentId });
+          await Submission.deleteMany({ student: studentId });
+          await Student.findByIdAndDelete(studentId);
+        }
+      } catch (err) {
+        console.error("Error cleaning student profile:", err);
+      }
+    } else if (application.studentEmail) {
+      try {
+        const user = await User.findOne({ email: application.studentEmail });
+        if (user) {
+          const studentObj = await Student.findOne({ user: user._id });
+          if (studentObj) {
+            await Fee.deleteMany({ studentId: studentObj._id });
+            await Attendance.deleteMany({ student: studentObj._id });
+            await Submission.deleteMany({ student: studentObj._id });
+            await Student.findByIdAndDelete(studentObj._id);
+          }
+          await User.findByIdAndDelete(user._id);
+        }
+      } catch (err) {
+        console.error("Error cleaning user profile by email:", err);
+      }
+    }
+
+    await Application.findByIdAndDelete(id);
     notifyChange("APPLICATION_CHANGED", { action: "delete", id });
     res.status(200).json({ message: "Application deleted successfully" });
   } catch (error) {

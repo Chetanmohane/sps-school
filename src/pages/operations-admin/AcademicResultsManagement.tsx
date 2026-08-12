@@ -271,7 +271,7 @@ const AcademicResultsManagement = () => {
     return acc + gpaVal;
   }, 0) / (filteredStudents.length || 1)).toFixed(2);
 
-  const classesList = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+  const classesList = ['Nursery', 'KG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
 
   return (
     <div className="app-layout">

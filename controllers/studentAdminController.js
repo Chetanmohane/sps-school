@@ -1,6 +1,9 @@
 const User = require("../models/User");
 const Student = require("../models/Student");
 const Application = require("../models/Application");
+const Fee = require("../models/Fee");
+const Attendance = require("../models/Attendance");
+const Submission = require("../models/Submission");
 const bcrypt = require("bcryptjs");
 const { notifyChange } = require("../config/socket");
 
@@ -302,6 +305,98 @@ exports.rejectAdmission = async (req, res) => {
   }
 };
 
+// Delete an admission application
+exports.deleteAdmission = async (req, res) => {
+  try {
+    const { admissionId } = req.params;
+
+    let application = await Application.findById(admissionId);
+    let studentId = null;
+    let userId = null;
+    let email = null;
+
+    if (application) {
+      if (application.student) {
+        studentId = typeof application.student === "object" && application.student._id ? application.student._id : application.student;
+      }
+      if (application.studentEmail) {
+        email = application.studentEmail;
+      }
+    } else {
+      // Fallback 1: Try finding Student by admissionId
+      const studentObj = await Student.findById(admissionId);
+      if (studentObj) {
+        studentId = studentObj._id;
+        userId = studentObj.user;
+        application = await Application.findOne({ student: studentObj._id });
+      } else {
+        // Fallback 2: Try finding User by admissionId
+        const userObj = await User.findById(admissionId);
+        if (userObj) {
+          userId = userObj._id;
+          email = userObj.email;
+          const s = await Student.findOne({ user: userObj._id });
+          if (s) studentId = s._id;
+          application = await Application.findOne({ $or: [{ student: s?._id }, { studentEmail: userObj.email }] });
+        }
+      }
+    }
+
+    if (!application && !studentId && !userId) {
+      return res.status(404).json({ message: "Admission record not found" });
+    }
+
+    if (!studentId && userId) {
+      const s = await Student.findOne({ user: userId });
+      if (s) studentId = s._id;
+    }
+    if (studentId && !userId) {
+      const s = await Student.findById(studentId);
+      if (s) userId = s.user;
+    }
+    if (!email && userId) {
+      const u = await User.findById(userId);
+      if (u) email = u.email;
+    }
+
+    // Clean up linked models
+    if (studentId) {
+      await Fee.deleteMany({ studentId });
+      await Attendance.deleteMany({ student: studentId });
+      await Submission.deleteMany({ student: studentId });
+      await Student.findByIdAndDelete(studentId);
+    }
+
+    if (userId) {
+      await User.findByIdAndDelete(userId);
+    }
+
+    if (application) {
+      await Application.findByIdAndDelete(application._id);
+    }
+    if (email || studentId) {
+      const query = [];
+      if (studentId) query.push({ student: studentId });
+      if (email) query.push({ studentEmail: email });
+      if (query.length > 0) {
+        await Application.deleteMany({ $or: query });
+      }
+    }
+
+    notifyChange("ADMISSION_CHANGED", { action: "delete", id: admissionId });
+    notifyChange("APPLICATION_CHANGED", { action: "delete", id: admissionId });
+    notifyChange("STUDENT_CHANGED", { action: "delete", id: studentId || admissionId });
+
+    res.status(200).json({
+      message: "Admission record deleted successfully",
+      data: { id: admissionId },
+    });
+  } catch (error) {
+    console.error("Error deleting admission:", error);
+    res.status(500).json({ message: "Error deleting admission application", error: error.message });
+  }
+};
+
 // ==================== STUDENT PROFILES ====================
 
 exports.createStudent = async (req, res) => {
@@ -486,20 +581,72 @@ exports.deleteStudent = async (req, res) => {
   try {
     const { studentId } = req.params;
 
-    const student = await Student.findById(studentId);
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
+    let student = await Student.findById(studentId);
+    let userId = null;
+    let email = null;
+    let targetStudentId = studentId;
+
+    if (student) {
+      userId = student.user;
+    } else {
+      // Fallback 1: check if studentId is actually an Application ID
+      const appObj = await Application.findById(studentId);
+      if (appObj) {
+        if (appObj.student) {
+          targetStudentId = typeof appObj.student === "object" && appObj.student._id ? appObj.student._id : appObj.student;
+          student = await Student.findById(targetStudentId);
+          if (student) userId = student.user;
+        }
+        email = appObj.studentEmail;
+        await Application.findByIdAndDelete(studentId);
+      } else {
+        // Fallback 2: check if studentId is a User ID
+        const userObj = await User.findById(studentId);
+        if (userObj) {
+          userId = userObj._id;
+          email = userObj.email;
+          student = await Student.findOne({ user: userObj._id });
+          if (student) targetStudentId = student._id;
+        }
+      }
     }
 
-    // Delete from User collection as well
-    await User.findByIdAndDelete(student.user);
-    await Student.findByIdAndDelete(studentId);
-    notifyChange("STUDENT_CHANGED", { action: "delete", id: studentId });
+    if (!student && !userId && !email) {
+      return res.status(404).json({ message: "Student record not found" });
+    }
+
+    if (userId && !email) {
+      const u = await User.findById(userId);
+      if (u) email = u.email;
+    }
+
+    // Delete linked Application records
+    const appQuery = [];
+    if (targetStudentId) appQuery.push({ student: targetStudentId });
+    if (email) appQuery.push({ studentEmail: email });
+    if (appQuery.length > 0) {
+      await Application.deleteMany({ $or: appQuery });
+    }
+
+    if (userId) {
+      await User.findByIdAndDelete(userId);
+    }
+
+    if (targetStudentId) {
+      await Fee.deleteMany({ studentId: targetStudentId });
+      await Attendance.deleteMany({ student: targetStudentId });
+      await Submission.deleteMany({ student: targetStudentId });
+      await Student.findByIdAndDelete(targetStudentId);
+    }
+
+    notifyChange("STUDENT_CHANGED", { action: "delete", id: targetStudentId || studentId });
+    notifyChange("ADMISSION_CHANGED", { action: "delete", id: targetStudentId || studentId });
 
     res.status(200).json({
-      message: "Student deleted successfully",
+      message: "Student record deleted successfully",
     });
   } catch (error) {
+    console.error("Error deleting student:", error);
     res.status(500).json({ message: "Error deleting student", error: error.message });
   }
 };

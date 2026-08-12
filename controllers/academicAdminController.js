@@ -378,10 +378,26 @@ exports.getClassById = async (req, res) => {
   }
 };
 
+// Helper to get formatted admin identity string
+const getAdminUserString = (req) => {
+  if (req.body && req.body.updatedBy) {
+    return req.body.updatedBy;
+  }
+  if (req.user) {
+    const r = (req.user.role || "").toLowerCase();
+    if (r.includes("manager")) return "Manager Admin";
+    if (r.includes("super")) return "Super Admin";
+    if (r.includes("academic")) return "Academic Admin";
+    if (r.includes("teacher")) return "Teacher Admin";
+    if (r.includes("operations")) return "Operations Admin";
+  }
+  return "Super Admin";
+};
+
 // Create class
 exports.createClass = async (req, res) => {
   try {
-    const { className, section, academicYear, classTeacher, subjects, capacity, startTime, endTime, room } = req.body;
+    const { className, section, academicYear, classTeacher, subjects, capacity, startTime, endTime, room, updatedBy } = req.body;
 
     if (!className || !academicYear) {
       return res.status(400).json({ message: "Class name and academic year are required" });
@@ -393,6 +409,8 @@ exports.createClass = async (req, res) => {
       return res.status(400).json({ message: "This class already exists for the selected academic year" });
     }
 
+    const adminUser = getAdminUserString(req);
+
     const schoolClass = new Class({
       className,
       section: section,
@@ -402,7 +420,8 @@ exports.createClass = async (req, res) => {
       capacity: capacity || 50,
       startTime: startTime,
       endTime: endTime,
-      room: room
+      room: room,
+      updatedBy: adminUser
     });
 
     const savedClass = await schoolClass.save();
@@ -426,7 +445,9 @@ exports.createClass = async (req, res) => {
 exports.updateClass = async (req, res) => {
   try {
     const { classId } = req.params;
-    const { className, section, classTeacher, subjects, capacity, status, startTime, endTime, room } = req.body;
+    const { className, section, classTeacher, subjects, capacity, status, startTime, endTime, room, updatedBy } = req.body;
+
+    const adminUser = getAdminUserString(req);
 
     const schoolClass = await Class.findByIdAndUpdate(
       classId,
@@ -440,6 +461,7 @@ exports.updateClass = async (req, res) => {
         startTime,
         endTime,
         room,
+        updatedBy: adminUser,
         updatedAt: Date.now()
       },
       { new: true }
@@ -517,9 +539,9 @@ exports.updateGlobalClassTimings = async (req, res) => {
 exports.assignClassTeacher = async (req, res) => {
   try {
     const { classId } = req.params;
-    const { teacherId, updatedBy } = req.body;
+    const { teacherId } = req.body;
 
-    const adminUser = updatedBy || "Super Admin";
+    const adminUser = getAdminUserString(req);
 
     // If teacherId is empty/null, unassign the class teacher
     const schoolClass = await Class.findByIdAndUpdate(

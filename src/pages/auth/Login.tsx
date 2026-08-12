@@ -79,7 +79,15 @@ const Login = () => {
   return (
     <div className="login-container">
       <div className="login-card">
-        <div className="login-logo">SPS School ERP</div>
+        <div className="login-logo">Vasant Valley School ERP</div>
+        <div style={{ textAlign: 'center', marginBottom: '6px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.18em', color: 'var(--primary)', textTransform: 'uppercase' }}>
+            LEARN • GROW • LEAD • SERVE
+          </span>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', fontStyle: 'italic' }}>
+            सीखें • बढ़ें • नेतृत्व करें • सेवा करें
+          </div>
+        </div>
         <p>Sign in to your account</p>
 
         {error && (
@@ -106,7 +114,7 @@ const Login = () => {
               id="email"
               type="email"
               className="form-control"
-              placeholder="admin@sps.edu"
+              placeholder="admin@vasantvalley.edu"
               value={credentials.email}
               onChange={handleChange}
               required

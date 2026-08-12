@@ -111,8 +111,8 @@ const runSeed = async () => {
         section: 'A',
         academicYear: '2025-2026',
         classTeacher: teacherProfile._id,
-        startTime: '08:00',
-        endTime: '14:00',
+        startTime: '08:45',
+        endTime: '13:50',
         room: '204',
         capacity: 40,
         status: 'active'

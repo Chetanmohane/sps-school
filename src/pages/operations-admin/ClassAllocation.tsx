@@ -3,7 +3,7 @@ import API from "../../api/axios";
 import { FiUsers, FiUserCheck, FiUserPlus, FiSearch, FiLayers, FiCheck, FiX, FiRefreshCw, FiDownload } from "react-icons/fi";
 import "../../assets/styles/main.css";
 
-const STANDARD_CLASSES = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
+const STANDARD_CLASSES = ['Nursery', 'KG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
 const SECTIONS = ['A', 'B', 'C', 'D', 'E'];
 
 const inputStyle: React.CSSProperties = {

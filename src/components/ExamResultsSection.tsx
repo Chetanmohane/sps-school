@@ -83,7 +83,7 @@ const ExamResultsSection: React.FC<ExamResultsSectionProps> = ({ student, result
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text("SHREE PUBLIC SCHOOL - REPORT CARD", 105, 18, { align: 'center' });
+    doc.text("VASANT VALLEY SCHOOL - REPORT CARD", 105, 18, { align: 'center' });
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
     doc.text(`${currentTerm.termName} | Academic Session 2025-26`, 105, 26, { align: 'center' });

@@ -12,7 +12,7 @@ import NoticeBoardAdmin from '../../components/NoticeBoardAdmin';
 /* ─────────────────────────────────────────────────────────────────
    EXAM TIMETABLE TAB COMPONENT (used inside Super Admin Dashboard)
 ───────────────────────────────────────────────────────────────── */
-const CLASSES = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'];
+const CLASSES = ['Nursery','KG','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'];
 const TIME_OPTIONS = ['08:00 AM','08:30 AM','09:00 AM','09:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','01:00 PM','01:30 PM','02:00 PM','02:30 PM','03:00 PM','03:30 PM','04:00 PM','04:30 PM','05:00 PM'];
 
 const inputSx: React.CSSProperties = {
@@ -1082,11 +1082,12 @@ const SuperAdminDashboard = () => {
   const confirmDeleteStudent = async () => {
     if(!studentToDelete) return;
     try {
-      await API.delete(`/api/admin/student-admin/students/${studentToDelete}`);
+      const targetId = typeof studentToDelete === 'object' ? (studentToDelete._id || studentToDelete.id) : studentToDelete;
+      await API.delete(`/api/admin/student-admin/students/${targetId}`);
       trigger('Student deleted successfully!');
       fetchStudents();
-    } catch (err) {
-      trigger('Failed to delete student', 'error');
+    } catch (err: any) {
+      trigger(err.response?.data?.message || 'Failed to delete student', 'error');
     }
     setStudentToDelete(null);
   };
@@ -1816,7 +1817,7 @@ const SuperAdminDashboard = () => {
 
                           <div style={{ padding: '10px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
                             <span>📍 Room {cls.room || 'N/A'}</span>
-                            <span style={{ fontWeight: '700', color: '#6366f1' }}>🕒 {cls.startTime || '08:00 AM'} - {cls.endTime || '02:00 PM'}</span>
+                            <span style={{ fontWeight: '700', color: '#6366f1' }}>🕒 {cls.startTime || '08:45 AM'} - {cls.endTime || '01:50 PM'}</span>
                           </div>
                         </div>
                       );
@@ -1848,7 +1849,7 @@ const SuperAdminDashboard = () => {
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.user?.phone || 'N/A'}</div>
                               </td>
                               <td><span style={{ padding: '3px 8px', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', fontSize: '12px' }}>{t.department || 'Main Block'}</span></td>
-                              <td><span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>08:00 AM - 02:00 PM</span></td>
+                              <td><span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>08:45 AM - 01:50 PM</span></td>
                               <td>
                                 <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(245,158,11,0.15)', color: '#d97706' }}>
                                   ⭐ Active Class Teacher
@@ -2155,8 +2156,8 @@ const SuperAdminDashboard = () => {
             const classTeachersCount = new Set(classes.map(c => c.classTeacher?._id || c.classTeacher).filter(Boolean)).size;
             const subjectTeachersCount = Math.max(0, teachers.length - classTeachersCount);
             const superAdminName = localStorage.getItem('userName') || 'Super Admin';
-            const superAdminEmail = localStorage.getItem('userEmail') || 'admin@sps.edu';
-            const superAdminPhone = localStorage.getItem('userPhone') || '+91 99999 99999';
+            const superAdminEmail = localStorage.getItem('userEmail') || 'admin@vasantvalley.edu';
+            const superAdminPhone = localStorage.getItem('userPhone') || '0755-4378074';
             const totalPaid = fees.reduce((s: number, f: any) => s + (f.paid || 0), 0);
 
             return (
@@ -2632,7 +2633,7 @@ const SuperAdminDashboard = () => {
                       <label style={lb}>Class</label>
                       <select value={feeFormClass} onChange={e=>setFeeFormClass(e.target.value)} style={inS}>
                         <option value="">All Classes</option>
-                        {['1','2','3','4','5','6','7','8','9','10','11','12'].map(c => (
+                        {['Nursery','KG','1','2','3','4','5','6','7','8','9','10','11','12'].map(c => (
                           <option key={c} value={c}>Class {c}</option>
                         ))}
                       </select>

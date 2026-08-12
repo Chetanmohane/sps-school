@@ -470,7 +470,7 @@ const AcademicAdminDashboard = () => {
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
                     <span>📍 Room {c.room || 'N/A'}</span>
-                    <span>🕒 {c.startTime || '08:00'} - {c.endTime || '14:00'}</span>
+                    <span>🕒 {c.startTime || '08:45'} - {c.endTime || '13:50'}</span>
                   </div>
                 </div>
               ))}
@@ -704,7 +704,7 @@ const AcademicAdminDashboard = () => {
                           <td style={{ padding: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <FiClock size={12} className="text-indigo-400" />
-                              {c.startTime || '08:00'} - {c.endTime || '14:00'}
+                              {c.startTime || '08:45'} - {c.endTime || '13:50'}
                             </div>
                           </td>
                           <td style={{ padding: '12px', fontSize: '11px', color: 'var(--text-muted)' }}>
