@@ -4,6 +4,7 @@ const Teacher = require("../models/Teacher");
 const Student = require("../models/Student");
 const Attendance = require("../models/Attendance");
 const Application = require("../models/Application");
+const { notifyChange } = require("../config/socket");
 
 // Get all classes taught by teacher (both Class Teacher classes & subject classes)
 exports.getMyClasses = async (req, res) => {
@@ -67,8 +68,24 @@ exports.getTeacherProfileInfo = async (req, res) => {
       return res.status(404).json({ success: false, message: "Teacher profile not found" });
     }
 
-    const classInCharge = await Class.findOne({ classTeacher: teacher._id, status: "active" })
+    // Check classTeacher link first
+    let classInCharge = await Class.findOne({ classTeacher: teacher._id, status: "active" })
       .populate("subjects", "name code");
+
+    // Fallback: if teacher.classes has entries but classTeacher not set, use first class
+    if (!classInCharge && teacher.classes && teacher.classes.length > 0) {
+      const firstClassId = teacher.classes[0]._id || teacher.classes[0];
+      const candidateClass = await Class.findOne({ _id: firstClassId, status: "active" })
+        .populate("subjects", "name code");
+      if (candidateClass) {
+        // Auto-repair the classTeacher link
+        if (!candidateClass.classTeacher || String(candidateClass.classTeacher) !== String(teacher._id)) {
+          candidateClass.classTeacher = teacher._id;
+          await candidateClass.save();
+        }
+        classInCharge = candidateClass;
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -98,8 +115,22 @@ exports.getClassTeacherStudents = async (req, res) => {
       return res.status(404).json({ success: false, message: "Teacher profile not found" });
     }
 
-    // Find class where teacher is strictly in-charge
-    const classInCharge = await Class.findOne({ classTeacher: teacher._id, status: "active" });
+    // Step 1: Try strict classTeacher match
+    let classInCharge = await Class.findOne({ classTeacher: teacher._id, status: "active" });
+
+    // Step 2: Fallback — check teacher.classes array for an active class
+    if (!classInCharge && teacher.classes && teacher.classes.length > 0) {
+      for (const clsId of teacher.classes) {
+        const classDoc = await Class.findOne({ _id: clsId, status: "active" });
+        if (classDoc) {
+          // Auto-repair: set this teacher as classTeacher on the Class document
+          classDoc.classTeacher = teacher._id;
+          await classDoc.save();
+          classInCharge = classDoc;
+          break;
+        }
+      }
+    }
 
     if (!classInCharge) {
       return res.status(200).json({
@@ -195,6 +226,47 @@ exports.getClassTeacherSummary = async (req, res) => {
         markedToday: todayAttendance.length,
         pendingLeaves
       }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// Update / Assign subjects and classes to teacher by email
+exports.updateTeacherSubjects = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { subjects, classes, specialization, department } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const teacher = await Teacher.findOne({ user: user._id });
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: "Teacher profile not found" });
+    }
+
+    if (subjects !== undefined) teacher.subjects = subjects;
+    if (classes !== undefined) teacher.classes = classes;
+    if (specialization !== undefined) teacher.specialization = specialization;
+    if (department !== undefined) teacher.department = department;
+    teacher.updatedAt = Date.now();
+
+    await teacher.save();
+
+    const updatedTeacher = await Teacher.findById(teacher._id)
+      .populate("user", "name email phone role")
+      .populate("subjects", "name code")
+      .populate("classes", "className section");
+
+    notifyChange("TEACHER_CHANGED", { action: "update", teacher: updatedTeacher });
+
+    res.status(200).json({
+      success: true,
+      message: "Teacher subjects and classes assigned successfully!",
+      data: updatedTeacher
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

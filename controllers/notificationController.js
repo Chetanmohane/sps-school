@@ -11,11 +11,12 @@ exports.getNotifications = async (req, res) => {
     
     if (adminRoles.includes(userRole)) {
       query = {};
-    } else if (userRole === "teacher") {
+    } else if (userRole === "teacher" || userRole === "class-teacher") {
       query = {
         $or: [
           { targetRole: "all" },
           { targetRole: "teacher" },
+          { targetRole: "class-teacher" },
           { targetRole: "student" }
         ]
       };

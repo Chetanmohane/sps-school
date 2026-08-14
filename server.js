@@ -62,8 +62,15 @@ app.use("/api/exams", require("./routes/examRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/timetable", require("./routes/timetableRoutes"));
 
-// Serve React static files
-app.use(express.static(path.join(__dirname, "build")));
+// Serve React static files with strict no-cache headers so browser always loads fresh JS/CSS
+app.use(express.static(path.join(__dirname, "build"), {
+  etag: false,
+  setHeaders: (res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+  }
+}));
 
 // Fallback all non-API GET requests to serve React's index.html
 app.get(/(.*)/, (req, res) => {

@@ -12,6 +12,11 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+      tailwind.config = {
+        darkMode: 'class'
+      }
+    </script>
+    <script>
       (function() {
         window.alert = function(message) {
           var container = document.getElementById('custom-alert-container');

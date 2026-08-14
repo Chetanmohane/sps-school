@@ -98,6 +98,7 @@ const StudentDashboard = () => {
     fetchDashboardData();
     const unsubFee = onEvent('FEE_CHANGED', () => fetchDashboardData());
     const unsubAtt = onEvent('ATTENDANCE_CHANGED', () => fetchDashboardData());
+    const unsubAsg = onEvent('ASSIGNMENT_CHANGED', () => fetchDashboardData());
     // Format date string
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     setCurrentDateString(new Date().toLocaleDateString('en-US', options));
@@ -108,6 +109,7 @@ const StudentDashboard = () => {
     return () => {
       unsubFee();
       unsubAtt();
+      unsubAsg();
     };
   }, [onEvent]);
 

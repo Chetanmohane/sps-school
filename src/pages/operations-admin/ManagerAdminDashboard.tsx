@@ -97,12 +97,13 @@ const ManagerAdminDashboard: React.FC = () => {
   ];
 
   const quickActions = [
+    { label: 'Holidays & School Events', desc: 'Manage school holidays, functions & sports calendar', icon: <FiCalendar size={18} />, path: '/operations-admin/events', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
     { label: 'Fee & Billing Portal', desc: 'Fee collection, dues & invoice management', icon: <FiDollarSign size={18} />, path: '/finance-admin', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
     { label: 'Exam Timetables', desc: 'Exam calendar & seating arrangements', icon: <FiCalendar size={18} />, path: '/exams', color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
     { label: 'Daily Class Timetable', desc: 'Create & manage period-wise class schedules', icon: <FiCalendar size={18} />, path: '/timetable', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
     { label: 'Teacher Workload & Tasks', desc: 'Faculty assignments & homework tasks', icon: <FiEdit3 size={18} />, path: '/teacher/assignments', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
-    { label: 'Leave Applications Desk', desc: 'Staff leave reviews & approvals', icon: <FiFileText size={18} />, path: '/teacher/application', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
-    { label: 'Daily Attendance Manager', desc: 'Mark student & staff attendance daily', icon: <FiCheckSquare size={18} />, path: '/teacher/attendanceMark', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+    { label: 'Leave Applications Desk', desc: 'Staff & student leave reviews & approvals', icon: <FiFileText size={18} />, path: '/teacher/application', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
+    { label: 'Daily Attendance Manager', desc: 'Mark student & staff attendance daily', icon: <FiCheckSquare size={18} />, path: '/teacher/attendanceMark', color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
     { label: 'Super Admin Panel', desc: 'System settings, users & audit logs', icon: <FiShield size={18} />, path: '/super-admin', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
   ];
 

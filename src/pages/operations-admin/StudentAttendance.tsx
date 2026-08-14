@@ -141,9 +141,8 @@ const StudentAttendance = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-xs font-semibold text-[var(--text-main)]">
-                          👔 {row.updatedBy || 'Class Teacher In-Charge'}
-                          <br />
-                          <span className="text-[10px] text-[var(--text-muted)]">{row.remark || 'Daily Roll Call Register'}</span>
+                          <div className="font-bold text-indigo-600">👔 Marked by: {row.updatedBy || 'Faculty Instructor'}</div>
+                          <span className="text-[11px] text-[var(--text-muted)] italic">💬 {row.remark || 'Daily Period Roll Call Register'}</span>
                         </td>
                       </tr>
                     );

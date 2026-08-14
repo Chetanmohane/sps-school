@@ -11,6 +11,6 @@ router.get('/audit-logs', auth, role(["super-admin", "manager-admin", "academic-
 router.post('/create-admin', auth, role(["super-admin", "manager-admin"]), controller.createSpecializedAdmin);
 router.delete('/delete-admin/:id', auth, role(["super-admin", "manager-admin"]), controller.deleteAdmin);
 router.put('/update-admin/:id', auth, role(["super-admin", "manager-admin"]), controller.updateAdmin);
-router.put('/user/:id/password', auth, role(["super-admin", "manager-admin", "student-admin", "academic-admin"]), controller.updateUserPassword);
+router.put('/user/:id/password', auth, role(["super-admin", "superadmin", "manager-admin", "student-admin", "academic-admin", "teacher-admin", "operations-admin"]), controller.updateUserPassword);
 
 module.exports = router;

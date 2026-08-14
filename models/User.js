@@ -16,13 +16,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, "Password is required"],
-    minlength: [8, 'Password must be at least 8 characters long'],
-    validate: {
-      validator: function(value) {
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(value);
-      },
-      message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
-    }
+    minlength: [6, 'Password must be at least 6 characters long']
   },
   visiblePassword: {
     type: String,
@@ -32,19 +26,31 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "Phone number is required"],
     validate: {
-    validator: function(v) {
-      // Check if starts with +91 and has 10 digits after that
-      return /^\+91\d{10}$/.test(v);
-    },
-    message: props => `${props.value} is not a valid Indian phone number! Format: +91XXXXXXXXXX`
-  }
+      validator: function(v) {
+        if (!v) return false;
+        return /^\+?\d{10,13}$/.test(v);
+      },
+      message: props => `${props.value} is not a valid phone number!`
+    }
   },
   role: {
     type: String,
     required: [true, "Role is required"],
     lowercase: true,
     enum: {
-      values: ['student', 'teacher', 'finance-admin', 'super-admin', 'academic-admin', 'teacher-admin', 'operations-admin', 'manager-admin'],
+      values: [
+        'student',
+        'teacher',
+        'class-teacher',
+        'subject-teacher',
+        'student-admin',
+        'finance-admin',
+        'super-admin',
+        'academic-admin',
+        'teacher-admin',
+        'operations-admin',
+        'manager-admin'
+      ],
       message: '{VALUE} is not a supported role' // Better error message for your console
     }
   },

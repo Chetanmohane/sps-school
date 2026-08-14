@@ -6,7 +6,7 @@ const role = require("../middleware/roleMiddleware");
 
 const studentAdminController = require("../controllers/studentAdminController");
 
-const allowedRoles = ["student-admin", "super-admin", "manager-admin", "academic-admin", "teacher-admin", "operations-admin", "admin", "finance-admin"];
+const allowedRoles = ["student-admin", "super-admin", "manager-admin", "academic-admin", "teacher-admin", "operations-admin", "admin", "finance-admin", "teacher", "class-teacher"];
 
 // ==================== STUDENT ADMIN ROUTES ====================
 router.get("/student-admin/dashboard-stats", auth, role(allowedRoles), studentAdminController.getDashboardStats);

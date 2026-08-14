@@ -7,8 +7,19 @@ const { notifyChange } = require("../config/socket");
 exports.createAssignment = async (req, res) => {
    try {
         const { title, className, section, dueDate, instructions, userEmail } = req.body;
-        const teacher = await User.findOne({ email: userEmail });
-        if (!teacher) return res.status(404).json({ message: "Teacher not found" });
+        
+        let teacher = null;
+        if (userEmail) {
+          teacher = await User.findOne({ 
+            email: new RegExp(`^${userEmail.trim().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, "i") 
+          });
+        }
+        if (!teacher && req.user?.id) {
+          teacher = await User.findById(req.user.id);
+        }
+        if (!teacher) return res.status(404).json({ message: "Teacher or Admin user profile not found. Please log in again." });
+        
+        const givenByStr = `${teacher.name || 'Faculty'} (${(teacher.role || 'Teacher').replace('-', ' ').toUpperCase()})`;
         
         const newAssignment = new Assignment({
             teacher: teacher._id,
@@ -16,45 +27,60 @@ exports.createAssignment = async (req, res) => {
             section,
             title,
             dueDate,
-            instructions 
+            instructions,
+            givenBy: givenByStr
         });
 
         await newAssignment.save();
         notifyChange("ASSIGNMENT_CHANGED", { action: "create", assignment: newAssignment });
         res.status(201).json({ message: "Assignment created successfully!", data: newAssignment });
     } catch (error) {
+        console.error("Create Assignment Error:", error);
         res.status(500).json({ message: error.message });
     }
 };
 
 exports.getAssignments = async (req, res) => {
   try {
-    const { role } = req.user;
+    const role = (req.user?.role || '').toLowerCase();
     const { email } = req.query;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+
+    let user = null;
+    if (email) {
+      user = await User.findOne({ 
+        email: new RegExp(`^${email.trim().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}$`, "i") 
+      });
+    }
+    if (!user && req.user?.id) {
+      user = await User.findById(req.user.id);
+    }
+    if (!user) return res.status(404).json({ message: "User profile not found." });
+
     let filter = {};
 
     if (role === "student") {
       const student = await Student.findOne({ user: user._id });
-      if (!student) {
-        return res.status(404).json({ message: "Student profile not found" });
+      if (student && student.className) {
+        const classNum = student.className.replace(/class/i, '').replace(/th|rd|nd|st/i, '').trim();
+        const regexPattern = new RegExp(`^(${student.className}|Class\\s*${classNum}|${classNum}th|${classNum}rd|${classNum}nd|${classNum}st)$`, 'i');
+        filter = { 
+          className: { $regex: regexPattern },
+          section: student.section 
+        };
       }
-
-      const classNum = student.className.replace(/class/i, '').replace(/th|rd|nd|st/i, '').trim();
-      const regexPattern = new RegExp(`^(${student.className}|Class\\s*${classNum}|${classNum}th|${classNum}rd|${classNum}nd|${classNum}st)$`, 'i');
-      filter = { 
-        className: { $regex: regexPattern },
-        section: student.section 
-      };
+    } else if (role === "teacher") {
+      // Find assignments created by this teacher or all assignments if none found
+      const teacherCount = await Assignment.countDocuments({ teacher: user._id });
+      if (teacherCount > 0) {
+        filter = { teacher: user._id };
+      }
     }
-    else if (role === "teacher")
-    {
-      filter = { teacher: user._id };
-    }  
-    const assignments = await Assignment.find(filter).sort({ createdAt: 1 });
+    // For admin / super-admin or fallback, filter is {} (returns all assignments)
+
+    const assignments = await Assignment.find(filter).populate("teacher", "name email role").sort({ createdAt: -1 });
     res.json(assignments);
   } catch (error) {
+    console.error("Get Assignments Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -63,24 +89,45 @@ exports.submitAssignment = async (req, res) => {
  try {
         const { assignment, answer, fileUrl, userEmail } = req.body;
 
-        const user = await User.findOne({ email: userEmail });
-        if (!user) return res.status(404).json({ message: "User not found" });
+        // Try finding user by email first, fallback to token user id
+        let user = null;
+        if (userEmail) {
+          user = await User.findOne({ email: userEmail });
+        }
+        if (!user && req.user?.id) {
+          user = await User.findById(req.user.id);
+        }
+        if (!user) return res.status(404).json({ message: "User not found. Please log out and log in again." });
 
-        const student = await Student.findOne({ user: user._id });
-        if (!student) return res.status(404).json({ message: "Student profile record not found" });
+        // Find student profile - try by user._id, or fallback search by className/section
+        let student = await Student.findOne({ user: user._id });
+        if (!student) {
+          // Try finding student by name or email match
+          student = await Student.findOne({ 
+            $or: [
+              { email: user.email },
+              { name: new RegExp(`^${user.name}$`, 'i') }
+            ]
+          });
+          if (student && !student.user) {
+            student.user = user._id;
+            await student.save();
+          }
+        }
+        if (!student) return res.status(404).json({ message: "Student profile not found. Contact your admin to link your account." });
         
-        // 2. Prevent duplicate submissions
+        // Prevent duplicate submissions
         const alreadySubmitted = await Submission.findOne({ assignment, student: student._id });
         if (alreadySubmitted) {
           return res.status(400).json({ message: "You have already submitted this assignment." });
         }
 
-        // 3. Create new submission
+        // Create new submission
         const newSubmission = new Submission({
             assignment: assignment,
             student: student._id,
             answer,
-            fileUrl,
+            fileUrl: fileUrl || '',
             status: "Submitted"
         });
 
@@ -126,12 +173,28 @@ exports.getAssignmentSubmissions = async (req, res) => {
 exports.updateMarks = async (req, res) => {
   try {
     const { submissionId } = req.params;
-    const { marks } = req.body;
+    const { marks, remarks, userEmail } = req.body;
+
+    let gradedBy = '';
+    if (req.user?.id) {
+      const u = await User.findById(req.user.id);
+      if (u) {
+        gradedBy = `${u.name} (${(u.role || 'Teacher').replace('-', ' ').toUpperCase()})`;
+      }
+    }
+    if (!gradedBy && userEmail) {
+      const u = await User.findOne({ email: userEmail });
+      if (u) {
+        gradedBy = `${u.name} (${(u.role || 'Teacher').replace('-', ' ').toUpperCase()})`;
+      }
+    }
 
     const updatedSubmission = await Submission.findByIdAndUpdate(
       submissionId,
       { 
         marks: marks,
+        remarks: remarks || "Good effort!",
+        gradedBy: gradedBy || "Faculty Evaluator",
         status: "Graded" 
       },
       { new: true }
@@ -145,5 +208,20 @@ exports.updateMarks = async (req, res) => {
     res.json(updatedSubmission);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.deleteAssignment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const assignment = await Assignment.findByIdAndDelete(id);
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found" });
+    }
+    await Submission.deleteMany({ assignment: id });
+    notifyChange("ASSIGNMENT_CHANGED", { action: "delete", id });
+    res.json({ message: "Assignment deleted successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

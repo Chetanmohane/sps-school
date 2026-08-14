@@ -101,8 +101,8 @@ body {
 
 /* --- Sidebar --- */
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 272px;
+  min-width: 272px;
   height: 100vh;
   background-color: var(--sidebar-bg);
   color: white;
@@ -113,6 +113,7 @@ body {
   left: 0;
   flex-shrink: 0;
   overflow: hidden;
+  overflow-x: hidden;
 }
 
 .sidebar-logo {
@@ -131,6 +132,7 @@ body {
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.15) transparent;
+  word-break: break-word;
 }
 
 .sidebar-menu::-webkit-scrollbar {
@@ -150,34 +152,49 @@ body {
 .sidebar-item {
   display: flex;
   align-items: center;
-  padding: 12px 24px;
+  padding: 11px 20px;
   color: #D1D5DB;
   text-decoration: none;
-  gap: 12px;
+  gap: 10px;
   transition: 0.2s;
   cursor: pointer;
+  font-size: 13.5px;
+  line-height: 1.4;
+  word-break: normal;
+  white-space: normal;
+}
+
+.nav-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 .sidebar-item:hover, .sidebar-item.active {
   background-color: var(--primary);
   color: white;
   border-left: 4px solid white;
+  padding-left: 16px;
 }
 
 /* --- Navbar --- */
 .navbar {
-  height: 70px;
+  height: 64px;
   background-color: var(--navbar-bg);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 20px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
   z-index: 50;
   flex-shrink: 0;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .nav-welcome {
@@ -1352,16 +1369,18 @@ html.dark-mode .theme-toggle-btn:hover {
   .sidebar {
     position: fixed !important;
     top: 0;
-    left: -280px;
+    left: 0 !important;
     width: 280px !important;
+    min-width: 280px !important;
     height: 100vh !important;
     z-index: 100 !important;
+    transform: translateX(-100%) !important;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     box-shadow: 4px 0 20px rgba(0,0,0,0.2);
   }
   
   .sidebar.open {
-    transform: translateX(280px);
+    transform: translateX(0) !important;
   }
 
   /* Navbar adjustments */
@@ -1500,14 +1519,16 @@ html.dark-mode .theme-toggle-btn:hover {
   .sidebar {
     position: fixed !important;
     top: 0;
-    left: -280px;
+    left: 0 !important;
     width: 280px !important;
+    min-width: 280px !important;
     height: 100vh !important;
     z-index: 1000 !important;
+    transform: translateX(-100%) !important;
     transition: transform 0.3s ease !important;
   }
   .sidebar.open {
-    transform: translateX(280px) !important;
+    transform: translateX(0) !important;
   }
   .sidebar-overlay {
     z-index: 999 !important;

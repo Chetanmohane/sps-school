@@ -10,6 +10,14 @@ const eventSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  endDate: {
+    type: Date
+  },
+  type: {
+    type: String,
+    enum: ["Holiday", "Event", "Academic", "Sports", "Exam"],
+    default: "Event"
+  },
   location: String,
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

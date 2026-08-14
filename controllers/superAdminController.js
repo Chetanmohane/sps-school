@@ -58,8 +58,62 @@ exports.createSpecializedAdmin = async (req, res) => {
     });
 
     await newAdmin.save();
+
+    if (role === 'class-teacher' || role === 'teacher') {
+      try {
+        const Teacher = require("../models/Teacher");
+        const Class = require("../models/Class");
+
+        let teacherDoc = await Teacher.findOne({ user: newAdmin._id });
+        if (!teacherDoc) {
+          teacherDoc = new Teacher({
+            user: newAdmin._id,
+            specialization: req.body.specialization || "Class In-Charge & Academic Management",
+            qualifications: req.body.qualifications || "M.Sc / B.Ed",
+            experience: Number(req.body.experience) || 3,
+            department: req.body.department || "Academic In-Charge",
+            phone: formattedPhone
+          });
+          await teacherDoc.save();
+        }
+
+        // If className & section provided, assign classTeacher on Class model (creating Class if it doesn't exist yet)
+        if (req.body.className && req.body.section) {
+          const targetClassName = String(req.body.className).trim();
+          const targetSection = String(req.body.section).trim().toUpperCase();
+          let classDoc = await Class.findOne({
+            className: targetClassName,
+            section: targetSection
+          });
+          if (!classDoc) {
+            const currentYear = new Date().getFullYear();
+            classDoc = new Class({
+              className: targetClassName,
+              section: targetSection,
+              academicYear: `${currentYear}-${currentYear + 1}`,
+              classTeacher: teacherDoc._id,
+              startTime: "08:00",
+              endTime: "14:00",
+              capacity: 40
+            });
+            await classDoc.save();
+          } else {
+            classDoc.classTeacher = teacherDoc._id;
+            await classDoc.save();
+          }
+          if (!teacherDoc.classes.includes(classDoc._id)) {
+            teacherDoc.classes.push(classDoc._id);
+            await teacherDoc.save();
+          }
+        }
+      } catch (tErr) {
+        console.warn("Notice: Created user but teacher doc binding encountered warning:", tErr.message);
+      }
+    }
+
     notifyChange("USER_CHANGED", { action: "create", role, user: { _id: newAdmin._id, name, email: cleanEmail, phone: formattedPhone, role, visiblePassword: password, createdBy: newAdmin.createdBy, remarks: newAdmin.remarks } });
-    res.status(201).json({ message: `${role} created successfully`, user: newAdmin });
+    notifyChange("TEACHER_CHANGED", { action: "create", role });
+    res.status(201).json({ message: `${role} account created successfully`, user: newAdmin });
   } catch (error) {
     console.error("Error creating admin:", error);
     res.status(400).json({ message: error.message || "Error creating admin" });
@@ -114,23 +168,111 @@ exports.updateUserPassword = async (req, res) => {
   try {
     const { id } = req.params;
     const { password } = req.body;
+    const cleanPassword = (password || "").trim();
 
-    if (!password || password.trim().length < 6) {
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({ message: "Invalid User ID provided." });
+    }
+
+    if (!cleanPassword || cleanPassword.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters long." });
     }
 
-    const user = await User.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const mongoose = require("mongoose");
+    const Teacher = require("../models/Teacher");
+    const Student = require("../models/Student");
+
+    let user = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      user = await User.findById(id);
+
+      if (!user) {
+        // Search if 'id' was a Teacher document ID
+        const teacherDoc = await Teacher.findById(id);
+        if (teacherDoc) {
+          if (teacherDoc.user) {
+            user = await User.findById(teacherDoc.user);
+          }
+          if (!user && (teacherDoc.email || teacherDoc.name)) {
+            user = await User.findOne({ 
+              $or: [
+                { email: (teacherDoc.email || '').toLowerCase() },
+                { name: new RegExp(`^${teacherDoc.name}$`, "i") }
+              ] 
+            });
+          }
+          if (!user) {
+            // Auto-create missing User account for this Teacher document
+            const hashedPassword = await bcrypt.hash(cleanPassword, 10);
+            user = new User({
+              name: teacherDoc.name || 'Teacher',
+              email: (teacherDoc.email || `teacher_${teacherDoc._id}@sps.edu`).toLowerCase(),
+              phone: teacherDoc.phone || '+919876543210',
+              password: hashedPassword,
+              visiblePassword: cleanPassword,
+              role: 'teacher'
+            });
+            await user.save({ validateBeforeSave: false });
+            teacherDoc.user = user._id;
+            await teacherDoc.save();
+          } else if (!teacherDoc.user) {
+            teacherDoc.user = user._id;
+            await teacherDoc.save();
+          }
+        }
+      }
+
+      if (!user) {
+        // Search if 'id' was a Student document ID
+        const studentDoc = await Student.findById(id);
+        if (studentDoc) {
+          if (studentDoc.user) {
+            user = await User.findById(studentDoc.user);
+          }
+          if (!user && (studentDoc.email || studentDoc.name)) {
+            user = await User.findOne({ 
+              $or: [
+                { email: (studentDoc.email || '').toLowerCase() },
+                { name: new RegExp(`^${studentDoc.name}$`, "i") }
+              ] 
+            });
+          }
+          if (!user) {
+            // Auto-create missing User account for this Student document
+            const hashedPassword = await bcrypt.hash(cleanPassword, 10);
+            user = new User({
+              name: studentDoc.name || 'Student',
+              email: (studentDoc.email || `student_${studentDoc._id}@sps.edu`).toLowerCase(),
+              phone: studentDoc.phone || '+919876543210',
+              password: hashedPassword,
+              visiblePassword: cleanPassword,
+              role: 'student'
+            });
+            await user.save({ validateBeforeSave: false });
+            studentDoc.user = user._id;
+            await studentDoc.save();
+          } else if (!studentDoc.user) {
+            studentDoc.user = user._id;
+            await studentDoc.save();
+          }
+        }
+      }
+    } else {
+      user = await User.findOne({ $or: [{ email: id.toLowerCase() }, { name: new RegExp(`^${id}$`, "i") }] });
     }
 
-    user.password = await bcrypt.hash(password, 10);
-    user.visiblePassword = password;
+    if (!user) {
+      return res.status(404).json({ message: `User account not found for ID: ${id}` });
+    }
+
+    user.password = await bcrypt.hash(cleanPassword, 10);
+    user.visiblePassword = cleanPassword;
     user.updatedBy = req.user?.name ? `${req.user.name} (${req.user.role || 'Super Admin'})` : "Super Admin";
-    await user.save();
+    await user.save({ validateBeforeSave: false });
 
     notifyChange("USER_CHANGED", { action: "update-password", userId: user._id, role: user.role });
     res.status(200).json({
+      success: true,
       message: `Password for ${user.name} (${user.role}) updated successfully!`,
       data: {
         userId: user._id,
@@ -142,7 +284,7 @@ exports.updateUserPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating user password:", error);
-    res.status(500).json({ message: "Error updating user password", error: error.message });
+    res.status(500).json({ message: error.message || "Failed to update password", error: error.message });
   }
 };
 

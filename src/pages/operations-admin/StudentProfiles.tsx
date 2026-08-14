@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from "react";
 import API from "../../api/axios";
 import "../../assets/styles/main.css";
 
+const standardClasses = [
+  "Nursery", "LKG", "UKG",
+  "1st", "2nd", "3rd", "4th", "5th", "6th",
+  "7th", "8th", "9th", "10th", "11th", "12th"
+];
+
+const standardSections = ["A", "B", "C", "D", "E", "F"];
+
 const StudentProfiles = () => {
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -14,11 +22,75 @@ const StudentProfiles = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<any>(null);
   const [selectedViewStudent, setSelectedViewStudent] = useState<any>(null);
+
+  // Custom class/section input toggles
+  const [addCustomClass, setAddCustomClass] = useState(false);
+  const [addCustomSection, setAddCustomSection] = useState(false);
+  const [editCustomClass, setEditCustomClass] = useState(false);
+  const [editCustomSection, setEditCustomSection] = useState(false);
   const [viewStudentAttendance, setViewStudentAttendance] = useState<any>({ records: [], percentage: 0 });
   const [viewStudentExams, setViewStudentExams] = useState<any[]>([]);
   const [viewStudentFees, setViewStudentFees] = useState<any[]>([]);
   const [viewStudentResults, setViewStudentResults] = useState<any>(null);
   const [viewTab, setViewTab] = useState<'profile' | 'attendance' | 'exams' | 'results' | 'fees'>('profile');
+
+  // Password Visibility & Change Password Modal States
+  const [visiblePasswordIds, setVisiblePasswordIds] = useState<{ [key: string]: boolean }>({});
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswordIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const [passwordModal, setPasswordModal] = useState<{
+    open: boolean;
+    userId: string;
+    userName: string;
+    visiblePassword?: string;
+  }>({ open: false, userId: '', userName: '' });
+
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [modalShowPassword, setModalShowPassword] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
+  const openChangePasswordModal = (targetUser: any, name: string, currentPass?: string) => {
+    let resolvedId = '';
+    if (typeof targetUser === 'object' && targetUser !== null) {
+      resolvedId = targetUser._id || targetUser.id || targetUser.userId || targetUser.user?._id || targetUser.user || '';
+    } else {
+      resolvedId = targetUser || '';
+    }
+    resolvedId = String(resolvedId);
+
+    setPasswordModal({ open: true, userId: resolvedId, userName: name, visiblePassword: currentPass });
+    setNewPasswordInput(currentPass || '');
+    setModalShowPassword(false);
+  };
+
+  const handleSavePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordModal.userId || passwordModal.userId === '[object Object]') {
+      alert('❌ Error: Invalid Student User ID.');
+      return;
+    }
+    if (!newPasswordInput || newPasswordInput.trim().length < 6) {
+      alert('Password must be at least 6 characters long.');
+      return;
+    }
+    try {
+      setUpdatingPassword(true);
+      const res = await API.put(`/api/super-admin/user/${passwordModal.userId}/password`, {
+        password: newPasswordInput.trim()
+      });
+      const msg = res.data?.message || `Password for ${passwordModal.userName} updated successfully!`;
+      alert(`✅ Success!\n\n${msg}`);
+      setPasswordModal({ open: false, userId: '', userName: '' });
+      fetchStudents();
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to update password';
+      alert('❌ Error: ' + errorMsg);
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
 
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const addFileInputRef = useRef<HTMLInputElement>(null);
@@ -129,6 +201,13 @@ const StudentProfiles = () => {
       gender: student.gender || "",
       profileImage: student.profileImage || ""
     });
+
+    // Check if the current student's class/section is standard
+    const isClassCustom = student.className && !standardClasses.includes(student.className) && !uniqueClasses.includes(student.className);
+    const isSecCustom = student.section && !standardSections.includes(student.section) && !uniqueSections.includes(student.section);
+    setEditCustomClass(!!isClassCustom);
+    setEditCustomSection(!!isSecCustom);
+
     setShowModal(true);
   };
 
@@ -223,6 +302,9 @@ const StudentProfiles = () => {
   const uniqueClasses = [...new Set(students.map(s => s.className).filter(Boolean))].sort();
   const uniqueSections = [...new Set(students.map(s => s.section).filter(Boolean))].sort();
 
+  const classOptions = Array.from(new Set([...standardClasses, ...uniqueClasses]));
+  const sectionOptions = Array.from(new Set([...standardSections, ...uniqueSections]));
+
   const filteredStudents = students.filter(s => {
     const matchSearch = !searchTerm ||
       s.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -272,7 +354,11 @@ const StudentProfiles = () => {
           </p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setAddCustomClass(false);
+            setAddCustomSection(false);
+            setShowAddModal(true);
+          }}
           style={{
             padding: "10px 20px", backgroundColor: "var(--primary)", color: "white",
             border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600",
@@ -424,39 +510,70 @@ const StudentProfiles = () => {
                   ))}
                 </div>
 
-                {/* Parent Info Card */}
+                {/* Parent Info Card & Password Pill */}
                 <div style={{ 
                   backgroundColor: "var(--panel-bg)", 
                   borderRadius: "10px", 
                   padding: "10px 14px",
                   border: "1px solid var(--border-color)",
-                  marginTop: "auto"
+                  marginTop: "auto",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px"
                 }}>
-                  <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: "700", marginBottom: "4px" }}>Parent / Guardian</div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-main)" }}>{student.parentName || "N/A"}</span>
+                    <div>
+                      <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: "700" }}>Parent / Guardian</div>
+                      <span style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-main)" }}>{student.parentName || "N/A"}</span>
+                    </div>
                     <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>{student.parentPhone || ""}</span>
+                  </div>
+
+                  <div style={{ borderTop: "1px dashed var(--border-color)", paddingTop: "6px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: "700" }}>Password</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{
+                        fontFamily: "monospace", fontWeight: "700", fontSize: "12px",
+                        backgroundColor: "var(--input-bg)", padding: "2px 6px", borderRadius: "4px",
+                        border: "1px solid var(--border-color)", color: visiblePasswordIds[student.user?._id || student._id] ? "#8b5cf6" : "var(--text-muted)"
+                      }}>
+                        {visiblePasswordIds[student.user?._id || student._id] ? (student.user?.visiblePassword || "Student@123") : "••••••••"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility(student.user?._id || student._id)}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: "2px" }}
+                      >
+                        {visiblePasswordIds[student.user?._id || student._id] ? "🙈" : "👁️"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div style={{ display: "flex", gap: "8px" }}>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                   <button onClick={() => handleViewStudentDetails(student)} style={{
-                    flex: 1, padding: "9px", backgroundColor: "#3b82f6", color: "white",
-                    border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "13px",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "5px"
-                  }}>👁️ View Details</button>
+                    flex: 1, padding: "8px 10px", backgroundColor: "#3b82f6", color: "white",
+                    border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "12px",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "4px"
+                  }}>👁️ View</button>
+                  <button onClick={() => openChangePasswordModal(student.user?._id || student._id, student.user?.name || "Student", student.user?.visiblePassword)} style={{
+                    padding: "8px 10px", backgroundColor: "#8b5cf6", color: "white",
+                    border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "12px",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "4px"
+                  }}>🔑 Pass</button>
                   <button onClick={() => handleEditClick(student)} style={{
-                    flex: 1, padding: "9px", backgroundColor: "var(--primary)", color: "white",
-                    border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "13px",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: "5px"
+                    padding: "8px 10px", backgroundColor: "var(--primary)", color: "white",
+                    border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "12px",
+                    display: "flex", alignItems: "center", justifyContent: "center"
                   }}>✏️ Edit</button>
                   <button onClick={() => handleDeleteStudent(student._id)} style={{
-                    padding: "9px 12px", backgroundColor: "var(--danger-bg)", color: "var(--danger)",
-                    border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "13px",
+                    padding: "8px 10px", backgroundColor: "var(--danger-bg)", color: "var(--danger)",
+                    border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", cursor: "pointer", fontWeight: "700", fontSize: "12px",
                     display: "flex", alignItems: "center", justifyContent: "center"
                   }}>🗑️</button>
                 </div>
+
               </div>
             );
           })}
@@ -853,11 +970,95 @@ const StudentProfiles = () => {
                 </div>
                 <div>
                   <label style={labelStyle}>Class</label>
-                  <input type="text" value={formData.className} onChange={e => setFormData({...formData, className: e.target.value})} style={inputStyle} placeholder="e.g., Class 10" />
+                  {!editCustomClass ? (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <select
+                        value={classOptions.includes(formData.className) ? formData.className : (formData.className ? "__custom__" : "")}
+                        onChange={e => {
+                          if (e.target.value === "__custom__") {
+                            setEditCustomClass(true);
+                            setFormData({ ...formData, className: "" });
+                          } else {
+                            setFormData({ ...formData, className: e.target.value });
+                          }
+                        }}
+                        style={inputStyle}
+                      >
+                        <option value="">Select Class</option>
+                        {classOptions.map(cls => (
+                          <option key={cls} value={cls}>{cls}</option>
+                        ))}
+                        <option value="__custom__">✍️ Other / Custom Class...</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        type="text"
+                        value={formData.className}
+                        onChange={e => setFormData({ ...formData, className: e.target.value })}
+                        style={inputStyle}
+                        placeholder="Type custom class"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditCustomClass(false);
+                          setFormData({ ...formData, className: "" });
+                        }}
+                        style={{ padding: "0 10px", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--panel-bg)", cursor: "pointer", color: "var(--text-main)" }}
+                        title="Back to dropdown"
+                      >
+                        ↩
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label style={labelStyle}>Section</label>
-                  <input type="text" value={formData.section} onChange={e => setFormData({...formData, section: e.target.value})} style={inputStyle} placeholder="e.g., A" />
+                  {!editCustomSection ? (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <select
+                        value={sectionOptions.includes(formData.section) ? formData.section : (formData.section ? "__custom__" : "")}
+                        onChange={e => {
+                          if (e.target.value === "__custom__") {
+                            setEditCustomSection(true);
+                            setFormData({ ...formData, section: "" });
+                          } else {
+                            setFormData({ ...formData, section: e.target.value });
+                          }
+                        }}
+                        style={inputStyle}
+                      >
+                        <option value="">Select Section</option>
+                        {sectionOptions.map(sec => (
+                          <option key={sec} value={sec}>{sec}</option>
+                        ))}
+                        <option value="__custom__">✍️ Other / Custom Section...</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        type="text"
+                        value={formData.section}
+                        onChange={e => setFormData({ ...formData, section: e.target.value })}
+                        style={inputStyle}
+                        placeholder="Type custom section"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditCustomSection(false);
+                          setFormData({ ...formData, section: "" });
+                        }}
+                        style={{ padding: "0 10px", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--panel-bg)", cursor: "pointer", color: "var(--text-main)" }}
+                        title="Back to dropdown"
+                      >
+                        ↩
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label style={labelStyle}>Roll Number</label>
@@ -989,11 +1190,99 @@ const StudentProfiles = () => {
                 </div>
                 <div>
                   <label style={labelStyle}>Class *</label>
-                  <input type="text" value={addFormData.className} onChange={e => setAddFormData({...addFormData, className: e.target.value})} style={inputStyle} placeholder="e.g., Class 10" required />
+                  {!addCustomClass ? (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <select
+                        value={classOptions.includes(addFormData.className) ? addFormData.className : (addFormData.className ? "__custom__" : "")}
+                        onChange={e => {
+                          if (e.target.value === "__custom__") {
+                            setAddCustomClass(true);
+                            setAddFormData({ ...addFormData, className: "" });
+                          } else {
+                            setAddFormData({ ...addFormData, className: e.target.value });
+                          }
+                        }}
+                        style={inputStyle}
+                        required
+                      >
+                        <option value="">Select Class</option>
+                        {classOptions.map(cls => (
+                          <option key={cls} value={cls}>{cls}</option>
+                        ))}
+                        <option value="__custom__">✍️ Other / Custom Class...</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        type="text"
+                        value={addFormData.className}
+                        onChange={e => setAddFormData({ ...addFormData, className: e.target.value })}
+                        style={inputStyle}
+                        placeholder="Type custom class"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddCustomClass(false);
+                          setAddFormData({ ...addFormData, className: "" });
+                        }}
+                        style={{ padding: "0 10px", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--panel-bg)", cursor: "pointer", color: "var(--text-main)" }}
+                        title="Back to dropdown"
+                      >
+                        ↩
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label style={labelStyle}>Section *</label>
-                  <input type="text" value={addFormData.section} onChange={e => setAddFormData({...addFormData, section: e.target.value})} style={inputStyle} placeholder="e.g., A" required />
+                  {!addCustomSection ? (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <select
+                        value={sectionOptions.includes(addFormData.section) ? addFormData.section : (addFormData.section ? "__custom__" : "")}
+                        onChange={e => {
+                          if (e.target.value === "__custom__") {
+                            setAddCustomSection(true);
+                            setAddFormData({ ...addFormData, section: "" });
+                          } else {
+                            setAddFormData({ ...addFormData, section: e.target.value });
+                          }
+                        }}
+                        style={inputStyle}
+                        required
+                      >
+                        <option value="">Select Section</option>
+                        {sectionOptions.map(sec => (
+                          <option key={sec} value={sec}>{sec}</option>
+                        ))}
+                        <option value="__custom__">✍️ Other / Custom Section...</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <input
+                        type="text"
+                        value={addFormData.section}
+                        onChange={e => setAddFormData({ ...addFormData, section: e.target.value })}
+                        style={inputStyle}
+                        placeholder="Type custom section"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddCustomSection(false);
+                          setAddFormData({ ...addFormData, section: "" });
+                        }}
+                        style={{ padding: "0 10px", borderRadius: "8px", border: "1px solid var(--border-color)", background: "var(--panel-bg)", cursor: "pointer", color: "var(--text-main)" }}
+                        title="Back to dropdown"
+                      >
+                        ↩
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label style={labelStyle}>Roll Number</label>
@@ -1026,6 +1315,50 @@ const StudentProfiles = () => {
                 <button type="button" onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "12px", backgroundColor: "var(--panel-bg)", color: "var(--text-main)", border: "1px solid var(--border-color)", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>
                   Cancel
                 </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CHANGE PASSWORD MODAL */}
+      {passwordModal.open && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)',
+            borderRadius: '20px', width: '100%', maxWidth: '440px', padding: '24px',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>🔑 Change Password</h3>
+                <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Updating password for <strong>{passwordModal.userName}</strong></p>
+              </div>
+              <button onClick={() => setPasswordModal({ open: false, userId: '', userName: '' })} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
+            </div>
+            <form onSubmit={handleSavePassword}>
+              <div style={{ marginBottom: '20px', position: 'relative' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>New Password</label>
+                <input
+                  type={modalShowPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={newPasswordInput}
+                  onChange={e => setNewPasswordInput(e.target.value)}
+                  placeholder="Enter new password"
+                  style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '14px', boxSizing: 'border-box' }}
+                />
+                <button type="button" onClick={() => setModalShowPassword(!modalShowPassword)} style={{ position: 'absolute', right: '10px', top: '32px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                  {modalShowPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setPasswordModal({ open: false, userId: '', userName: '' })} style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" disabled={updatingPassword} style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>{updatingPassword ? 'Updating...' : '🔒 Save Password'}</button>
               </div>
             </form>
           </div>

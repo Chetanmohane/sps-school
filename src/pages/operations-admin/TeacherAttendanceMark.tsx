@@ -23,8 +23,8 @@ const TeacherAttendanceMark = () => {
   const [endDateFilter, setEndDateFilter] = useState('');
 
   // Filters for Mark Attendance
-  const [markClass, setMarkClass] = useState('10');
-  const [markSection, setMarkSection] = useState('A');
+  const [markClass, setMarkClass] = useState('');
+  const [markSection, setMarkSection] = useState('');
   const [markDate, setMarkDate] = useState(new Date().toISOString().split('T')[0]);
   const [markNameSearch, setMarkNameSearch] = useState('');
   
@@ -43,14 +43,8 @@ const TeacherAttendanceMark = () => {
   });
   const [isAlreadySubmitted, setIsAlreadySubmitted] = useState(false);
 
-  // Subject Teacher's Assigned Timetable Classes
-  const assignedTimetableClasses = [
-    { className: '10', section: 'A' },
-    { className: '10', section: 'B' },
-    { className: '9', section: 'A' },
-    { className: '12', section: 'A' },
-    { className: '8', section: 'A' }
-  ];
+  const [assignedTimetableClasses, setAssignedTimetableClasses] = useState<any[]>([]);
+  const userEmail = localStorage.getItem('userEmail') || '';
 
   // Admin / Manager Override Privilege
   const currentUserRole = (localStorage.getItem('role') || '').toLowerCase();
@@ -60,17 +54,46 @@ const TeacherAttendanceMark = () => {
   const [adminOverrideActive, setAdminOverrideActive] = useState(false);
   const [auditRemarkInput, setAuditRemarkInput] = useState('');
 
-  // Normalization helper
+  // Normalization helper (used only for display/filtering comparison, NOT for API calls)
   const normalizeClass = (cls: any) => {
     if (!cls) return '';
-    return cls.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
+    return cls.toString().toLowerCase()
+      .replace(/class\s*/i, '')
+      .replace(/(st|nd|rd|th)\s*$/i, '')
+      .trim();
+  };
+
+  // Date helper functions for timezone-independent date string matching (YYYY-MM-DD)
+  const getUtcDateStr = (d: any) => {
+    if (!d) return '';
+    const dateObj = new Date(d);
+    if (isNaN(dateObj.getTime())) return '';
+    return dateObj.toISOString().slice(0, 10);
+  };
+
+  const getLocalDateStr = (d: any) => {
+    if (!d) return '';
+    const dateObj = new Date(d);
+    if (isNaN(dateObj.getTime())) return '';
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   };
 
   const isTeacherRole = (localStorage.getItem('role') || '').toLowerCase().includes('teacher');
-  const predefinedClasses = isTeacherRole ? ['8', '9', '10', '12'] : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-  const predefinedSections = isTeacherRole ? ['A', 'B'] : ['A', 'B', 'C', 'D', 'E'];
-  const uniqueClasses = Array.from(new Set([...predefinedClasses, ...attendanceRecords.map(r => r.student?.className).filter(Boolean)]));
-  const uniqueSections = Array.from(new Set([...predefinedSections, ...attendanceRecords.map(r => r.student?.section).filter(Boolean)]));
+
+  // Extract unique classes and sections across assigned timetable, attendance records, and student records
+  const uniqueClasses = Array.from(new Set([
+    ...assignedTimetableClasses.map(c => c.className),
+    ...attendanceRecords.map(r => r.student?.className)
+  ].filter(Boolean)));
+
+  const uniqueSections = Array.from(new Set([
+    ...assignedTimetableClasses.map(c => c.section),
+    ...attendanceRecords.map(r => r.student?.section),
+    'A', 'B', 'C', 'D', 'E', 'F'
+  ].filter(Boolean))).sort();
 
   // Fetch all attendance records for View tab
   const fetchAllAttendance = async () => {
@@ -94,6 +117,66 @@ const TeacherAttendanceMark = () => {
     });
     return () => cleanup();
   }, [attendanceSubTab, onEvent]);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        let classesList: any[] = [];
+
+        // 1. Fetch classes from academic admin endpoint
+        try {
+          const res = await API.get('/api/academic-admin/classes');
+          if (res.data?.data) {
+            classesList = res.data.data;
+          }
+        } catch (err) {
+          console.warn("Could not load classes from academic admin", err);
+        }
+
+        // 2. Fetch distinct class names from student admin endpoint
+        try {
+          const resNames = await API.get('/api/student-admin/classes');
+          if (resNames.data?.data && Array.isArray(resNames.data.data)) {
+            resNames.data.data.forEach((clsName: string) => {
+              if (clsName && !classesList.some(c => normalizeClass(c.className) === normalizeClass(clsName))) {
+                classesList.push({ className: clsName, section: 'A' });
+              }
+            });
+          }
+        } catch (err) {
+          console.warn("Could not load class names from student admin", err);
+        }
+
+        setAssignedTimetableClasses(classesList);
+
+        // 3. For teachers, pre-select their assigned class in charge if available
+        if (userEmail) {
+          try {
+            const profileRes = await API.get(`/api/teacher/profile-info/${userEmail}`);
+            const classInCharge = profileRes.data?.data?.classInCharge;
+            if (classInCharge && classInCharge.className && classInCharge.section) {
+              setMarkClass(classInCharge.className);
+              setMarkSection(classInCharge.section);
+            } else if (classesList.length > 0 && !markClass) {
+              setMarkClass(classesList[0].className);
+              setMarkSection(classesList[0].section || 'A');
+            }
+          } catch (e) {
+            if (classesList.length > 0 && !markClass) {
+              setMarkClass(classesList[0].className);
+              setMarkSection(classesList[0].section || 'A');
+            }
+          }
+        } else if (classesList.length > 0 && !markClass) {
+          setMarkClass(classesList[0].className);
+          setMarkSection(classesList[0].section || 'A');
+        }
+      } catch (err) {
+        console.error("Failed to load classes", err);
+      }
+    };
+    fetchClasses();
+  }, [userEmail]);
 
   // CSV Export Utility
   const downloadCSV = (data: any[][], filename: string, headers: string[]) => {
@@ -130,15 +213,7 @@ const TeacherAttendanceMark = () => {
     const rollNo = r.student?.rollNumber || '';
     const className = r.student?.className || '';
     const section = r.student?.section || '';
-    const dateStr = r.date ? new Date(r.date).toISOString().slice(0, 10) : '';
-
-    // If user is a teacher, restrict view strictly to assigned timetable classes
-    if (isTeacherRole) {
-      const isAssigned = assignedTimetableClasses.some(
-        tc => normalizeClass(tc.className) === normalizeClass(className) && tc.section.toUpperCase() === section.toUpperCase()
-      );
-      if (!isAssigned) return false;
-    }
+    const dateStr = getUtcDateStr(r.date) || getLocalDateStr(r.date);
 
     const matchesSearch = !searchAttendance || 
       studentName.toLowerCase().includes(searchAttendance.toLowerCase()) ||
@@ -146,7 +221,7 @@ const TeacherAttendanceMark = () => {
       rollNo.toLowerCase().includes(searchAttendance.toLowerCase());
 
     const matchesClass = classFilter === 'all' || normalizeClass(className) === normalizeClass(classFilter);
-    const matchesSection = sectionFilter === 'all' || section === sectionFilter;
+    const matchesSection = sectionFilter === 'all' || section.toUpperCase() === sectionFilter.toUpperCase();
     const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
     let matchesDate = true;
     if (startDateFilter && endDateFilter) {
@@ -176,8 +251,8 @@ const TeacherAttendanceMark = () => {
 
   // Fetch student list for marking
   const fetchMarkStudents = async () => {
-    if (!markClass || !markSection) {
-      alert('Please select both Class and Section from your assigned schedule');
+    if (!markClass) {
+      alert('Please select a Class');
       return;
     }
     if (markDate > todayStr) {
@@ -186,13 +261,14 @@ const TeacherAttendanceMark = () => {
     }
 
     const isPastDate = markDate < todayStr;
-    const lockKey = `${normalizeClass(markClass)}-${markSection.toUpperCase()}-${markDate}`;
+    const lockKey = `${normalizeClass(markClass)}-${(markSection || 'all').toUpperCase()}-${markDate}`;
     const isLocked = (isPastDate || lockedKeys.includes(lockKey)) && !adminOverrideActive;
     setIsAlreadySubmitted(isLocked);
 
     setLoadingStudents(true);
     try {
-      const response = await API.get(`/api/attendance/list?className=${encodeURIComponent(markClass)}&section=${encodeURIComponent(markSection)}`);
+      const sectionQuery = markSection ? `&section=${encodeURIComponent(markSection)}` : '';
+      const response = await API.get(`/api/attendance/list?className=${encodeURIComponent(markClass)}${sectionQuery}`);
       let students = response.data || [];
       
       if (markNameSearch) {
@@ -205,8 +281,8 @@ const TeacherAttendanceMark = () => {
       const initialStatus: Record<string, string> = {};
       students.forEach((s: any) => {
         const existingRecord = attendanceRecords.find(
-          r => (r.student?._id === s._id || r.student?.user?._id === s.user?._id) && 
-               r.date && new Date(r.date).toISOString().slice(0, 10) === markDate
+          r => (r.student?._id === s._id || r.student?.user?._id === s.user?._id || r.student === s._id) && 
+               r.date && (getUtcDateStr(r.date) === markDate || getLocalDateStr(r.date) === markDate)
         );
         initialStatus[s._id] = existingRecord ? existingRecord.status : 'Present';
       });
@@ -250,11 +326,9 @@ const TeacherAttendanceMark = () => {
         status: markAttendanceList[studentId]
       }));
 
-      const actionBy = adminOverrideActive || canAdminOverride
-        ? `${currentUserName} (${currentUserRole.toUpperCase()})` 
-        : 'Subject Teacher';
-      
-      const auditRemark = auditRemarkInput.trim() || (adminOverrideActive ? `Admin Audit Override by ${currentUserName}` : `Daily Roll Call Register`);
+      const actionBy = `${currentUserName} (${currentUserRole.replace('-', ' ').toUpperCase()})`;
+      const rawAuditRemark = auditRemarkInput.trim() || (adminOverrideActive ? `Admin Audit Override` : `Daily Period Roll Call Register`);
+      const auditRemark = rawAuditRemark.includes('— by') ? rawAuditRemark : `${rawAuditRemark} — by ${actionBy}`;
 
       await API.post('/api/attendance/bulkSubmit', {
         attendanceData,
@@ -558,12 +632,15 @@ const TeacherAttendanceMark = () => {
                     <label className="block text-xs font-semibold text-[var(--text-muted)] mb-2 uppercase tracking-wider">Class *</label>
                     <select 
                       value={markClass} 
-                      onChange={e => setMarkClass(e.target.value)} 
+                      onChange={e => {
+                         setMarkClass(e.target.value);
+                         setMarkSection(''); // reset section on class change
+                      }} 
                       className="w-full px-4 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" 
                       required
                     >
                       <option value="">Select...</option>
-                      {predefinedClasses.map(cls => (
+                      {uniqueClasses.map(cls => (
                         <option key={cls} value={cls}>
                           {cls.toLowerCase().startsWith('class') ? cls : `Class ${cls}`}
                         </option>
@@ -571,15 +648,23 @@ const TeacherAttendanceMark = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-[var(--text-muted)] mb-2 uppercase tracking-wider">Section *</label>
+                    <label className="block text-xs font-semibold text-[var(--text-muted)] mb-2 uppercase tracking-wider">Section</label>
                     <select 
                       value={markSection} 
                       onChange={e => setMarkSection(e.target.value)} 
                       className="w-full px-4 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" 
-                      required
+                      disabled={!markClass}
                     >
-                      <option value="">Select...</option>
-                      {predefinedSections.map(sec => (
+                      <option value="all">All Sections</option>
+                      {Array.from(new Set([
+                        'A', 'B', 'C', 'D', 'E', 'F',
+                        ...assignedTimetableClasses
+                          .filter(c => normalizeClass(c.className) === normalizeClass(markClass))
+                          .map(c => c.section),
+                        ...attendanceRecords
+                          .filter(r => normalizeClass(r.student?.className) === normalizeClass(markClass))
+                          .map(r => r.student?.section)
+                      ].filter(Boolean))).sort().map(sec => (
                         <option key={sec} value={sec}>Section {sec}</option>
                       ))}
                     </select>

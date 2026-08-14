@@ -61,12 +61,6 @@ exports.login = async (req, res) => {
       await user.save({ validateBeforeSave: false });
     }
 
-    // If existing user exists, update password hash if matching known account pass
-    if (user && known) {
-      const hashedPassword = await bcrypt.hash(known.pass, 10);
-      user.password = hashedPassword;
-      await user.save({ validateBeforeSave: false });
-    }
 
     if (!user) {
       return res.status(404).json({ message: "Invalid Email or Password" });

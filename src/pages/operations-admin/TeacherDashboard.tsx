@@ -63,6 +63,13 @@ const TeacherDashboard = () => {
   const [todaySchedule, setTodaySchedule] = useState<any[]>([]);
   const [timetableLoading, setTimetableLoading] = useState<boolean>(false);
 
+  // Teacher's assigned subjects and classes
+  const [mySubjects, setMySubjects] = useState<any[]>([]);
+  const [myClasses, setMyClasses] = useState<any[]>([]);
+  const [myClassStudents, setMyClassStudents] = useState<any[]>([]);
+  const [loadingMyData, setLoadingMyData] = useState<boolean>(false);
+  const [selectedClassFilter, setSelectedClassFilter] = useState<string>('all');
+
   // Live clock
   const [now, setNow] = useState(new Date());
   useEffect(() => {
@@ -112,9 +119,48 @@ const TeacherDashboard = () => {
         setProfileData(res.data.data);
         setIsClassTeacher(res.data.data.isClassTeacher);
         setClassInCharge(res.data.data.classInCharge);
+
+        // Extract assigned subjects and classes
+        const teacherDoc = res.data.data.teacher;
+        if (teacherDoc) {
+          const subjects = Array.isArray(teacherDoc.subjects) ? teacherDoc.subjects : [];
+          const classes = Array.isArray(teacherDoc.classes) ? teacherDoc.classes : [];
+          setMySubjects(subjects);
+          setMyClasses(classes);
+
+          // Fetch students from assigned classes
+          if (classes.length > 0) {
+            fetchMyClassStudents(classes);
+          }
+        }
       }
     } catch (err) {
       console.log('Error fetching teacher profile info:', err);
+    }
+  };
+
+  const fetchMyClassStudents = async (classes: any[]) => {
+    try {
+      setLoadingMyData(true);
+      const studentMap: any[] = [];
+      for (const cls of classes) {
+        const className = cls.className || cls;
+        const section = cls.section || '';
+        try {
+          const res = await API.get('/api/student/all', {
+            params: { className, section }
+          });
+          const studentsData = res.data?.data || res.data?.students || [];
+          studentsData.forEach((s: any) => {
+            studentMap.push({ ...s, fromClass: `${className}${section ? '-' + section : ''}` });
+          });
+        } catch {}
+      }
+      setMyClassStudents(studentMap);
+    } catch (err) {
+      console.log('Error fetching assigned class students:', err);
+    } finally {
+      setLoadingMyData(false);
     }
   };
 
@@ -573,6 +619,218 @@ const TeacherDashboard = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* ── MY ASSIGNED SUBJECTS & CLASSES ── */}
+              <div style={{ marginBottom: '28px' }}>
+                <h2 style={{ margin: '0 0 16px', fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FiBookOpen size={14} /> My Assigned Subjects & Classes
+                </h2>
+
+                {/* Subject Chips */}
+                {mySubjects.length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
+                    {mySubjects.map((sub: any, i: number) => (
+                      <div key={i} style={{
+                        padding: '10px 18px',
+                        borderRadius: '12px',
+                        background: 'linear-gradient(135deg, #4338ca, #6366f1)',
+                        color: '#fff',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: '0 4px 12px rgba(99,102,241,0.3)'
+                      }}>
+                        📚 {sub.name || sub} {sub.code ? <span style={{ fontSize: '10px', opacity: 0.8, fontWeight: '600' }}>({sub.code})</span> : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', border: '1px dashed var(--border-color)', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    📌 No subjects assigned yet. Contact your Academic Admin to assign subjects.
+                  </div>
+                )}
+
+                {/* Class Filter Tabs */}
+                {myClasses.length > 0 && (
+                  <>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                      <button
+                        onClick={() => setSelectedClassFilter('all')}
+                        style={{
+                          padding: '6px 14px', borderRadius: '20px', cursor: 'pointer',
+                          fontWeight: '700', fontSize: '12px',
+                          backgroundColor: selectedClassFilter === 'all' ? '#4338ca' : 'var(--card-bg)',
+                          color: selectedClassFilter === 'all' ? '#fff' : 'var(--text-muted)',
+                          border: selectedClassFilter === 'all' ? '2px solid #4338ca' : '1px solid var(--border-color)'
+                        }}
+                      >
+                        All Classes ({myClasses.length})
+                      </button>
+                      {myClasses.map((cls: any, i: number) => {
+                        const label = `${cls.className || cls}-${cls.section || ''}`;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => setSelectedClassFilter(label)}
+                            style={{
+                              padding: '6px 14px', borderRadius: '20px', cursor: 'pointer',
+                              fontWeight: '700', fontSize: '12px',
+                              backgroundColor: selectedClassFilter === label ? '#059669' : 'var(--card-bg)',
+                              color: selectedClassFilter === label ? '#fff' : 'var(--text-muted)',
+                              border: selectedClassFilter === label ? '2px solid #059669' : '1px solid var(--border-color)'
+                            }}
+                          >
+                            🏫 Class {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Assigned Classes Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+                      {myClasses
+                        .filter((cls: any) => {
+                          if (selectedClassFilter === 'all') return true;
+                          const label = `${cls.className || cls}-${cls.section || ''}`;
+                          return label === selectedClassFilter;
+                        })
+                        .map((cls: any, i: number) => {
+                          const className = cls.className || cls;
+                          const section = cls.section || '';
+                          const label = `${className}${section ? '-' + section : ''}`;
+                          const subjectsInClass = Array.isArray(cls.subjects) ? cls.subjects : [];
+                          const studentsInClass = myClassStudents.filter(s => s.fromClass === label);
+                          return (
+                            <div key={i} style={{
+                              borderRadius: '16px',
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'var(--card-bg)',
+                              overflow: 'hidden',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                            }}>
+                              {/* Class Header */}
+                              <div style={{
+                                background: 'linear-gradient(135deg, #0f172a, #1e293b)',
+                                padding: '16px 20px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}>
+                                <div>
+                                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assigned Class</div>
+                                  <div style={{ fontSize: '18px', fontWeight: '800', color: '#fff', marginTop: '2px' }}>Class {label}</div>
+                                </div>
+                                <div style={{
+                                  width: '44px', height: '44px', borderRadius: '12px',
+                                  background: 'linear-gradient(135deg, #6366f1, #4338ca)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontSize: '20px'
+                                }}>🏫</div>
+                              </div>
+                              {/* Class Body */}
+                              <div style={{ padding: '16px 20px' }}>
+                                <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', fontSize: '12px' }}>
+                                  <div style={{ flex: 1, padding: '10px', borderRadius: '8px', backgroundColor: 'var(--primary-bg)', textAlign: 'center' }}>
+                                    <div style={{ fontWeight: '800', color: '#4338ca', fontSize: '18px' }}>{studentsInClass.length || '—'}</div>
+                                    <div style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '600' }}>Students</div>
+                                  </div>
+                                  <div style={{ flex: 1, padding: '10px', borderRadius: '8px', backgroundColor: 'var(--primary-bg)', textAlign: 'center' }}>
+                                    <div style={{ fontWeight: '800', color: '#059669', fontSize: '18px' }}>{mySubjects.length}</div>
+                                    <div style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '600' }}>Subjects</div>
+                                  </div>
+                                </div>
+                                {/* Subjects taught in this class */}
+                                <div style={{ marginBottom: '12px' }}>
+                                  <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>You Teach</div>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    {mySubjects.slice(0, 4).map((sub: any, si: number) => (
+                                      <span key={si} style={{
+                                        padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
+                                        backgroundColor: 'rgba(99,102,241,0.12)', color: '#6366f1'
+                                      }}>📚 {sub.name || sub}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                                {/* Action buttons */}
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button
+                                    onClick={() => window.location.href = '/teacher/attendanceMark'}
+                                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', backgroundColor: '#059669', color: '#fff', fontWeight: '700', fontSize: '11px', cursor: 'pointer' }}
+                                  >✅ Mark Attendance</button>
+                                  <button
+                                    onClick={() => window.location.href = '/teacher/results'}
+                                    style={{ flex: 1, padding: '8px', borderRadius: '8px', border: 'none', backgroundColor: '#7c3aed', color: '#fff', fontWeight: '700', fontSize: '11px', cursor: 'pointer' }}
+                                  >🏆 Upload Results</button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+
+                    {/* Students Table for selected class */}
+                    {myClassStudents.length > 0 && (
+                      <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '16px', overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            🎓 Students in My Assigned Classes
+                            <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(99,102,241,0.1)', color: '#6366f1', fontWeight: '800' }}>
+                              {selectedClassFilter === 'all' ? myClassStudents.length : myClassStudents.filter(s => s.fromClass === selectedClassFilter).length} Students
+                            </span>
+                          </h3>
+                        </div>
+                        {loadingMyData ? (
+                          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>⏳ Loading students...</div>
+                        ) : (
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                            <thead>
+                              <tr style={{ backgroundColor: 'var(--primary-bg)', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                <th style={{ padding: '12px 16px', textAlign: 'left' }}>Roll No</th>
+                                <th style={{ padding: '12px 16px', textAlign: 'left' }}>Student Name</th>
+                                <th style={{ padding: '12px 16px', textAlign: 'left' }}>Class</th>
+                                <th style={{ padding: '12px 16px', textAlign: 'left' }}>Contact</th>
+                                <th style={{ padding: '12px 16px', textAlign: 'left' }}>Attendance</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(selectedClassFilter === 'all' ? myClassStudents : myClassStudents.filter(s => s.fromClass === selectedClassFilter))
+                                .map((st: any, i: number) => (
+                                  <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                    <td style={{ padding: '12px 16px', fontWeight: '700', color: '#6366f1' }}>{st.rollNumber || `#${i + 1}`}</td>
+                                    <td style={{ padding: '12px 16px', fontWeight: '600', color: 'var(--text-main)' }}>{st.user?.name || st.name || 'Student'}</td>
+                                    <td style={{ padding: '12px 16px' }}>
+                                      <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(5,150,105,0.1)', color: '#059669' }}>
+                                        {st.fromClass}
+                                      </span>
+                                    </td>
+                                    <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '12px' }}>{st.user?.email || '—'}</td>
+                                    <td style={{ padding: '12px 16px' }}>
+                                      <span style={{
+                                        padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: '700',
+                                        backgroundColor: (st.attendancePct || 85) >= 75 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                                        color: (st.attendancePct || 85) >= 75 ? '#059669' : '#dc2626'
+                                      }}>{st.attendancePct || '—'}%</span>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {myClasses.length === 0 && mySubjects.length === 0 && (
+                  <div style={{ padding: '32px', textAlign: 'center', border: '2px dashed var(--border-color)', borderRadius: '16px', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '36px', marginBottom: '12px' }}>📋</div>
+                    <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '6px' }}>No assignments yet</div>
+                    <div style={{ fontSize: '12px' }}>Contact your Academic Admin to assign subjects and classes to your profile.</div>
+                  </div>
+                )}
               </div>
 
               {/* QUICK ACTIONS */}

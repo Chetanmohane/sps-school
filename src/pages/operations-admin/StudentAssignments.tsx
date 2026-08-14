@@ -1,31 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
 import API from '../../api/axios';
-import jsPDF from 'jspdf';
 import {
   FiSend, FiBookOpen, FiCalendar, FiCheckSquare,
   FiAward, FiClock, FiAlertCircle, FiLoader, FiCheckCircle,
-  FiDownload, FiUpload, FiFileText, FiX, FiLink, FiMessageCircle
+  FiX, FiLink, FiMessageCircle
 } from 'react-icons/fi';
 
+import { useSocket } from '../../context/SocketContext';
+
 const StudentAssignments = () => {
+  const { onEvent } = useSocket();
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [selectedAsg, setSelectedAsg] = useState<any>(null);
   const [answer, setAnswer] = useState('');
-  // 'link' | 'pdf'
-  const [submitMode, setSubmitMode] = useState<'link' | 'pdf'>('link');
   const [fileUrl, setFileUrl] = useState('');
-  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchData();
+    const unsub = onEvent('ASSIGNMENT_CHANGED', (data: any) => {
+      if (data?.action === 'delete' && data?.id) {
+        setAssignments(prev => prev.filter(a => a._id !== data.id));
+        setSubmissions(prev => prev.filter(s => {
+          const asgId = typeof s.assignment === 'object' ? s.assignment?._id : s.assignment;
+          return asgId !== data.id;
+        }));
+      } else {
+        fetchData();
+      }
+    });
+    return () => { unsub?.(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -54,79 +64,35 @@ const StudentAssignments = () => {
     })
   );
 
-  const fileToDataUrl = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
   const resetModal = () => {
     setSelectedAsg(null);
     setAnswer('');
     setFileUrl('');
-    setPdfFile(null);
-    setSubmitMode('link');
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    let finalUrl = '';
-    if (submitMode === 'link') {
-      if (!fileUrl.trim()) { alert('Please enter a file link.'); return; }
-      finalUrl = fileUrl.trim();
-    } else {
-      if (!pdfFile) { alert('Please attach a PDF file.'); return; }
-      finalUrl = await fileToDataUrl(pdfFile);
-    }
+    if (!answer.trim()) { alert('Please write your answer or notes.'); return; }
 
     setSubmitting(true);
     try {
       const userEmail = localStorage.getItem('userEmail');
       await API.post('/api/assignment/submit', {
         answer,
-        fileUrl: finalUrl,
+        fileUrl: fileUrl.trim(),
         assignment: selectedAsg._id,
         userEmail
       });
-      alert('Assignment submitted successfully!');
-      // refresh submissions
+      alert('✅ Assignment submitted successfully!');
       const subRes = await API.get(`/api/assignment/my-submissions?email=${userEmail}`);
       setSubmissions(subRes.data || []);
       resetModal();
       setActiveTab('history');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Submission failed');
+      alert('❌ ' + (err.response?.data?.message || 'Submission failed. Please try again.'));
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleDownloadPDF = (asg: any) => {
-    const doc = new jsPDF();
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(79, 70, 229);
-    doc.text('Vasant Valley School Assignment', 20, 20);
-    doc.setFontSize(14);
-    doc.setTextColor(17, 24, 39);
-    doc.text(`Title: ${asg.title}`, 20, 40);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(75, 85, 99);
-    doc.text(`Class: ${asg.className} — Section: ${asg.section}`, 20, 50);
-    doc.text(`Due: ${new Date(asg.dueDate).toLocaleDateString('en-GB')}`, 20, 60);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(17, 24, 39);
-    doc.text('Instructions:', 20, 78);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(75, 85, 99);
-    const lines = doc.splitTextToSize(asg.instructions || 'No instructions.', 170);
-    doc.text(lines, 20, 88);
-    doc.save(`${asg.title.replace(/\s+/g, '_')}_Assignment.pdf`);
   };
 
   if (loading) {
@@ -145,10 +111,15 @@ const StudentAssignments = () => {
         <div className="p-6 lg:p-8 bg-[var(--bg-color)] min-h-screen text-[var(--text-main)]">
 
           <header className="mb-8">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                🔗 Link Only Submission Portal (PDF Option Removed)
+              </span>
+            </div>
             <h1 className="text-2xl font-black flex items-center gap-2">
               <FiBookOpen className="text-indigo-500" /> Classroom Assignments
             </h1>
-            <p className="text-[var(--text-muted)] text-sm">Submit PDF or link, and track your grades below.</p>
+            <p className="text-[var(--text-muted)] text-sm">Submit your assignments via link/notes and track your grades.</p>
           </header>
 
           {error && (
@@ -189,7 +160,6 @@ const StudentAssignments = () => {
                   >
                     <div className="absolute left-0 top-0 h-full w-2 rounded-l-3xl bg-indigo-500" />
                     <div className="flex-1 pl-4 space-y-2">
-                      {/* Class + Section badges */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
                           Class {asg.className}
@@ -203,8 +173,18 @@ const StudentAssignments = () => {
                           </span>
                         )}
                       </div>
-                      <h3 className="font-bold text-lg text-[var(--text-main)]">{asg.title}</h3>
-                      <p className="text-sm text-[var(--text-muted)] line-clamp-2">{asg.instructions}</p>
+                      {(() => {
+                        const creatorInfo = asg.givenBy || (asg.teacher?.name ? `${asg.teacher.name} (${(asg.teacher.role || 'Teacher').replace('-', ' ').toUpperCase()})` : 'Faculty Instructor');
+                        return (
+                          <>
+                            <h3 className="font-bold text-lg text-[var(--text-main)]">{asg.title}</h3>
+                            <div className="text-xs font-semibold text-indigo-600 flex items-center gap-1.5 bg-indigo-50/70 border border-indigo-100 px-3 py-1 rounded-xl w-fit">
+                              👔 Assigned by: <span className="font-bold text-slate-800">{creatorInfo}</span>
+                            </div>
+                            <p className="text-sm text-[var(--text-muted)] line-clamp-2">{asg.instructions}</p>
+                          </>
+                        );
+                      })()}
                       <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full ${
                         overdue ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-amber-50 text-amber-600 border border-amber-100'
                       }`}>
@@ -212,11 +192,6 @@ const StudentAssignments = () => {
                       </span>
                     </div>
                     <div className="flex gap-2 self-start md:self-center shrink-0">
-                      <button onClick={() => handleDownloadPDF(asg)}
-                        className="px-4 py-2.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-[var(--hover-bg)] transition-all"
-                      >
-                        <FiDownload size={14} /> PDF
-                      </button>
                       <button onClick={() => setSelectedAsg(asg)}
                         className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-indigo-700 active:scale-95 transition-all shadow-md"
                       >
@@ -246,14 +221,14 @@ const StudentAssignments = () => {
                       <th className="px-6 py-4">Submitted On</th>
                       <th className="px-6 py-4">Status</th>
                       <th className="px-6 py-4">Marks</th>
-                      <th className="px-6 py-4">File</th>
+                      <th className="px-6 py-4">Teacher Remarks</th>
+                      <th className="px-6 py-4">Link</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-color)]">
                     {submissions.length > 0 ? submissions.map((sub) => {
                       const asgD = typeof sub.assignment === 'object' ? sub.assignment : null;
                       const d = new Date(sub.submittedAt);
-                      const isPdf = sub.fileUrl?.startsWith('data:application/pdf');
                       return (
                         <tr key={sub._id} className="hover:bg-[var(--input-bg)] transition-colors">
                           <td className="px-6 py-4">
@@ -289,18 +264,28 @@ const StudentAssignments = () => {
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            {isPdf ? (
-                              <a href={sub.fileUrl} download="my_submission.pdf"
-                                className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition-colors"
-                              >
-                                <FiFileText size={12} /> View PDF
-                              </a>
+                            {sub.remarks ? (
+                              <div className="bg-indigo-50/80 border border-indigo-100 text-indigo-900 p-2.5 rounded-xl text-xs max-w-xs">
+                                <p className="font-semibold italic text-slate-800">"{sub.remarks}"</p>
+                                {sub.gradedBy && (
+                                  <p className="text-[10px] font-bold text-indigo-600 mt-1">👔 Evaluator: {sub.gradedBy}</p>
+                                )}
+                              </div>
+                            ) : sub.status === 'Graded' ? (
+                              <span className="text-xs text-[var(--text-muted)] italic">Good effort!</span>
                             ) : (
+                              <span className="text-xs text-[var(--text-muted)]">—</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            {sub.fileUrl ? (
                               <a href={sub.fileUrl} target="_blank" rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
                               >
                                 <FiLink size={12} /> View Link
                               </a>
+                            ) : (
+                              <span className="text-xs text-[var(--text-muted)]">—</span>
                             )}
                           </td>
                         </tr>
@@ -320,7 +305,7 @@ const StudentAssignments = () => {
 
           {/* ── SUBMISSION MODAL ── */}
           {selectedAsg && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
               <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-lg rounded-[32px] p-7 shadow-2xl border border-[var(--border-color)]">
 
                 {/* Modal header */}
@@ -342,10 +327,15 @@ const StudentAssignments = () => {
                 </div>
 
                 {/* Instructions */}
-                <div className="bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl p-4 mb-5">
-                  <p className="text-[10px] font-black uppercase text-[var(--text-muted)] mb-1 flex items-center gap-1">
-                    <FiMessageCircle size={11} /> Teacher's Instructions
-                  </p>
+                <div className="bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl p-4 mb-5 space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <p className="text-[10px] font-black uppercase text-[var(--text-muted)] flex items-center gap-1">
+                      <FiMessageCircle size={11} /> Teacher's Instructions
+                    </p>
+                    <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
+                      👔 Given by: {selectedAsg.givenBy || (selectedAsg.teacher?.name ? `${selectedAsg.teacher.name} (${(selectedAsg.teacher.role || 'Teacher').replace('-', ' ').toUpperCase()})` : 'Faculty Instructor')}
+                    </span>
+                  </div>
                   <p className="text-sm text-[var(--text-muted)] leading-relaxed">
                     {selectedAsg.instructions || 'No specific instructions provided.'}
                   </p>
@@ -354,7 +344,7 @@ const StudentAssignments = () => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Answer */}
                   <div>
-                    <label className="text-[10px] font-black uppercase text-[var(--text-muted)] ml-1 mb-1 block">Your Answer / Notes</label>
+                    <label className="text-[10px] font-black uppercase text-[var(--text-muted)] ml-1 mb-1 block">Your Answer / Notes <span className="text-rose-500">*</span></label>
                     <textarea
                       required
                       rows={3}
@@ -365,88 +355,21 @@ const StudentAssignments = () => {
                     />
                   </div>
 
-                  {/* Submit Mode Toggle */}
+                  {/* Link Input (optional) */}
                   <div>
-                    <label className="text-[10px] font-black uppercase text-[var(--text-muted)] ml-1 mb-2 block">Submission Type</label>
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => { setSubmitMode('link'); setPdfFile(null); }}
-                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
-                          submitMode === 'link'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                            : 'bg-[var(--input-bg)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-blue-400'
-                        }`}
-                      >
-                        <FiLink size={14} /> Submit via Link
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setSubmitMode('pdf'); setFileUrl(''); }}
-                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${
-                          submitMode === 'pdf'
-                            ? 'bg-rose-600 text-white border-rose-600 shadow-md'
-                            : 'bg-[var(--input-bg)] text-[var(--text-muted)] border-[var(--border-color)] hover:border-rose-400'
-                        }`}
-                      >
-                        <FiFileText size={14} /> Upload PDF
-                      </button>
+                    <label className="text-[10px] font-black uppercase text-[var(--text-muted)] ml-1 mb-1 block">
+                      Submission Link <span className="text-slate-400 font-normal normal-case">(optional — Google Drive / Docs)</span>
+                    </label>
+                    <div className="relative">
+                      <FiLink className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                      <input
+                        type="url"
+                        className="w-full p-3.5 pl-10 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-sm focus:ring-2 ring-blue-500/20"
+                        placeholder="https://drive.google.com/..."
+                        value={fileUrl}
+                        onChange={e => setFileUrl(e.target.value)}
+                      />
                     </div>
-
-                    {/* Link Input */}
-                    {submitMode === 'link' && (
-                      <div className="relative animate-in fade-in duration-200">
-                        <FiLink className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                        <input
-                          type="url"
-                          required={submitMode === 'link'}
-                          className="w-full p-3.5 pl-10 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-sm focus:ring-2 ring-blue-500/20"
-                          placeholder="https://drive.google.com/..."
-                          value={fileUrl}
-                          onChange={e => setFileUrl(e.target.value)}
-                        />
-                      </div>
-                    )}
-
-                    {/* PDF Upload */}
-                    {submitMode === 'pdf' && (
-                      <div className="animate-in fade-in duration-200">
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="application/pdf"
-                          className="hidden"
-                          onChange={e => setPdfFile(e.target.files?.[0] || null)}
-                        />
-                        {pdfFile ? (
-                          <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
-                            <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                              <FiFileText className="text-rose-600" size={18} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-[var(--text-main)] truncate">{pdfFile.name}</p>
-                              <p className="text-xs text-emerald-600 font-medium">{(pdfFile.size / 1024).toFixed(1)} KB — Ready</p>
-                            </div>
-                            <button type="button"
-                              onClick={() => { setPdfFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                              className="p-1.5 rounded-full hover:bg-rose-100 text-rose-500 transition-colors"
-                            >
-                              <FiX size={14} />
-                            </button>
-                          </div>
-                        ) : (
-                          <button type="button" onClick={() => fileInputRef.current?.click()}
-                            className="w-full p-5 border-2 border-dashed border-[var(--border-color)] rounded-2xl flex flex-col items-center gap-2 hover:border-rose-400 hover:bg-rose-50/20 transition-all group"
-                          >
-                            <div className="w-10 h-10 bg-[var(--input-bg)] group-hover:bg-rose-100 rounded-xl flex items-center justify-center transition-colors">
-                              <FiUpload className="text-[var(--text-muted)] group-hover:text-rose-600 transition-colors" size={18} />
-                            </div>
-                            <p className="text-sm font-bold text-[var(--text-muted)] group-hover:text-rose-600 transition-colors">Click to browse PDF</p>
-                            <p className="text-[11px] text-slate-400">Only .pdf files accepted</p>
-                          </button>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   {/* Submit / Cancel */}
@@ -459,11 +382,9 @@ const StudentAssignments = () => {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className={`flex-1 py-3 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md text-sm disabled:opacity-60 ${
-                        submitMode === 'pdf' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'
-                      }`}
+                      className="flex-1 py-3 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md text-sm disabled:opacity-60 bg-indigo-600 hover:bg-indigo-700"
                     >
-                      {submitting ? <><FiLoader className="animate-spin" size={14} /> Uploading...</> : <>Submit Assignment <FiSend size={14} /></>}
+                      {submitting ? <><FiLoader className="animate-spin" size={14} /> Submitting...</> : <>Submit Assignment <FiSend size={14} /></>}
                     </button>
                   </div>
                 </form>

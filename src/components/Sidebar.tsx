@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FiHome, FiUsers, FiSettings, FiBookOpen, FiCalendar, FiFileText,
   FiUserPlus, FiDollarSign, FiCheckSquare, FiEdit3, FiMail,
-  FiShield, FiActivity, FiLayers, FiChevronRight, FiAward, FiUserCheck, FiType
+  FiShield, FiActivity, FiLayers, FiChevronRight, FiAward, FiUserCheck, FiType, FiSliders
 } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
 
@@ -28,6 +28,13 @@ const Sidebar = () => {
       emoji: '👩‍🏫',
       color: '#8b5cf6',
       path: '/academic-admin',
+    },
+    {
+      key: 'class-teacher',
+      name: 'Class Teacher Portal',
+      emoji: '⭐',
+      color: '#16a34a',
+      path: '/class-teacher',
     },
     {
       key: 'finance',
@@ -94,6 +101,7 @@ const Sidebar = () => {
       { path: '/academic-admin', name: 'Teacher Admin Branch', icon: <FiBookOpen /> },
       { path: '/academic-admin?tab=admissions', name: 'Submit Admission', icon: <FiUserPlus /> },
       { path: '/finance-admin', name: 'Finance Admin Overview', icon: <FiDollarSign /> },
+      { path: '/operations-admin/events', name: '🎉 Holidays & Events', icon: <FiCalendar /> },
       { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
       { path: '/exams', name: '📅 Exam Timetable', icon: <FiCalendar /> },
       { path: '/timetable', name: '🗓️ Manage Daily Timetable', icon: <FiCalendar /> },
@@ -149,7 +157,18 @@ const Sidebar = () => {
     ],
     'class-teacher': [
       { path: '/class-teacher', name: '⭐ Class Teacher Portal', icon: <FiHome /> },
-      { path: '/teacher/application', name: 'Student Leave Requests', icon: <FiMail /> },
+      { path: '/class-teacher?tab=roster', name: '👥 Student Directory', icon: <FiUsers /> },
+      { path: '/class-teacher?tab=attendance', name: '📋 Daily Roll Call Register', icon: <FiCheckSquare /> },
+      { path: '/class-teacher?tab=results', name: '🏆 Class Exam Results', icon: <FiAward /> },
+      { path: '/teacher/application', name: '📩 Leave Request Approvals', icon: <FiMail /> },
+      { path: '/class-teacher?tab=subjectTeachers', name: '📅 Class Timetable & Schedule', icon: <FiCalendar /> },
+      { path: '/class-teacher?tab=announcements', name: '📢 Class Notice Board', icon: <FiFileText /> },
+      { path: '/class-teacher?tab=allocation', name: '⚙️ Subject & Class Allocation', icon: <FiSliders /> },
+      { path: '/teacher', name: '📖 Subject Teacher Zone', icon: <FiBookOpen /> },
+      { path: '/teacher/myclasses', name: 'My Classes & Timetable', icon: <FiUsers /> },
+      { path: '/teacher/attendanceMark', name: 'Subject Period Attendance', icon: <FiCheckSquare /> },
+      { path: '/teacher/results', name: 'Subject Exam Results Upload', icon: <FiAward /> },
+      { path: '/teacher/assignments', name: 'Assignments & Homework', icon: <FiEdit3 /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
     'teacher': [
@@ -256,10 +275,10 @@ const Sidebar = () => {
       <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} onClick={closeSidebar}></div>
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="logo-icon" style={{ background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '8px', marginRight: '8px', display: 'inline-flex' }}>
+          <div className="logo-icon" style={{ background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '8px', marginRight: '8px', display: 'inline-flex', flexShrink: 0 }}>
             <FiShield size={18} />
           </div>
-          Vasant Valley School ERP
+          <span style={{ fontSize: '15px', fontWeight: 700, lineHeight: '1.3', wordBreak: 'break-word' }}>Vasant Valley School ERP</span>
         </div>
         <div style={{ padding: '0 16px 10px 16px', textAlign: 'center' }}>
           <div style={{ fontSize: '9px', fontWeight: '800', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', lineHeight: '1.6' }}>
@@ -271,7 +290,7 @@ const Sidebar = () => {
         </div>
 
       <ul className="sidebar-menu">
-        <li style={{ padding: '15px 24px 10px', fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+        <li style={{ padding: '12px 16px 8px', fontSize: '10px', color: 'rgba(255, 255, 255, 0.5)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: '1.5', wordBreak: 'break-word' }}>
           {getMenuTitle()}
         </li>
 

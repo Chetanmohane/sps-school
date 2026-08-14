@@ -24,6 +24,10 @@ const assignmentSchema = new mongoose.Schema({
   instructions: {
     type: String,
     required: true
+  },
+  givenBy: {
+    type: String,
+    default: ""
   }
 }, { timestamps: true });
 

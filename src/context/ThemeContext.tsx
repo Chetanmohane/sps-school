@@ -34,10 +34,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const root = document.documentElement;
     if (isDark) {
-      root.classList.add('dark-mode');
+      root.classList.add('dark-mode', 'dark');
       localStorage.setItem('theme', 'dark');
     } else {
-      root.classList.remove('dark-mode');
+      root.classList.remove('dark-mode', 'dark');
       localStorage.setItem('theme', 'light');
     }
   }, [isDark]);

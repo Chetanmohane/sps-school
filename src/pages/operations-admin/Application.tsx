@@ -270,11 +270,16 @@ const Application = () => {
                           )}
 
                           {app.teacherRemarks && (
-                            <div className="bg-amber-50/50 border border-amber-100/50 text-amber-800 p-3 rounded-xl text-xs space-y-1">
-                              <p className="font-bold flex items-center gap-1">
-                                <FiMessageCircle size={13} /> Administrator Remarks:
+                            <div className="bg-indigo-50/70 border border-indigo-100 text-indigo-900 p-3 rounded-xl text-xs space-y-1">
+                              <p className="font-bold flex items-center gap-1 text-indigo-700">
+                                <FiMessageCircle size={13} /> Official Remarks:
                               </p>
-                              <p className="font-medium">{app.teacherRemarks}</p>
+                              <p className="font-semibold text-slate-800">"{app.teacherRemarks}"</p>
+                              {app.processedBy && (
+                                <p className="text-[10px] font-bold text-indigo-600 mt-1">
+                                  👔 Given by: {app.processedBy}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>

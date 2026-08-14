@@ -4,7 +4,7 @@ const auth = require("../middleware/authMiddleware");
 const role = require("../middleware/roleMiddleware");
 const controller = require("../controllers/notificationController");
 
-const allowedRoles = ["super-admin", "manager-admin", "academic-admin", "student-admin", "teacher"];
+const allowedRoles = ["super-admin", "manager-admin", "academic-admin", "student-admin", "operations-admin", "teacher", "class-teacher"];
 
 router.get("/", auth, controller.getNotifications);
 router.post("/", auth, role(allowedRoles), controller.createNotification);

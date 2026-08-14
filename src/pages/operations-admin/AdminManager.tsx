@@ -9,8 +9,9 @@ const AdminManager = () => {
   const { role } = useParams();      //fetch from url
   const [showPassword, setShowPassword] = useState(false);
   const [admins, setAdmins] = useState([]);
+  const [classesList, setClassesList] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', email: '', phone:'', password: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', phone:'', password: '', className: '', section: '' });
 
   const fetchAdmins = async () => {
     try {
@@ -21,11 +22,47 @@ const AdminManager = () => {
     }
   };
 
+  const fetchClasses = async () => {
+    try {
+      const res = await API.get('/api/academic-admin/classes');
+      setClassesList(res.data?.data || res.data || []);
+    } catch (err) {
+      console.error("Error fetching classes:", err);
+    }
+  };
+
+  const getAllClassOptions = () => {
+    const standard = ['Nursery', 'KG', 'LKG', 'UKG', 'Playgroup', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    const dbClasses = (classesList || []).map((c: any) => String(c.className).trim()).filter(Boolean);
+    const combined = Array.from(new Set([...dbClasses, ...standard]));
+    const order = ['Nursery', 'Playgroup', 'LKG', 'UKG', 'KG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    return combined.sort((a, b) => {
+      const idxA = order.indexOf(a);
+      const idxB = order.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
+  };
+
+  const getSectionOptions = (selectedClass?: string) => {
+    const standard = ['A', 'B', 'C', 'D', 'E'];
+    const dbSections = selectedClass
+      ? (classesList || []).filter((c: any) => String(c.className).trim().toLowerCase() === String(selectedClass).trim().toLowerCase()).map((c: any) => String(c.section).trim().toUpperCase())
+      : (classesList || []).map((c: any) => String(c.section).trim().toUpperCase());
+    const combined = Array.from(new Set([...dbSections, ...standard])).filter(Boolean);
+    return combined.sort();
+  };
+
   useEffect(() => { 
     fetchAdmins(); 
+    if (role === 'class-teacher') {
+      fetchClasses();
+    }
   }, [role]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     // Password Validation Regex
@@ -45,9 +82,9 @@ const AdminManager = () => {
     try {
       await API.post('/api/super-admin/create-admin', { ...formData, role });
       setShowForm(false);
-      setFormData({ name: '', email: '', phone: '', password: '' });
+      setFormData({ name: '', email: '', phone: '', password: '', className: '', section: '' });
       fetchAdmins();
-    } catch (err) { 
+    } catch (err: any) { 
         alert(err.response?.data?.message || "Error adding admin"); 
     }
   };
@@ -66,6 +103,7 @@ const AdminManager = () => {
       'academic-admin': 'Teacher Admin',
       'finance-admin': 'Finance Admin',
       'operations-admin': 'Operations Admin',
+      'class-teacher': 'Class Teacher',
     };
     return roleMap[r] || (r ? r.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Admin');
   };
@@ -88,7 +126,7 @@ const AdminManager = () => {
             >
               {showForm ? "Cancel" : (<>
                 <FiPlus style={{ marginRight: '8px' }} /> 
-                <span>Add New Admin</span>
+                <span>Add New {formattedRoleName}</span>
               </>)
               }
             </button>
@@ -113,16 +151,16 @@ const AdminManager = () => {
                 />
                 <input style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)'  }} 
                   type="text" 
-                  placeholder="Phone" 
+                  placeholder="Phone (+919876543210)" 
                   required 
                   maxLength={13}
                   value={formData.phone} 
                   onChange={(e) => setFormData({...formData, phone: e.target.value})} 
                 />
-                <div className="relative">
-                  <input style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', width: '100%'  }} 
+                <div style={{ position: 'relative' }}>
+                  <input style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', width: '100%', boxSizing: 'border-box' }} 
                     type={showPassword ? "text" : "password"}
-                    placeholder="Password" 
+                    placeholder="Password (e.g. Admin@123)" 
                     required 
                     value={formData.password} 
                     onChange={(e) => setFormData({...formData, password: e.target.value})} 
@@ -130,13 +168,47 @@ const AdminManager = () => {
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-0 top-4 text-[var(--text-muted)]"
+                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
                   >
                     {showPassword ? <FiEyeOff /> : <FiEye />}
                   </button>
                 </div>
-                <button type="submit" style={{ marginLeft: '32px', padding: '12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
-                  Create Admin
+
+                {role === 'class-teacher' && (
+                  <>
+                    <select
+                      required
+                      value={formData.className}
+                      onChange={(e) => {
+                        const newClass = e.target.value;
+                        const secs = getSectionOptions(newClass);
+                        setFormData({ ...formData, className: newClass, section: secs[0] || 'A' });
+                      }}
+                      style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontWeight: 700 }}
+                    >
+                      <option value="">-- Select Class --</option>
+                      {getAllClassOptions().map((cn: any) => (
+                        <option key={cn} value={cn}>Class {cn}</option>
+                      ))}
+                    </select>
+
+                    <select
+                      required
+                      disabled={!formData.className}
+                      value={formData.section}
+                      onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                      style={{ padding: '12px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontWeight: 700 }}
+                    >
+                      <option value="">-- Select Section --</option>
+                      {getSectionOptions(formData.className).map((sec: any) => (
+                        <option key={sec} value={sec}>Section {sec}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+
+                <button type="submit" style={{ gridColumn: role === 'class-teacher' ? '1/-1' : 'auto', padding: '12px', borderRadius: '6px', background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                  Create {formattedRoleName} Account
                 </button>
               </form>
             </div>

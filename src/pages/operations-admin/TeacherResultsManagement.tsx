@@ -27,11 +27,11 @@ interface StudentResultItem {
 }
 
 const TeacherResultsManagement = () => {
-  const [selectedClass, setSelectedClass] = useState('10');
-  const [selectedSection, setSelectedSection] = useState('A');
+  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedSection, setSelectedSection] = useState('');
   const [examType, setExamType] = useState('Mid-Term Examination 2026');
-  const [subjectName, setSubjectName] = useState('Mathematics');
-  const [subjectCode, setSubjectCode] = useState('MATH-10A');
+  const [subjectName, setSubjectName] = useState('');
+  const [subjectCode, setSubjectCode] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
   
   const [students, setStudents] = useState<StudentResultItem[]>([]);
@@ -41,6 +41,64 @@ const TeacherResultsManagement = () => {
     isOpen: boolean;
     student: StudentResultItem;
   } | null>(null);
+
+  const userEmail = localStorage.getItem('userEmail') || '';
+  const userRole = localStorage.getItem('role') || '';
+  const canAdminOverride = userRole === 'super-admin' || userRole === 'academic-admin' || userRole.includes('admin') || userRole.includes('manager');
+  const [assignedClasses, setAssignedClasses] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        let classesData = [];
+        if (canAdminOverride) {
+          const res = await API.get('/api/academic-admin/classes');
+          classesData = res.data.data || [];
+        } else {
+          const res = await API.get(`/api/teacher/my-classes/${userEmail}`);
+          classesData = res.data.data || [];
+        }
+        setAssignedClasses(classesData);
+        
+        // Auto-select the first available class, section, and subject if not set
+        if (classesData.length > 0) {
+          const firstClass = classesData[0];
+          const classNameStr = firstClass.className.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
+          setSelectedClass(classNameStr);
+          setSelectedSection(firstClass.section);
+          
+          if (firstClass.subjects && firstClass.subjects.length > 0) {
+            setSubjectName(firstClass.subjects[0].name);
+            setSubjectCode(firstClass.subjects[0].code);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load classes", err);
+      }
+    };
+    fetchClasses();
+  }, [userEmail, canAdminOverride]);
+
+  const normalizeClass = (cls: any) => {
+    if (!cls) return '';
+    return cls.toString().toLowerCase().replace('class', '').replace('th', '').replace('rd', '').replace('nd', '').replace('st', '').trim();
+  };
+
+  const uniqueClasses = Array.from(new Set(assignedClasses.map(c => normalizeClass(c.className)).filter(Boolean)));
+  
+  const availableSections = Array.from(new Set(assignedClasses
+    .filter(c => normalizeClass(c.className) === normalizeClass(selectedClass))
+    .map(c => c.section)
+    .filter(Boolean)
+  ));
+
+  const availableSubjects = Array.from(new Set(assignedClasses
+    .filter(c => normalizeClass(c.className) === normalizeClass(selectedClass) && c.section === selectedSection)
+    .flatMap(c => c.subjects || [])
+    .map((s: any) => ({ name: s.name, code: s.code }))
+  ));
+  
+  const uniqueSubjects = Array.from(new Map(availableSubjects.map((s: any) => [s.name, s])).values());
 
   // Shared state for Teacher Admin Exam Result Orders
   const [examOrders, setExamOrders] = useSharedState<any[]>('erp_exam_result_orders', [
@@ -265,12 +323,19 @@ const TeacherResultsManagement = () => {
         const marksNum = Number(st.marksObtained) || 0;
         const gradeDetails = getGradeDetails(marksNum);
 
+        const currentNavName = localStorage.getItem('userName') || 'Faculty';
+        const currentNavRole = (localStorage.getItem('role') || 'Teacher').replace('-', ' ').toUpperCase();
+        const evaluatorBy = `${currentNavName} (${currentNavRole})`;
+        const baseRemark = (st.remark || gradeDetails.remarks).trim();
+        const formattedRemark = baseRemark.includes('— by') ? baseRemark : `${baseRemark} — by ${evaluatorBy}`;
+
         const newSubjectEntry = {
           name: targetSubjectName,
           marks: marksNum,
           maxMarks: st.maxMarks,
           grade: gradeDetails.grade,
-          remarks: st.remark || gradeDetails.remarks
+          remarks: formattedRemark,
+          evaluatedBy: evaluatorBy
         };
 
         if (subjectIndex >= 0) {
@@ -405,13 +470,20 @@ const TeacherResultsManagement = () => {
               <label className="block text-xs font-black text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Assigned Class *</label>
               <select
                 value={selectedClass}
-                onChange={e => setSelectedClass(e.target.value)}
+                onChange={e => {
+                  setSelectedClass(e.target.value);
+                  setSelectedSection('');
+                  setSubjectName('');
+                  setSubjectCode('');
+                }}
                 className="w-full px-3.5 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none"
               >
-                <option value="10">Class 10</option>
-                <option value="9">Class 9</option>
-                <option value="12">Class 12</option>
-                <option value="8">Class 8</option>
+                <option value="">Select Class...</option>
+                {uniqueClasses.map(cls => (
+                  <option key={cls} value={cls}>
+                    {cls.toLowerCase().startsWith('class') ? cls : `Class ${cls}`}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -419,11 +491,18 @@ const TeacherResultsManagement = () => {
               <label className="block text-xs font-black text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Section *</label>
               <select
                 value={selectedSection}
-                onChange={e => setSelectedSection(e.target.value)}
+                onChange={e => {
+                  setSelectedSection(e.target.value);
+                  setSubjectName('');
+                  setSubjectCode('');
+                }}
                 className="w-full px-3.5 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none"
+                disabled={!selectedClass}
               >
-                <option value="A">Section A</option>
-                <option value="B">Section B</option>
+                <option value="">Select Section...</option>
+                {availableSections.map(sec => (
+                  <option key={sec} value={sec}>Section {sec}</option>
+                ))}
               </select>
             </div>
 
@@ -434,21 +513,20 @@ const TeacherResultsManagement = () => {
                 onChange={e => {
                   const val = e.target.value;
                   setSubjectName(val);
-                  if (val.includes('Math')) setSubjectCode(`MATH-${selectedClass}${selectedSection}`);
-                  else if (val.includes('Science')) setSubjectCode(`SCI-${selectedClass}${selectedSection}`);
-                  else if (val.includes('English')) setSubjectCode(`ENG-${selectedClass}${selectedSection}`);
-                  else if (val.includes('Social')) setSubjectCode(`SST-${selectedClass}${selectedSection}`);
-                  else if (val.includes('Computer')) setSubjectCode(`CS-${selectedClass}${selectedSection}`);
-                  else setSubjectCode(`SUB-${selectedClass}${selectedSection}`);
+                  const selectedSub = uniqueSubjects.find((s: any) => s.name === val);
+                  if (selectedSub) {
+                    setSubjectCode(selectedSub.code);
+                  } else {
+                    setSubjectCode(`SUB-${selectedClass}${selectedSection}`);
+                  }
                 }}
                 className="w-full px-3.5 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none"
+                disabled={!selectedSection}
               >
-                <option value="Mathematics">Mathematics</option>
-                <option value="Science & Tech">Science & Tech</option>
-                <option value="English Literature">English Literature</option>
-                <option value="Social Science">Social Science</option>
-                <option value="Computer Applications">Computer Applications</option>
-                <option value="Hindi Language">Hindi Language</option>
+                <option value="">Select Subject...</option>
+                {uniqueSubjects.map((sub: any) => (
+                  <option key={sub.name} value={sub.name}>{sub.name}</option>
+                ))}
               </select>
             </div>
 

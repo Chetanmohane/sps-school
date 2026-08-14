@@ -85,17 +85,112 @@ const TeacherDirectory = () => {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // Password Visibility & Change Modal States
+  const [visiblePasswordIds, setVisiblePasswordIds] = useState<{ [key: string]: boolean }>({});
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswordIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const [passwordModal, setPasswordModal] = useState<{
+    open: boolean;
+    userId: string;
+    userName: string;
+    visiblePassword?: string;
+  }>({ open: false, userId: '', userName: '' });
+
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [modalShowPassword, setModalShowPassword] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
+  const openChangePasswordModal = (teacherObj: any, name: string, currentPass?: string) => {
+    let resolvedId = '';
+    if (typeof teacherObj === 'object' && teacherObj !== null) {
+      // If it's a teacher object, try to get the linked user._id first, then fallback to teacher._id
+      const user = teacherObj.user;
+      if (user && typeof user === 'object') {
+        resolvedId = String(user._id || user.id || '');
+      } else if (user && typeof user === 'string') {
+        resolvedId = user;
+      }
+      // Fallback: use teacher's own _id so backend can look up by Teacher doc ID
+      if (!resolvedId) {
+        resolvedId = String(teacherObj._id || teacherObj.id || '');
+      }
+    } else {
+      resolvedId = String(teacherObj || '');
+    }
+
+    console.log('[Password Modal] Teacher object:', teacherObj);
+    console.log('[Password Modal] Resolved userId:', resolvedId);
+    console.log('[Password Modal] API URL will be:', `/api/super-admin/user/${resolvedId}/password`);
+
+    setPasswordModal({ open: true, userId: resolvedId, userName: name, visiblePassword: currentPass });
+    setNewPasswordInput(currentPass || '');
+    setModalShowPassword(false);
+  };
+
+  const handleSavePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordModal.userId || passwordModal.userId === '[object Object]' || passwordModal.userId === 'undefined') {
+      showToast('Error: Invalid Teacher User ID — please refresh and try again.', 'error');
+      alert('❌ Error: Could not resolve Teacher ID. Please refresh the page.');
+      return;
+    }
+    if (!newPasswordInput || newPasswordInput.trim().length < 6) {
+      showToast('Password must be at least 6 characters long.', 'error');
+      return;
+    }
+    try {
+      setUpdatingPassword(true);
+      const url = `/api/super-admin/user/${passwordModal.userId}/password`;
+      console.log('[handleSavePassword] PUT request to:', url, 'userId:', passwordModal.userId);
+      const res = await API.put(url, {
+        password: newPasswordInput.trim()
+      });
+      const msg = res.data?.message || `Password for ${passwordModal.userName} updated successfully!`;
+      alert(`✅ Success!\n\n${msg}`);
+      showToast(msg, 'success');
+      setPasswordModal({ open: false, userId: '', userName: '' });
+      fetchTeachers();
+    } catch (err: any) {
+      const status = (err as any).response?.status;
+      const errorMsg = (err as any).response?.data?.message || (err as any).message || 'Failed to update password';
+      console.error('[handleSavePassword] Error:', status, errorMsg, err);
+      alert(`❌ Error (${status || 'Network'}): ${errorMsg}`);
+      showToast(errorMsg, 'error');
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
   const [subjectsList, setSubjectsList] = useState<any[]>([]);
+  const [classesList, setClassesList] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', password: '',
     specialization: '', qualifications: '', experience: 0, department: '',
-    subjects: [] as string[]
+    subjects: [] as string[],
+    classes: [] as string[]
+  });
+
+  // Dedicated Subject Teacher Account Creator State
+  const [showSubjectTeacherModal, setShowSubjectTeacherModal] = useState(false);
+  const [subTeacherCreating, setSubTeacherCreating] = useState(false);
+  const [createdAccountDetails, setCreatedAccountDetails] = useState<any>(null);
+  const [subTeacherForm, setSubTeacherForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: 'Teacher@123',
+    className: '8th',
+    section: 'A',
+    subjectName: 'Mathematics'
   });
 
   useEffect(() => { 
     fetchTeachers(); 
     fetchSubjects();
+    fetchClasses();
   }, []);
 
   const fetchTeachers = async () => {
@@ -114,6 +209,87 @@ const TeacherDirectory = () => {
     } catch (e) { console.error(e); }
   };
 
+  const fetchClasses = async () => {
+    try {
+      const res = await API.get('/api/academic-admin/classes');
+      setClassesList(res.data.data || []);
+    } catch (e) { console.error(e); }
+  };
+
+  const handleCreateSubjectTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubTeacherCreating(true);
+    try {
+      // Find matching class ID if exists
+      const targetCls = classesList.find(
+        c => String(c.className).toLowerCase() === String(subTeacherForm.className).toLowerCase() &&
+             String(c.section).toLowerCase() === String(subTeacherForm.section).toLowerCase()
+      );
+      const classIds = targetCls ? [targetCls._id] : [];
+
+      // Find matching subject ID if exists
+      const targetSub = subjectsList.find(
+        s => String(s.name).toLowerCase().includes(subTeacherForm.subjectName.toLowerCase())
+      );
+      const subjectIds = targetSub ? [targetSub._id] : [];
+
+      const phoneRegex = /^\+91\d{10}$/;
+      let formattedPhone = subTeacherForm.phone.trim();
+      if (!phoneRegex.test(formattedPhone)) {
+        if (/^\d{10}$/.test(formattedPhone)) {
+          formattedPhone = `+91${formattedPhone}`;
+        } else {
+          showToast('Phone number must be 10 digits or start with +91', 'error');
+          setSubTeacherCreating(false);
+          return;
+        }
+      }
+
+      const payload = {
+        name: subTeacherForm.name.trim(),
+        email: subTeacherForm.email.trim(),
+        phone: formattedPhone,
+        password: subTeacherForm.password.trim(),
+        specialization: `${subTeacherForm.subjectName} Teacher`,
+        department: 'Academic',
+        qualifications: 'Subject Specialist',
+        experience: 3,
+        subjects: subjectIds,
+        classes: classIds
+      };
+
+      await API.post('/api/academic-admin/teachers', payload);
+      showToast(`✅ Subject Teacher Account created for Class ${subTeacherForm.className}-${subTeacherForm.section}!`, 'success');
+      
+      setCreatedAccountDetails({
+        name: subTeacherForm.name,
+        email: subTeacherForm.email,
+        password: subTeacherForm.password,
+        className: subTeacherForm.className,
+        section: subTeacherForm.section,
+        subject: subTeacherForm.subjectName
+      });
+
+      setShowSubjectTeacherModal(false);
+      setSubTeacherForm({
+        name: '',
+        email: '',
+        phone: '',
+        password: 'Teacher@123',
+        className: '8th',
+        section: 'A',
+        subjectName: 'Mathematics'
+      });
+      fetchTeachers();
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Error creating Subject Teacher account';
+      showToast(msg, 'error');
+      alert(`❌ Failed: ${msg}`);
+    } finally {
+      setSubTeacherCreating(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -124,10 +300,12 @@ const TeacherDirectory = () => {
     try {
       if (editingTeacher) {
         const updateData = { ...formData };
-        delete updateData.password;
+        if (!updateData.password || updateData.password.trim() === '') {
+          delete updateData.password;
+        }
         delete updateData.email;
         await API.put(`/api/academic-admin/teachers/${editingTeacher._id}`, updateData);
-        showToast('Teacher profile updated successfully!', 'success');
+        showToast('Teacher profile and password updated successfully!', 'success');
       } else {
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         const phoneRegex = /^\+91\d{10}$/;
@@ -144,20 +322,26 @@ const TeacherDirectory = () => {
       }
       setShowModal(false);
       setEditingTeacher(null);
-      setFormData({ name: '', email: '', phone: '', password: '', specialization: '', qualifications: '', experience: 0, department: '', subjects: [] });
+      setFormData({ name: '', email: '', phone: '', password: '', specialization: '', qualifications: '', experience: 0, department: '', subjects: [], classes: [] });
       fetchTeachers();
     } catch (error: any) {
       showToast(error.response?.data?.message || 'Error saving teacher', 'error');
     }
   };
 
-  const handleEdit = (teacher) => {
+  const handleEdit = (teacher: any) => {
     setEditingTeacher(teacher);
     setFormData({
-      name: teacher.user.name, email: teacher.user.email, phone: teacher.user.phone,
-      password: '', specialization: teacher.specialization, qualifications: teacher.qualifications,
-      experience: teacher.experience, department: teacher.department,
-      subjects: teacher.subjects ? teacher.subjects.map((sub: any) => typeof sub === 'string' ? sub : sub._id) : []
+      name: teacher.user?.name || '',
+      email: teacher.user?.email || '',
+      phone: teacher.user?.phone || '',
+      password: '',
+      specialization: teacher.specialization || '',
+      qualifications: teacher.qualifications || '',
+      experience: teacher.experience || 0,
+      department: teacher.department || '',
+      subjects: teacher.subjects ? teacher.subjects.map((sub: any) => typeof sub === 'string' ? sub : sub._id) : [],
+      classes: teacher.classes ? teacher.classes.map((cls: any) => typeof cls === 'string' ? cls : cls._id) : []
     });
     setShowModal(true);
   };
@@ -244,10 +428,19 @@ const TeacherDirectory = () => {
             Manage faculty profiles, specializations, qualifications & class teacher roles.
           </p>
         </div>
-        <button type="button" className="btn-primary flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-          onClick={() => { setEditingTeacher(null); setFormData({ name: '', email: '', phone: '', password: '', specialization: '', qualifications: '', experience: 0, department: '', subjects: [] }); setShowModal(true); }}>
-          <FiPlus /><span>Add New Teacher</span>
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button type="button" 
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all text-sm shadow-md"
+            onClick={() => setShowSubjectTeacherModal(true)}
+          >
+            <FiBookOpen size={16} />
+            <span>📘 Create Subject Teacher Account (Class &amp; Section)</span>
+          </button>
+          <button type="button" className="btn-primary flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors text-sm"
+            onClick={() => { setEditingTeacher(null); setFormData({ name: '', email: '', phone: '', password: '', specialization: '', qualifications: '', experience: 0, department: '', subjects: [], classes: [] }); setShowModal(true); }}>
+            <FiPlus /><span>Add Faculty Profile</span>
+          </button>
+        </div>
       </div>
 
       {/* Metrics */}
@@ -362,7 +555,7 @@ const TeacherDirectory = () => {
           <thead>
             <tr>
               <th>Faculty Name</th><th>Contact Info</th><th>Specialization</th>
-              <th>Experience</th><th>Department</th><th>Qualifications</th>
+              <th>Password</th><th>Experience</th><th>Department</th><th>Qualifications</th>
               <th>Class Role</th><th>Actions</th>
             </tr>
           </thead>
@@ -370,6 +563,8 @@ const TeacherDirectory = () => {
             {filteredTeachers.length > 0 ? filteredTeachers.map((teacher: any) => {
               const initials = teacher.user?.name
                 ? teacher.user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : 'T';
+              const uId = (typeof teacher.user === 'object' && teacher.user !== null) ? (teacher.user._id || teacher._id) : (teacher.user || teacher._id);
+              const visPass = teacher.user?.visiblePassword || '';
               return (
                 <tr key={teacher._id}>
                   <td>
@@ -388,17 +583,54 @@ const TeacherDirectory = () => {
                   <td>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', backgroundColor: 'rgba(99,102,241,0.1)', color: 'var(--primary)', alignSelf: 'flex-start' }}>
-                        {teacher.specialization || 'General'}
+                        {teacher.specialization || 'General Subject'}
                       </span>
+                      {/* Assigned Subjects */}
                       {teacher.subjects && teacher.subjects.length > 0 && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
                           {teacher.subjects.map((sub: any) => (
                             <span key={sub._id || sub} style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'var(--panel-bg)', color: 'var(--text-muted)', border: '1px solid var(--border-color)', fontWeight: '500' }}>
-                              {sub.name || sub}
+                              📚 {sub.name || sub}
                             </span>
                           ))}
                         </div>
                       )}
+                      {/* Assigned Classes */}
+                      {teacher.classes && teacher.classes.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
+                          {teacher.classes.map((cls: any) => (
+                            <span key={cls._id || cls} style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', backgroundColor: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)', fontWeight: '600' }}>
+                              🏫 {cls.className ? `Class ${cls.className}-${cls.section}` : cls}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{
+                        fontFamily: 'monospace',
+                        fontWeight: '700',
+                        fontSize: '12px',
+                        backgroundColor: 'var(--input-bg)',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        minWidth: '85px',
+                        textAlign: 'center',
+                        color: visiblePasswordIds[uId] ? '#8b5cf6' : 'var(--text-muted)'
+                      }}>
+                        {visiblePasswordIds[uId] ? (visPass || 'Teacher@123') : '••••••••'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordVisibility(uId)}
+                        title={visiblePasswordIds[uId] ? "Hide Password" : "Show Password"}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '2px 4px', display: 'flex', alignItems: 'center' }}
+                      >
+                        {visiblePasswordIds[uId] ? <FiEyeOff size={14} /> : <FiEye size={14} />}
+                      </button>
                     </div>
                   </td>
                   <td><strong style={{ fontSize: '13px' }}>{teacher.experience || 0} yrs</strong></td>
@@ -416,16 +648,18 @@ const TeacherDirectory = () => {
                     )}
                   </td>
                   <td className="action-buttons">
+                    <button type="button" style={{ padding: '5px 8px', backgroundColor: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '3px' }} onClick={() => openChangePasswordModal(teacher, teacher.user?.name || 'Teacher', visPass)} title="Update Password">🔑 Password</button>
                     <button type="button" className="action-btn edit" onClick={() => handleEdit(teacher)} title="Edit Teacher"><FiEdit2 /></button>
                     <button type="button" className="action-btn delete" onClick={(e) => handleOpenDeleteModal(teacher, e)} title="Delete Teacher"><FiTrash2 /></button>
                   </td>
                 </tr>
               );
             }) : (
-              <tr><td colSpan={8} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>No matching teacher records found.</td></tr>
+              <tr><td colSpan={9} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>No matching teacher records found.</td></tr>
             )}
           </tbody>
         </table>
+
       </div>
 
       {/* Add/Edit Modal */}
@@ -452,17 +686,25 @@ const TeacherDirectory = () => {
                   <label className="text-sm font-medium mb-1">Phone *</label>
                   <input type="tel" name="phone" maxLength={13} className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.phone} onChange={handleInputChange} required />
                 </div>
-                {!editingTeacher && (
-                  <div className="flex flex-col">
-                    <label className="text-sm font-medium mb-1">Password *</label>
-                    <div className="relative">
-                      <input type={showPassword ? 'text' : 'password'} name="password" className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.password} onChange={handleInputChange} required={!editingTeacher} />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-[var(--text-muted)]">
-                        {showPassword ? <FiEyeOff /> : <FiEye />}
-                      </button>
-                    </div>
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium mb-1">
+                    {editingTeacher ? 'New Password (optional)' : 'Password *'}
+                  </label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? 'text' : 'password'} 
+                      name="password" 
+                      placeholder={editingTeacher ? 'Leave blank to keep current' : 'Enter password'} 
+                      className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" 
+                      value={formData.password} 
+                      onChange={handleInputChange} 
+                      required={!editingTeacher} 
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-[var(--text-muted)]">
+                      {showPassword ? <FiEyeOff /> : <FiEye />}
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
@@ -484,40 +726,124 @@ const TeacherDirectory = () => {
                   <input type="text" name="qualifications" className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.qualifications} onChange={handleInputChange} placeholder="e.g., B.Sc, M.Ed" />
                 </div>
               </div>
-              <div className="flex flex-col">
-                <label className="text-sm font-medium mb-1">Assign Subjects *</label>
-                <div className="grid grid-cols-2 gap-2 p-3 border border-[var(--border-color)] rounded-md bg-[var(--input-bg)] max-h-36 overflow-y-auto" style={{ width: '100%', minWidth: '100%', boxSizing: 'border-box' }}>
-                  {subjectsList.map((sub: any) => {
-                    const isChecked = formData.subjects.includes(sub._id);
-                    return (
-                      <label key={sub._id} className="flex items-center gap-2 text-xs font-semibold cursor-pointer p-1.5 hover:bg-[var(--card-bg)] rounded transition-colors" style={{ color: 'var(--text-main)' }}>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            const updatedSubjects = e.target.checked
-                              ? [...formData.subjects, sub._id]
-                              : formData.subjects.filter(id => id !== sub._id);
-                            setFormData({ ...formData, subjects: updatedSubjects });
-                          }}
-                          className="w-4 h-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500 cursor-pointer"
-                        />
-                        <span className="truncate" title={`${sub.name} (${sub.code})`}>
-                          {sub.name} <span className="opacity-60 font-normal">({sub.code})</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                  {subjectsList.length === 0 && (
-                    <div className="col-span-full text-center text-xs text-[var(--text-muted)] py-4">
-                      No subjects available. Please add subjects first.
-                    </div>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Assign Subjects */}
+                <div className="flex flex-col">
+                  <label className="text-sm font-bold mb-1 flex items-center gap-1 text-[var(--text-main)]">
+                    📚 Assign Particular Subject(s) *
+                  </label>
+                  <div className="grid grid-cols-1 gap-1.5 p-3 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] max-h-36 overflow-y-auto" style={{ width: '100%', boxSizing: 'border-box' }}>
+                    {subjectsList.map((sub: any) => {
+                      const isChecked = formData.subjects.includes(sub._id);
+                      return (
+                        <label key={sub._id} className="flex items-center gap-2 text-xs font-semibold cursor-pointer p-1.5 hover:bg-[var(--card-bg)] rounded-lg transition-colors" style={{ color: 'var(--text-main)' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const updatedSubjects = e.target.checked
+                                ? [...formData.subjects, sub._id]
+                                : formData.subjects.filter(id => id !== sub._id);
+                              setFormData({ ...formData, subjects: updatedSubjects });
+                            }}
+                            className="w-4 h-4 rounded text-indigo-600 border-gray-300 focus:ring-indigo-500 cursor-pointer"
+                          />
+                          <span className="truncate" title={`${sub.name} (${sub.code})`}>
+                            {sub.name} <span className="opacity-60 font-normal">({sub.code})</span>
+                          </span>
+                        </label>
+                      );
+                    })}
+                    {subjectsList.length === 0 && (
+                      <div className="text-center text-xs text-[var(--text-muted)] py-4">
+                        No subjects available.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Assign Classes & Sections */}
+                <div className="flex flex-col">
+                  <label className="text-sm font-bold mb-1 flex items-center gap-1 text-[var(--text-main)]">
+                    🏫 Assign Particular Class(es) &amp; Section(s) *
+                  </label>
+                  <div className="grid grid-cols-1 gap-1.5 p-3 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] max-h-36 overflow-y-auto" style={{ width: '100%', boxSizing: 'border-box' }}>
+                    {classesList.map((cls: any) => {
+                      const isChecked = formData.classes.includes(cls._id);
+                      return (
+                        <label key={cls._id} className="flex items-center gap-2 text-xs font-semibold cursor-pointer p-1.5 hover:bg-[var(--card-bg)] rounded-lg transition-colors" style={{ color: 'var(--text-main)' }}>
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const updatedClasses = e.target.checked
+                                ? [...formData.classes, cls._id]
+                                : formData.classes.filter(id => id !== cls._id);
+                              setFormData({ ...formData, classes: updatedClasses });
+                            }}
+                            className="w-4 h-4 rounded text-emerald-600 border-gray-300 focus:ring-emerald-500 cursor-pointer"
+                          />
+                          <span className="truncate">
+                            Class {cls.className} — Section {cls.section}
+                          </span>
+                        </label>
+                      );
+                    })}
+                    {classesList.length === 0 && (
+                      <div className="text-center text-xs text-[var(--text-muted)] py-4">
+                        No classes available.
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="form-buttons space-x-4">
                 <button type="submit" className="btn-primary">{editingTeacher ? 'Update Teacher' : 'Create Teacher'}</button>
                 <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CHANGE PASSWORD MODAL */}
+      {passwordModal.open && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          zIndex: 999999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)',
+            borderRadius: '20px', width: '100%', maxWidth: '440px', padding: '24px',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text-main)' }}>🔑 Change Password</h3>
+                <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>Updating password for <strong>{passwordModal.userName}</strong></p>
+              </div>
+              <button onClick={() => setPasswordModal({ open: false, userId: '', userName: '' })} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><FiX size={20} /></button>
+            </div>
+            <form onSubmit={handleSavePassword}>
+              <div style={{ marginBottom: '20px', position: 'relative' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>New Password</label>
+                <input
+                  type={modalShowPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={newPasswordInput}
+                  onChange={e => setNewPasswordInput(e.target.value)}
+                  placeholder="Enter new password"
+                  style={{ width: '100%', padding: '10px 40px 10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '14px', boxSizing: 'border-box' }}
+                />
+                <button type="button" onClick={() => setModalShowPassword(!modalShowPassword)} style={{ position: 'absolute', right: '10px', top: '32px', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                  {modalShowPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                </button>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setPasswordModal({ open: false, userId: '', userName: '' })} style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--panel-bg)', color: 'var(--text-main)', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" disabled={updatingPassword} style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#8b5cf6', color: 'white', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>{updatingPassword ? 'Updating...' : '🔒 Save Password'}</button>
               </div>
             </form>
           </div>
@@ -543,6 +869,195 @@ const TeacherDirectory = () => {
                 {deleting ? "Deleting..." : "Yes, Delete"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DEDICATED SUBJECT TEACHER ACCOUNT CREATOR MODAL ── */}
+      {showSubjectTeacherModal && (() => {
+        const selectedClassObj = classesList.find(
+          c => String(c.className).toLowerCase().replace(/class/i, '').trim() === String(subTeacherForm.className).toLowerCase().replace(/class/i, '').trim() &&
+               String(c.section).toLowerCase().trim() === String(subTeacherForm.section).toLowerCase().trim()
+        );
+
+        const availableSubjects = (selectedClassObj?.subjects && selectedClassObj.subjects.length > 0)
+          ? selectedClassObj.subjects
+          : subjectsList;
+
+        return (
+          <div className="fixed inset-0 z-[99999] bg-slate-900/65 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-xl rounded-3xl p-7 shadow-2xl border border-[var(--border-color)]">
+            <div className="flex justify-between items-start mb-5 border-b border-[var(--border-color)] pb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold mb-1">
+                  📘 Super Admin Subject Teacher Account Generator
+                </div>
+                <h3 className="text-xl font-black text-[var(--text-main)]">Create Subject Teacher Portal Account</h3>
+                <p className="text-xs text-[var(--text-muted)]">Class-wise &amp; Section-wise Subject Teacher login creation</p>
+              </div>
+              <button onClick={() => setShowSubjectTeacherModal(false)} className="p-2 rounded-full hover:bg-[var(--input-bg)] text-[var(--text-muted)]">
+                <FiX size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSubjectTeacher} className="space-y-4">
+              {/* Class, Section & Subject Selection Card */}
+              <div className="bg-indigo-50/50 border border-indigo-100 p-4 rounded-2xl space-y-3">
+                <p className="text-xs font-black uppercase text-indigo-800 flex items-center gap-1">
+                  🏫 Select Target Class, Section &amp; Subject
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-[var(--text-muted)] block mb-1">Class *</label>
+                    <select
+                      required
+                      value={subTeacherForm.className}
+                      onChange={e => setSubTeacherForm({ ...subTeacherForm, className: e.target.value })}
+                      className="w-full p-2.5 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl text-sm font-bold text-[var(--text-main)] outline-none focus:ring-2 ring-indigo-500/20"
+                    >
+                      {['Nursery', 'LKG', 'UKG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'].map(c => (
+                        <option key={c} value={c}>Class {c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[var(--text-muted)] block mb-1">Section *</label>
+                    <select
+                      required
+                      value={subTeacherForm.section}
+                      onChange={e => setSubTeacherForm({ ...subTeacherForm, section: e.target.value })}
+                      className="w-full p-2.5 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl text-sm font-bold text-[var(--text-main)] outline-none focus:ring-2 ring-indigo-500/20"
+                    >
+                      {['A', 'B', 'C', 'D', 'E', 'F'].map(s => (
+                        <option key={s} value={s}>Section {s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[var(--text-muted)] block mb-1">
+                      Subject {selectedClassObj?.subjects?.length ? `(${selectedClassObj.subjects.length} Assigned)` : ''} *
+                    </label>
+                    <select
+                      required
+                      value={subTeacherForm.subjectName}
+                      onChange={e => setSubTeacherForm({ ...subTeacherForm, subjectName: e.target.value })}
+                      className="w-full p-2.5 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-xl text-sm font-bold text-[var(--text-main)] outline-none focus:ring-2 ring-indigo-500/20"
+                    >
+                      <option value="">Select Subject</option>
+                      {availableSubjects.length > 0 ? (
+                        availableSubjects.map((sub: any) => {
+                          const subName = typeof sub === 'object' ? sub.name : sub;
+                          const subCode = typeof sub === 'object' && sub.code ? ` (${sub.code})` : '';
+                          return (
+                            <option key={typeof sub === 'object' ? sub._id : sub} value={subName}>
+                              {subName}{subCode}
+                            </option>
+                          );
+                        })
+                      ) : (
+                        <option value="" disabled>No subjects assigned to this class</option>
+                      )}
+                    </select>
+                  </div>
+                </div>
+                {selectedClassObj && selectedClassObj.subjects?.length > 0 && (
+                  <p className="text-[10px] text-emerald-600 font-bold flex items-center gap-1 mt-1">
+                    ✓ Showing {selectedClassObj.subjects.length} assigned subject(s) for Class {selectedClassObj.className}-{selectedClassObj.section}
+                  </p>
+                )}
+              </div>
+
+              {/* Teacher Account Credentials */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-[var(--text-muted)] block mb-1">Teacher Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Rahul Sharma"
+                    value={subTeacherForm.name}
+                    onChange={e => setSubTeacherForm({ ...subTeacherForm, name: e.target.value })}
+                    className="w-full p-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl text-sm font-medium text-[var(--text-main)] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[var(--text-muted)] block mb-1">Teacher Email (Portal Login) *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. rahul.maths@school.com"
+                    value={subTeacherForm.email}
+                    onChange={e => setSubTeacherForm({ ...subTeacherForm, email: e.target.value })}
+                    className="w-full p-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl text-sm font-medium text-[var(--text-main)] outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-[var(--text-muted)] block mb-1">Phone Number (+91) *</label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+919876543210"
+                    value={subTeacherForm.phone}
+                    onChange={e => setSubTeacherForm({ ...subTeacherForm, phone: e.target.value })}
+                    className="w-full p-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl text-sm font-medium text-[var(--text-main)] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-[var(--text-muted)] block mb-1">Login Password *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Teacher@123"
+                    value={subTeacherForm.password}
+                    onChange={e => setSubTeacherForm({ ...subTeacherForm, password: e.target.value })}
+                    className="w-full p-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl text-sm font-medium text-[var(--text-main)] outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowSubjectTeacherModal(false)} className="flex-1 py-3 bg-[var(--input-bg)] text-[var(--text-muted)] rounded-xl font-bold hover:bg-[var(--border-color)]">
+                  Cancel
+                </button>
+                <button type="submit" disabled={subTeacherCreating} className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-bold hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-2">
+                  {subTeacherCreating ? <FiRefreshCw className="animate-spin" /> : '📘 Create Subject Teacher Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* ── SUCCESS CREATED ACCOUNT DETAILS MODAL ── */}
+      {createdAccountDetails && (
+        <div className="fixed inset-0 z-[999999] bg-slate-900/70 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-md rounded-3xl p-6 shadow-2xl border border-emerald-200 text-center">
+            <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl font-black">
+              ✓
+            </div>
+            <h3 className="text-xl font-black text-[var(--text-main)] mb-1">Subject Teacher Account Created!</h3>
+            <p className="text-xs text-[var(--text-muted)] mb-4">Handover these portal login credentials to the teacher:</p>
+
+            <div className="bg-[var(--input-bg)] border border-[var(--border-color)] p-4 rounded-2xl text-left space-y-2 mb-5 font-mono text-xs">
+              <div><span className="text-[var(--text-muted)]">Teacher Name:</span> <strong className="text-[var(--text-main)]">{createdAccountDetails.name}</strong></div>
+              <div><span className="text-[var(--text-muted)]">Email Login:</span> <strong className="text-indigo-600">{createdAccountDetails.email}</strong></div>
+              <div><span className="text-[var(--text-muted)]">Password:</span> <strong className="text-purple-600">{createdAccountDetails.password}</strong></div>
+              <div><span className="text-[var(--text-muted)]">Class &amp; Section:</span> <strong className="text-emerald-600">Class {createdAccountDetails.className}-{createdAccountDetails.section}</strong></div>
+              <div><span className="text-[var(--text-muted)]">Assigned Subject:</span> <strong className="text-amber-600">{createdAccountDetails.subject}</strong></div>
+            </div>
+
+            <button
+              onClick={() => setCreatedAccountDetails(null)}
+              className="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-md"
+            >
+              Done &amp; Close
+            </button>
           </div>
         </div>
       )}

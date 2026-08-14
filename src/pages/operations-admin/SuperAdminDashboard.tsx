@@ -454,7 +454,7 @@ const SuperAdminDashboard = () => {
   const [feeForm, setFeeForm] = useState({ studentId:'', amount:'', dueDate:'', remarks:'' });
   const [feeFormClass, setFeeFormClass] = useState('');
   const [feeFormSection, setFeeFormSection] = useState('');
-  const [adminForm, setAdminForm] = useState({ name:'', email:'', phone:'', password:'', role:'finance-admin', remarks:'' });
+  const [adminForm, setAdminForm] = useState({ name:'', email:'', phone:'', password:'', role:'finance-admin', className:'', section:'', remarks:'' });
   const [searchStudent, setSearchStudent] = useState('');
   const [studentClassFilter, setStudentClassFilter] = useState('all');
   const [studentSectionFilter, setStudentSectionFilter] = useState('all');
@@ -482,6 +482,81 @@ const SuperAdminDashboard = () => {
   const [subAdminStatusFilter, setSubAdminStatusFilter] = useState('all');
   const [subAdminDateFrom, setSubAdminDateFrom] = useState('');
   const [subAdminDateTo, setSubAdminDateTo] = useState('');
+
+  // Helper to ensure all standard & DB classes are visible in dropdowns
+  const getAllClassOptions = () => {
+    const standard = ['Nursery', 'KG', 'LKG', 'UKG', 'Playgroup', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    const dbClasses = (classes || []).map((c: any) => String(c.className).trim()).filter(Boolean);
+    const combined = Array.from(new Set([...dbClasses, ...standard]));
+    const order = ['Nursery', 'Playgroup', 'LKG', 'UKG', 'KG', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    return combined.sort((a, b) => {
+      const idxA = order.indexOf(a);
+      const idxB = order.indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b, undefined, { numeric: true });
+    });
+  };
+
+  const getSectionOptions = (selectedClass?: string) => {
+    const standard = ['A', 'B', 'C', 'D', 'E'];
+    const dbSections = selectedClass
+      ? (classes || []).filter((c: any) => String(c.className).trim().toLowerCase() === String(selectedClass).trim().toLowerCase()).map((c: any) => String(c.section).trim().toUpperCase())
+      : (classes || []).map((c: any) => String(c.section).trim().toUpperCase());
+    const combined = Array.from(new Set([...dbSections, ...standard])).filter(Boolean);
+    return combined.sort();
+  };
+
+  // Dedicated Class Teacher Account Creation State
+  const [showClassTeacherModal, setShowClassTeacherModal] = useState(false);
+  const [classTeacherForm, setClassTeacherForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: 'Teacher@123',
+    className: '',
+    section: '',
+    specialization: 'Class In-Charge & General Studies',
+    remarks: 'Class Teacher Assigned by Super Admin'
+  });
+  const [creatingClassTeacher, setCreatingClassTeacher] = useState(false);
+
+  const handleCreateClassTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setCreatingClassTeacher(true);
+      const creatorName = localStorage.getItem('userName') || 'Super Admin';
+      const creatorRole = localStorage.getItem('userRole') || 'super-admin';
+      const payload = {
+        ...classTeacherForm,
+        role: 'class-teacher',
+        createdBy: `${creatorName} (${creatorRole})`
+      };
+      const res = await API.post('/api/super-admin/create-admin', payload);
+      alert(`✅ Class Teacher Account Created!\n\nNew Class Teacher account created successfully for ${classTeacherForm.name}.\nEmail: ${classTeacherForm.email}\nPassword: ${classTeacherForm.password}`);
+      if (window.showToast) window.showToast(`✅ Class Teacher account created for ${classTeacherForm.name}!`, 'success');
+      fetchAdmins();
+      fetchAcademicData();
+      setShowClassTeacherModal(false);
+      setClassTeacherForm({
+        name: '',
+        email: '',
+        phone: '',
+        password: 'Teacher@123',
+        className: '',
+        section: '',
+        specialization: 'Class In-Charge & General Studies',
+        remarks: 'Class Teacher Assigned by Super Admin'
+      });
+    } catch (err: any) {
+      console.error(err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to create class teacher account';
+      alert('❌ Error: ' + errorMsg);
+    } finally {
+      setCreatingClassTeacher(false);
+    }
+  };
 
   // Attendance States
   const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
@@ -545,20 +620,25 @@ const SuperAdminDashboard = () => {
   const [modalShowPassword, setModalShowPassword] = useState(false);
   const [updatingPassword, setUpdatingPassword] = useState(false);
 
-  const openChangePasswordModal = (user: { userId: string; name: string; role?: string; visiblePassword?: string }) => {
+  const openChangePasswordModal = (user: any) => {
+    const targetId = user.userId || user._id || user.id || user.user?._id || user.user || '';
     setPasswordModal({
       open: true,
-      userId: user.userId,
-      userName: user.name,
+      userId: targetId,
+      userName: user.name || user.user?.name || 'User',
       userRole: user.role || 'User',
-      currentPassword: user.visiblePassword || ''
+      currentPassword: user.visiblePassword || user.user?.visiblePassword || ''
     });
-    setNewPasswordInput(user.visiblePassword || '');
+    setNewPasswordInput(user.visiblePassword || user.user?.visiblePassword || '');
     setModalShowPassword(false);
   };
 
   const handleSaveUserPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!passwordModal.userId) {
+      alert('❌ Error: User ID not found. Please refresh and try again.');
+      return;
+    }
     if (!newPasswordInput || newPasswordInput.trim().length < 6) {
       alert('Password must be at least 6 characters long.');
       return;
@@ -569,10 +649,11 @@ const SuperAdminDashboard = () => {
         password: newPasswordInput.trim()
       });
       const msg = res.data?.message || `Password for ${passwordModal.userName} updated successfully!`;
+      alert(`✅ Success!\n\n${msg}`);
       if (window.showToast) {
-        window.showToast(msg, 'success');
+        window.showToast('✅ Password Updated Successfully!', 'success');
       } else {
-        trigger(msg, 'success');
+        trigger('✅ ' + msg, 'success');
       }
       setPasswordModal({ open: false, userId: '', userName: '', userRole: '' });
       setNewPasswordInput('');
@@ -581,6 +662,7 @@ const SuperAdminDashboard = () => {
       fetchAdmins();
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.message || 'Failed to update password.';
+      alert('❌ Error: ' + errorMsg);
       trigger('Error updating password: ' + errorMsg, 'danger');
     } finally {
       setUpdatingPassword(false);
@@ -654,13 +736,20 @@ const SuperAdminDashboard = () => {
   // Fetch Sub-Admins from MongoDB
   const fetchAdmins = async () => {
     try {
-      const [financeRes, studentRes, academicRes, managerRes] = await Promise.all([
+      const [financeRes, studentRes, academicRes, managerRes, classTeacherRes] = await Promise.all([
         API.get('/api/super-admin/role/finance-admin'),
         API.get('/api/super-admin/role/student-admin'),
         API.get('/api/super-admin/role/academic-admin'),
-        API.get('/api/super-admin/role/manager-admin')
+        API.get('/api/super-admin/role/manager-admin'),
+        API.get('/api/super-admin/role/class-teacher')
       ]);
-      const allAdmins = [...(financeRes.data || []), ...(studentRes.data || []), ...(academicRes.data || []), ...(managerRes.data || [])];
+      const allAdmins = [
+        ...(financeRes.data || []),
+        ...(studentRes.data || []),
+        ...(academicRes.data || []),
+        ...(managerRes.data || []),
+        ...(classTeacherRes.data || [])
+      ];
       const mappedAdmins = allAdmins.map((a: any) => ({
         id: a._id,
         _id: a._id,
@@ -1227,13 +1316,15 @@ const SuperAdminDashboard = () => {
         createdBy: `${creatorName} (${creatorRole})`
       };
       const res = await API.post('/api/super-admin/create-admin', payload);
-      trigger(res.data?.message || 'Manager account created successfully!');
+      alert(`✅ Create Successful!\n\nNew manager account created successfully with password for ${adminForm.name}.`);
+      trigger(res.data?.message || 'Create Successful: Manager account created!');
       fetchAdmins();
-      setAdminForm({ name:'', email:'', phone:'', password:'', role:'finance-admin', remarks:'' });
+      setAdminForm({ name:'', email:'', phone:'', password:'', role:'finance-admin', className:'', section:'', remarks:'' });
       setShowAdminForm(false);
     } catch (err: any) {
       console.error(err);
       const errorMsg = err.response?.data?.message || err.message || 'Failed to create manager account';
+      alert('❌ Error: ' + errorMsg);
       trigger(errorMsg, 'danger');
     }
   };
@@ -1931,9 +2022,14 @@ const SuperAdminDashboard = () => {
                         Detailed roster of official Class In-Charges assigned to each class section with room numbers, timings & contact details.
                       </p>
                     </div>
-                    <button onClick={() => navigate('/academic-admin/classes')} style={{ padding: '8px 16px', backgroundColor: '#d97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                      Manage Class In-Charges →
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button onClick={() => setShowClassTeacherModal(true)} style={{ padding: '9px 18px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}>
+                        <FiPlus size={16} /> Register New Class Teacher Account
+                      </button>
+                      <button onClick={() => navigate('/academic-admin/classes')} style={{ padding: '9px 18px', backgroundColor: '#d97706', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                        Manage Class In-Charges →
+                      </button>
+                    </div>
                   </div>
 
                   {/* Filter Bar */}
@@ -3295,8 +3391,15 @@ const SuperAdminDashboard = () => {
               </div>
 
               {/* Role cards */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(280px,1fr))', gap:'16px', marginBottom:'24px' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(260px,1fr))', gap:'16px', marginBottom:'24px' }}>
                 {[
+                  {
+                    role:'class-teacher', emoji:'🏫', name:'Class Teacher Admin',
+                    color:'#22c55e', bg:'rgba(34,197,94,0.08)', border:'rgba(34,197,94,0.25)',
+                    desc:'Class teacher in-charge portal for daily roll call, notices, leave reviews, and student report cards.',
+                    path:'/class-teacher',
+                    count: subAdmins.filter(a=>a.role==='class-teacher').length
+                  },
                   {
                     role:'manager-admin', emoji:'👔', name:'Manager Admin',
                     color:'#3b82f6', bg:'rgba(59,130,246,0.08)', border:'rgba(59,130,246,0.25)',
@@ -3346,7 +3449,7 @@ const SuperAdminDashboard = () => {
 
               {showAdminForm && (
                 <form onSubmit={addAdmin} style={{ backgroundColor:'var(--card-bg)', border:'1px solid var(--border-color)', borderRadius:'10px', padding:'20px', marginBottom:'20px' }}>
-                  <h4 style={{ margin:'0 0 16px', color:'var(--text-main)' }}>➕ Register New Manager / Staff</h4>
+                  <h4 style={{ margin:'0 0 16px', color:'var(--text-main)' }}>➕ Register New Manager / Class Teacher Admin / Staff</h4>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'14px' }}>
                     <div><label style={lb}>Full Name *</label><input required type="text" value={adminForm.name} onChange={e=>setAdminForm({...adminForm,name:e.target.value})} style={inS} placeholder="Admin full name" /></div>
                     <div><label style={lb}>Email *</label><input required type="email" value={adminForm.email} onChange={e=>setAdminForm({...adminForm,email:e.target.value})} style={inS} placeholder="admin@school.com" /></div>
@@ -3364,11 +3467,56 @@ const SuperAdminDashboard = () => {
                     <div>
                       <label style={lb}>Admin Role *</label>
                       <select value={adminForm.role} onChange={e=>setAdminForm({...adminForm,role:e.target.value})} style={inS}>
+                        <option value="class-teacher">🏫 Class Teacher Admin (Class In-Charge &amp; Attendance)</option>
                         <option value="academic-admin">📚 Teacher &amp; Student Admin (Academic &amp; Admissions)</option>
                         <option value="manager-admin">👔 Manager Admin (Executive Overview &amp; Finance Read-Only)</option>
                         <option value="finance-admin">💰 Finance Admin</option>
                       </select>
                     </div>
+
+                    {adminForm.role === 'class-teacher' && (
+                      <div style={{ gridColumn: '1/-1', backgroundColor: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '10px', padding: '14px' }}>
+                        <label style={{ display:'block', fontSize:'12px', fontWeight:700, color:'#059669', marginBottom:'8px', textTransform:'uppercase' }}>
+                          🏫 Assign Class &amp; Section (Class In-Charge) *
+                        </label>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
+                          <div>
+                            <label style={{ display:'block', fontSize:'11px', fontWeight:600, color:'var(--text-muted)', marginBottom:'4px' }}>Class Name *</label>
+                            <select
+                              required
+                              value={adminForm.className}
+                              onChange={e => {
+                                const newClass = e.target.value;
+                                const sectionsForClass = getSectionOptions(newClass);
+                                setAdminForm({ ...adminForm, className: newClass, section: sectionsForClass[0] || 'A' });
+                              }}
+                              style={{ ...inS, fontWeight:700 }}
+                            >
+                              <option value="">-- Select Class --</option>
+                              {getAllClassOptions().map((cn: any) => (
+                                <option key={cn} value={cn}>Class {cn}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style={{ display:'block', fontSize:'11px', fontWeight:600, color:'var(--text-muted)', marginBottom:'4px' }}>Section *</label>
+                            <select
+                              required
+                              value={adminForm.section}
+                              onChange={e => setAdminForm({ ...adminForm, section: e.target.value })}
+                              style={{ ...inS, fontWeight:700 }}
+                              disabled={!adminForm.className}
+                            >
+                              <option value="">-- Select Section --</option>
+                              {getSectionOptions(adminForm.className).map((sec: any) => (
+                                <option key={sec} value={sec}>Section {sec}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div style={{ gridColumn: '1/-1' }}>
                       <label style={lb}>Audit Remarks / Reason *</label>
                       <input required type="text" value={adminForm.remarks} onChange={e=>setAdminForm({...adminForm,remarks:e.target.value})} style={inS} placeholder="e.g. Account created for academic session / staff onboarding reason" />
@@ -3417,6 +3565,7 @@ const SuperAdminDashboard = () => {
                     style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', boxSizing: 'border-box' }}
                   >
                     <option value="all">All Roles</option>
+                    <option value="class-teacher">🏫 Class Teacher Admin</option>
                     <option value="manager-admin">👔 Manager Admin</option>
                     <option value="finance-admin">💰 Finance Admin</option>
                     <option value="academic-admin">📚 Teacher Admin</option>
@@ -3494,13 +3643,14 @@ const SuperAdminDashboard = () => {
                         <td>{a.email}</td>
                         <td style={{ fontSize:'13px' }}>{a.phone||'N/A'}</td>
                         <td>
-                          {badge(a.role === 'finance-admin' ? 'finance' : a.role === 'academic-admin' ? 'academic' : a.role === 'manager-admin' ? 'manager' : 'student')}
+                          {badge(a.role === 'finance-admin' ? 'finance' : a.role === 'academic-admin' ? 'academic' : a.role === 'manager-admin' ? 'manager' : a.role === 'class-teacher' ? 'class-teacher' : 'student')}
                           <span style={{ marginLeft:'8px', fontSize:'13px', fontWeight: '600', color:'var(--text-main)' }}>
                             {a.role === 'super-admin' ? 'Super Admin' :
                              a.role === 'manager-admin' ? 'Manager Admin' :
                              a.role === 'academic-admin' ? 'Teacher Admin' :
                              a.role === 'student-admin' ? 'Student Admin' :
                              a.role === 'finance-admin' ? 'Finance Admin' :
+                             a.role === 'class-teacher' ? 'Class Teacher Admin' :
                              a.role === 'operations-admin' ? 'Operations Admin' :
                              a.role ? a.role.replace('-',' ') : 'Admin'}
                           </span>
@@ -3606,11 +3756,11 @@ const SuperAdminDashboard = () => {
                             onChange={e => setEditAdminForm({...editAdminForm, role: e.target.value})}
                             style={{ width:'100%', padding:'10px 13px', borderRadius:'9px', border:'1px solid var(--border-color)', backgroundColor:'var(--input-bg)', color:'var(--text-main)', fontSize:'13px', boxSizing:'border-box', outline:'none', cursor:'pointer' }}
                           >
+                            <option value="class-teacher">🏫 Class Teacher Admin (Class In-Charge &amp; Attendance)</option>
                             <option value="academic-admin">📚 Teacher &amp; Student Admin (Academic &amp; Admissions)</option>
                             <option value="manager-admin">👔 Manager Admin</option>
                             <option value="finance-admin">💰 Finance Admin</option>
                           </select>
-
                         </div>
 
                         {/* New Password */}
@@ -4126,6 +4276,214 @@ const SuperAdminDashboard = () => {
               <button onClick={() => setStudentToDelete(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
               <button onClick={confirmDeleteStudent} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── DEDICATED CLASS TEACHER ACCOUNT CREATION MODAL ── */}
+      {showClassTeacherModal && (
+        <div
+          onClick={() => setShowClassTeacherModal(false)}
+          style={{ position:'fixed', inset:0, backgroundColor:'rgba(0,0,0,0.65)', backdropFilter:'blur(8px)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:99999, padding:'16px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ backgroundColor:'var(--card-bg)', border:'2px solid #10b981', borderRadius:'24px', width:'100%', maxWidth:'540px', boxShadow:'0 25px 60px -12px rgba(16,185,129,0.35)', overflow:'hidden', color:'var(--text-main)' }}
+          >
+            {/* Modal Header */}
+            <div style={{ background:'linear-gradient(135deg, #064e3b, #10b981)', padding:'24px 28px', color:'white', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div>
+                <div style={{ fontSize:'11px', fontWeight:800, letterSpacing:'0.06em', textTransform:'uppercase', opacity:0.9, backgroundColor:'rgba(255,255,255,0.2)', padding:'2px 8px', borderRadius:'12px', display:'inline-block', marginBottom:'6px' }}>
+                  SUPER ADMIN PORTAL
+                </div>
+                <h3 style={{ margin:0, fontSize:'20px', fontWeight:'900', display:'flex', alignItems:'center', gap:'8px' }}>
+                  ⭐ Register New Class Teacher Account
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowClassTeacherModal(false)}
+                style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:'50%', color:'white', width:'32px', height:'32px', cursor:'pointer', fontSize:'18px', fontWeight:'700', display:'flex', alignItems:'center', justifyContent:'center' }}
+              >✕</button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleCreateClassTeacher} style={{ padding:'26px' }}>
+              <div style={{ display:'grid', gap:'16px' }}>
+                <div>
+                  <label style={{ display:'block', fontSize:'12px', fontWeight:700, color:'var(--text-muted)', marginBottom:'4px', textTransform:'uppercase' }}>Class Teacher Full Name *</label>
+                  <input
+                    required
+                    type="text"
+                    value={classTeacherForm.name}
+                    onChange={e => setClassTeacherForm({ ...classTeacherForm, name: e.target.value })}
+                    style={inS}
+                    placeholder="e.g. Mrs. Anjali Sharma"
+                  />
+                </div>
+
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'12px' }}>
+                  <div>
+                    <label style={{ display:'block', fontSize:'12px', fontWeight:700, color:'var(--text-muted)', marginBottom:'4px', textTransform:'uppercase' }}>Email Address *</label>
+                    <input
+                      required
+                      type="email"
+                      value={classTeacherForm.email}
+                      onChange={e => setClassTeacherForm({ ...classTeacherForm, email: e.target.value })}
+                      style={inS}
+                      placeholder="teacher@school.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display:'block', fontSize:'12px', fontWeight:700, color:'var(--text-muted)', marginBottom:'4px', textTransform:'uppercase' }}>Phone Number (+91) *</label>
+                    <input
+                      required
+                      type="tel"
+                      value={classTeacherForm.phone}
+                      onChange={e => setClassTeacherForm({ ...classTeacherForm, phone: e.target.value })}
+                      style={inS}
+                      placeholder="+919876543210 or 10 digits"
+                    />
+                  </div>
+                </div>
+
+                {/* ── Class & Section Assignment ── */}
+                <div>
+                  <label style={{ display:'block', fontSize:'12px', fontWeight:700, color:'var(--text-muted)', marginBottom:'6px', textTransform:'uppercase', letterSpacing:'0.05em' }}>🏫 Assign Class &amp; Section *</label>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px', marginBottom:'10px' }}>
+                    {/* Class Name Dropdown */}
+                    <div>
+                      <label style={{ display:'block', fontSize:'11px', fontWeight:600, color:'var(--text-muted)', marginBottom:'4px' }}>Class Name *</label>
+                      <select
+                        required
+                        value={classTeacherForm.className}
+                        onChange={e => {
+                          const newClass = e.target.value;
+                          const sectionsForClass = getSectionOptions(newClass);
+                          setClassTeacherForm({ ...classTeacherForm, className: newClass, section: sectionsForClass[0] || 'A' });
+                        }}
+                        style={{ ...inS, fontWeight:700 }}
+                      >
+                        <option value="">-- Select Class --</option>
+                        {getAllClassOptions().map((cn: any) => (
+                          <option key={cn} value={cn}>Class {cn}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Section Dropdown */}
+                    <div>
+                      <label style={{ display:'block', fontSize:'11px', fontWeight:600, color:'var(--text-muted)', marginBottom:'4px' }}>Section *</label>
+                      <select
+                        required
+                        value={classTeacherForm.section}
+                        onChange={e => setClassTeacherForm({ ...classTeacherForm, section: e.target.value })}
+                        style={{ ...inS, fontWeight:700 }}
+                        disabled={!classTeacherForm.className}
+                      >
+                        <option value="">-- Select Section --</option>
+                        {getSectionOptions(classTeacherForm.className).map((sec: any) => (
+                          <option key={sec} value={sec}>Section {sec}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Selected Class Preview Card */}
+                      {(() => {
+                        const selectedClass = classes.find((c: any) => c.className === classTeacherForm.className && c.section === classTeacherForm.section);
+                        if (!selectedClass) return null;
+                        const hasTeacher = selectedClass.classTeacher;
+                        return (
+                          <div style={{
+                            background: hasTeacher ? 'rgba(239,68,68,0.07)' : 'rgba(16,185,129,0.07)',
+                            border: `1px solid ${hasTeacher ? '#fca5a5' : '#6ee7b7'}`,
+                            borderRadius:'12px',
+                            padding:'12px 16px',
+                            display:'flex',
+                            gap:'16px',
+                            alignItems:'center',
+                            marginTop:'4px'
+                          }}>
+                            <div style={{ fontSize:'28px' }}>{hasTeacher ? '⚠️' : '✅'}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontWeight:800, fontSize:'14px', color:'var(--text-main)', marginBottom:'4px' }}>
+                                Class {selectedClass.className} — Section {selectedClass.section}
+                              </div>
+                              <div style={{ display:'flex', gap:'12px', flexWrap:'wrap', fontSize:'11px', color:'var(--text-muted)' }}>
+                                {selectedClass.room && <span>🚪 Room: <strong>{selectedClass.room}</strong></span>}
+                                {selectedClass.capacity && <span>👥 Capacity: <strong>{selectedClass.capacity}</strong></span>}
+                                {selectedClass.academicYear && <span>📅 Year: <strong>{selectedClass.academicYear}</strong></span>}
+                              </div>
+                              {hasTeacher && (
+                                <div style={{ marginTop:'6px', fontSize:'12px', color:'#dc2626', fontWeight:700 }}>
+                                  ⚠️ This class already has a Class Teacher assigned. Assigning a new one will replace the existing teacher.
+                                </div>
+                              )}
+                              {!hasTeacher && (
+                                <div style={{ marginTop:'6px', fontSize:'12px', color:'#059669', fontWeight:700 }}>
+                                  ✅ No Class Teacher assigned yet — ready to assign!
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                </div>
+
+                <div>
+                  <label style={{ display:'block', fontSize:'12px', fontWeight:700, color:'var(--text-muted)', marginBottom:'4px', textTransform:'uppercase' }}>Login Password *</label>
+                  <input
+                    required
+                    type="text"
+                    value={classTeacherForm.password}
+                    onChange={e => setClassTeacherForm({ ...classTeacherForm, password: e.target.value })}
+                    style={inS}
+                    placeholder="Min 8 chars (e.g. Teacher@123)"
+                  />
+                  <span style={{ fontSize:'11px', color:'var(--text-muted)', display:'block', marginTop:'2px' }}>Must have 1 uppercase, 1 lowercase, 1 number & 1 special char</span>
+                </div>
+
+                <div>
+                  <label style={{ display:'block', fontSize:'12px', fontWeight:700, color:'var(--text-muted)', marginBottom:'4px', textTransform:'uppercase' }}>Subject / Specialization</label>
+                  <input
+                    type="text"
+                    value={classTeacherForm.specialization}
+                    onChange={e => setClassTeacherForm({ ...classTeacherForm, specialization: e.target.value })}
+                    style={inS}
+                    placeholder="Class In-Charge & General Studies"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display:'block', fontSize:'12px', fontWeight:700, color:'var(--text-muted)', marginBottom:'4px', textTransform:'uppercase' }}>Audit Remarks / Note</label>
+                  <input
+                    type="text"
+                    value={classTeacherForm.remarks}
+                    onChange={e => setClassTeacherForm({ ...classTeacherForm, remarks: e.target.value })}
+                    style={inS}
+                    placeholder="e.g. Assigned Class Teacher for Academic Session"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display:'flex', gap:'12px', marginTop:'22px' }}>
+                <button
+                  type="submit"
+                  disabled={creatingClassTeacher}
+                  style={{ flex:1, padding:'12px', backgroundColor:'#10b981', color:'white', border:'none', borderRadius:'10px', fontWeight:'800', fontSize:'14px', cursor: creatingClassTeacher ? 'not-allowed' : 'pointer', boxShadow:'0 4px 14px rgba(16,185,129,0.35)' }}
+                >
+                  {creatingClassTeacher ? 'Creating Account...' : '⭐ Create Class Teacher Account'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowClassTeacherModal(false)}
+                  style={{ padding:'12px 20px', backgroundColor:'var(--panel-bg)', color:'var(--text-main)', border:'1px solid var(--border-color)', borderRadius:'10px', fontWeight:'700', fontSize:'13px', cursor:'pointer' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

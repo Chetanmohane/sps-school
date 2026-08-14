@@ -243,7 +243,7 @@ const AppRoutes = () => {
         } />
 
         <Route path="/operations-admin/events" element={
-          <ProtectedRoute allowedRoles={['operations-admin', 'super-admin', 'manager-admin']}>
+          <ProtectedRoute allowedRoles={['operations-admin', 'super-admin', 'manager-admin', 'academic-admin']}>
             <Events />
           </ProtectedRoute>
         } />

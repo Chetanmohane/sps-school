@@ -5,7 +5,7 @@ import API from '../../api/axios';
 import {
   FiPlus, FiBookOpen, FiCalendar, FiLoader, FiAlertCircle,
   FiCheckCircle, FiX, FiAward, FiFileText, FiSave,
-  FiUser, FiHash, FiLink, FiEye, FiLayers
+  FiUser, FiHash, FiLink, FiEye, FiLayers, FiTrash2
 } from 'react-icons/fi';
 
 const TeacherAssignments = () => {
@@ -17,6 +17,7 @@ const TeacherAssignments = () => {
   const [currentSubmissions, setCurrentSubmissions] = useState<any[]>([]);
   const [currentAsg, setCurrentAsg] = useState<any>(null);
   const [marksMap, setMarksMap] = useState<Record<string, string>>({});
+  const [remarksMap, setRemarksMap] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
 
@@ -37,8 +38,21 @@ const TeacherAssignments = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleDeleteAssignment = async (asgId: string, title: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${title}"? All student submissions for this assignment will also be removed.`)) {
+      return;
+    }
+    try {
+      await API.delete(`/api/assignment/delete/${asgId}`);
+      alert(`Assignment "${title}" deleted successfully.`);
+      fetchAssignments();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete assignment.');
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -64,8 +78,13 @@ const TeacherAssignments = () => {
       setCurrentSubmissions(res.data || []);
       setCurrentAsg(asg);
       const map: Record<string, string> = {};
-      res.data.forEach((sub: any) => { map[sub._id] = String(sub.marks ?? ''); });
+      const remMap: Record<string, string> = {};
+      res.data.forEach((sub: any) => { 
+        map[sub._id] = String(sub.marks ?? ''); 
+        remMap[sub._id] = String(sub.remarks ?? ''); 
+      });
       setMarksMap(map);
+      setRemarksMap(remMap);
       setSavedIds(new Set(res.data.filter((s: any) => s.status === 'Graded').map((s: any) => s._id)));
       setViewSubModal(true);
     } catch {
@@ -81,12 +100,23 @@ const TeacherAssignments = () => {
     }
     setSavingId(subId);
     try {
-      await API.put(`/api/assignment/update-marks/${subId}`, { marks: val });
+      const userEmail = localStorage.getItem('userEmail');
+      const currentName = localStorage.getItem('userName') || 'Teacher';
+      const currentRole = (localStorage.getItem('role') || 'Teacher').replace('-', ' ').toUpperCase();
+      const evaluator = `${currentName} (${currentRole})`;
+      const enteredRemark = (remarksMap[subId] || 'Good effort!').trim();
+      const formattedRemark = enteredRemark.includes('— by') ? enteredRemark : `${enteredRemark} — by ${evaluator}`;
+
+      await API.put(`/api/assignment/update-marks/${subId}`, { 
+        marks: val,
+        remarks: formattedRemark,
+        userEmail 
+      });
       setCurrentSubmissions(prev =>
-        prev.map(s => s._id === subId ? { ...s, marks: val, status: 'Graded' } : s)
+        prev.map(s => s._id === subId ? { ...s, marks: val, remarks: formattedRemark, gradedBy: evaluator, status: 'Graded' } : s)
       );
       setSavedIds(prev => new Set([...prev, subId]));
-      alert(`✅ Marks saved! Student will now see ${val}/100.`);
+      alert(`✅ Marks (${val}/100) and Remarks saved successfully!`);
     } catch {
       alert('Could not save marks. Try again.');
     } finally {
@@ -166,11 +196,19 @@ const TeacherAssignments = () => {
                         </span>
                       </td>
                       <td className="px-8 py-5 text-center">
-                        <button onClick={() => handleViewSubmissions(asg)}
-                          className="inline-flex items-center gap-1.5 text-blue-600 font-bold hover:underline text-sm"
-                        >
-                          <FiEye size={14} /> View
-                        </button>
+                        <div className="flex items-center justify-center gap-3">
+                          <button onClick={() => handleViewSubmissions(asg)}
+                            className="inline-flex items-center gap-1 text-blue-600 font-bold hover:underline text-sm"
+                          >
+                            <FiEye size={14} /> View
+                          </button>
+                          <button onClick={() => handleDeleteAssignment(asg._id, asg.title)}
+                            className="inline-flex items-center gap-1.5 text-rose-600 font-bold hover:text-rose-800 hover:underline text-sm"
+                            title="Delete Assignment"
+                          >
+                            <FiTrash2 size={14} /> Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -204,15 +242,35 @@ const TeacherAssignments = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Class</label>
-                      <input name="className" required value={form.className} placeholder="e.g. 8th" onChange={handleChange}
-                        className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
-                      />
+                      <select
+                        name="className"
+                        required
+                        value={form.className}
+                        onChange={handleChange}
+                        className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', paddingRight: '40px' }}
+                      >
+                        <option value="">Select Class</option>
+                        {['Nursery','KG','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th','11th','12th'].map(cls => (
+                          <option key={cls} value={cls}>{cls}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Section</label>
-                      <input name="section" required value={form.section} placeholder="e.g. A" onChange={handleChange}
-                        className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
-                      />
+                      <select
+                        name="section"
+                        required
+                        value={form.section}
+                        onChange={handleChange}
+                        className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', paddingRight: '40px' }}
+                      >
+                        <option value="">Select Section</option>
+                        {['A','B','C','D','E','F'].map(sec => (
+                          <option key={sec} value={sec}>Section {sec}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                   <div>
@@ -360,10 +418,10 @@ const TeacherAssignments = () => {
                           )}
                         </div>
 
-                        {/* ── Marks Section ── */}
+                        {/* ── Marks & Remarks Section ── */}
                         <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl">
                           <p className="text-[10px] font-black uppercase text-[var(--text-muted)] mb-3 flex items-center gap-1">
-                            <FiAward className="text-amber-500" size={12} /> Enter Marks — Student will see this
+                            <FiAward className="text-amber-500" size={12} /> Enter Marks &amp; Teacher Remarks — Student will see this
                           </p>
                           <div className="flex items-center gap-3">
                             <input
@@ -383,13 +441,25 @@ const TeacherAssignments = () => {
                             >
                               {savingId === sub._id
                                 ? <><FiLoader className="animate-spin" size={14} /> Saving...</>
-                                : <><FiSave size={14} /> Save Marks</>
+                                : <><FiSave size={14} /> Save Marks &amp; Remark</>
                               }
                             </button>
                           </div>
+
+                          <div className="mt-3">
+                            <label className="text-[10px] font-bold uppercase text-[var(--text-muted)] mb-1 block">Teacher Remarks / Feedback</label>
+                            <input
+                              type="text"
+                              value={remarksMap[sub._id] ?? ''}
+                              onChange={e => setRemarksMap(prev => ({ ...prev, [sub._id]: e.target.value }))}
+                              className="w-full p-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl font-medium text-sm text-[var(--text-main)] outline-none focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                              placeholder="e.g. Excellent work! / Good effort, clean explanation."
+                            />
+                          </div>
+
                           {isGraded && (
                             <p className="text-xs text-emerald-600 font-bold mt-2 flex items-center gap-1">
-                              <FiCheckCircle size={11} /> Marks saved — student can see {marksMap[sub._id] || sub.marks}/100 in their history
+                              <FiCheckCircle size={11} /> Marks ({marksMap[sub._id] || sub.marks}/100) &amp; Remarks saved — student can see this in their history
                             </p>
                           )}
                         </div>

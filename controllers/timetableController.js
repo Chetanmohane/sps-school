@@ -150,3 +150,75 @@ exports.getMyTimetable = async (req, res) => {
   }
 };
 
+
+// @desc    Get full weekly teaching schedule for a specific teacher
+// @route   GET /api/timetable/teacher-schedule?email=X
+// @access  Private (Teacher)
+exports.getTeacherSchedule = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) return res.status(400).json({ success: false, message: "Email is required." });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+    const teacherName = user.name || '';
+
+    // Fetch teacher profile to get assigned subjects and classes
+    const teacher = await Teacher.findOne({ user: user._id }).populate('subjects').populate('classes');
+
+    // Fetch all timetables
+    const allTimetables = await Timetable.find({}).sort({ dayOfWeek: 1 });
+
+    const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    // Build flat schedule list from timetable periods matching this teacher
+    const schedule = [];
+    for (const tt of allTimetables) {
+      for (const period of tt.periods) {
+        if (!period.isBreak && period.teacher && period.teacher.trim() !== '') {
+          const ptName = period.teacher.trim().toLowerCase();
+          const tName = teacherName.trim().toLowerCase();
+          if (ptName.includes(tName) || tName.includes(ptName)) {
+            schedule.push({
+              dayOfWeek: tt.dayOfWeek,
+              dayOrder: dayOrder.indexOf(tt.dayOfWeek),
+              className: tt.className,
+              section: tt.section,
+              period: period.period,
+              startTime: period.startTime,
+              endTime: period.endTime,
+              subject: period.subject,
+              room: period.room || '',
+            });
+          }
+        }
+      }
+    }
+
+    // Sort by day order then period
+    schedule.sort((a, b) => {
+      if (a.dayOrder !== b.dayOrder) return a.dayOrder - b.dayOrder;
+      return String(a.period).localeCompare(String(b.period));
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: schedule,
+      teacher: {
+        name: teacherName,
+        email,
+        subjects: teacher ? teacher.subjects : [],
+        classes: teacher ? teacher.classes : [],
+        specialization: teacher ? teacher.specialization : '',
+        department: teacher ? teacher.department : '',
+        experience: teacher ? teacher.experience : '',
+      }
+    });
+  } catch (error) {
+    console.error("Error in getTeacherSchedule:", error);
+    res.status(500).json({ success: false, message: "Server error." });
+  }
+};
+
+

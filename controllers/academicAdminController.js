@@ -72,7 +72,7 @@ exports.getTeacherById = async (req, res) => {
 // Create teacher
 exports.createTeacher = async (req, res) => {
   try {
-    const { name, email, phone, password, specialization, qualifications, experience, subjects, department } = req.body;
+    const { name, email, phone, password, specialization, qualifications, experience, subjects, classes, department } = req.body;
 
     // Validate required fields
     if (!name || !email || !phone || !password || !specialization) {
@@ -112,9 +112,8 @@ exports.createTeacher = async (req, res) => {
       visiblePassword: password,
       role: "teacher",
       createdBy: creatorName,
-      remarks: "Teacher Account Registered"
+      remarks: "Subject Teacher Account Registered"
     });
-
 
     const savedUser = await user.save();
 
@@ -125,18 +124,23 @@ exports.createTeacher = async (req, res) => {
       qualifications,
       experience,
       subjects: subjects || [],
+      classes: classes || [],
       department,
       phone
     });
 
     const savedTeacher = await teacher.save();
+    const populatedTeacher = await Teacher.findById(savedTeacher._id)
+      .populate("user", "name email phone role visiblePassword")
+      .populate("subjects", "name code")
+      .populate("classes", "className section");
 
-    notifyChange("TEACHER_CHANGED", { action: "create", teacher: savedTeacher });
+    notifyChange("TEACHER_CHANGED", { action: "create", teacher: populatedTeacher });
     res.status(201).json({
       message: "Teacher created successfully",
       data: {
         user: savedUser,
-        teacher: savedTeacher
+        teacher: populatedTeacher
       }
     });
   } catch (error) {
@@ -148,7 +152,27 @@ exports.createTeacher = async (req, res) => {
 exports.updateTeacher = async (req, res) => {
   try {
     const { teacherId } = req.params;
-    const { specialization, qualifications, experience, subjects, classes, department, status } = req.body;
+    const { specialization, qualifications, experience, subjects, classes, department, status, name, phone, password } = req.body;
+
+    const teacherDoc = await Teacher.findById(teacherId);
+    if (!teacherDoc) {
+      return res.status(404).json({ message: "Teacher not found" });
+    }
+
+    // Update associated User model if name, phone, or password were provided
+    if (teacherDoc.user) {
+      const user = await User.findById(teacherDoc.user);
+      if (user) {
+        if (name) user.name = name;
+        if (phone) user.phone = phone;
+        if (password && password.trim().length >= 6) {
+          const bcrypt = require("bcryptjs");
+          user.password = await bcrypt.hash(password.trim(), 10);
+          user.visiblePassword = password.trim();
+        }
+        await user.save({ validateBeforeSave: false });
+      }
+    }
 
     // Build update object with only provided fields
     const updateData = {
@@ -168,13 +192,9 @@ exports.updateTeacher = async (req, res) => {
       updateData,
       { new: true }
     )
-      .populate("user", "name email phone")
+      .populate("user", "name email phone role visiblePassword")
       .populate("subjects", "name code")
       .populate("classes", "className section");
-
-    if (!teacher) {
-      return res.status(404).json({ message: "Teacher not found" });
-    }
 
     notifyChange("TEACHER_CHANGED", { action: "update", teacher });
     res.status(200).json({
