@@ -97,7 +97,8 @@ const Navbar = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 16px',
+      padding: '0 12px sm:px-4',
+      height: '60px',
       width: '100%',
       maxWidth: '100vw',
       boxSizing: 'border-box',
@@ -106,10 +107,11 @@ const Navbar = () => {
       zIndex: 50
     }}>
       {/* Welcome & Date Section */}
-      <div className="nav-left-section" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="nav-left-section" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
         <button 
           className="mobile-menu-btn" 
           onClick={toggleSidebar}
+          aria-label="Toggle Navigation Menu"
           style={{
             display: 'none', // Overridden in media queries
             background: 'var(--input-bg)',
@@ -118,19 +120,22 @@ const Navbar = () => {
             fontSize: '18px',
             cursor: 'pointer',
             padding: '6px 10px',
-            borderRadius: '8px',
+            borderRadius: '10px',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            flexShrink: 0
           }}
         >
           <FiMenu />
         </button>
         <div className="flex flex-col justify-center" style={{ minWidth: 0 }}>
-          <div className="nav-welcome nav-welcome-text" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', whiteSpace: 'nowrap' }}>
+          <div className="nav-welcome nav-welcome-text" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', whiteSpace: 'nowrap', minWidth: 0 }}>
             <span style={{ color: 'var(--text-muted)' }} className="hide-on-mobile">Hello,</span> 
-            <span className="font-semibold mobile-header-title" style={{ color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortName}</span>
+            <span className="font-bold mobile-header-title text-xs sm:text-sm text-[var(--text-main)] truncate max-w-[110px] xs:max-w-[140px] sm:max-w-none">
+              {shortName}
+            </span>
             <span 
-              className="nav-role-badge"
+              className="nav-role-badge hidden sm:inline-flex"
               style={{ 
                 fontSize: '10px', 
                 fontWeight: '700',
@@ -154,16 +159,16 @@ const Navbar = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
         {/* Text Size Toggle */}
         <button
           className="font-size-toggle-btn hide-on-mobile-sm"
           onClick={cycleFont}
           title={`Text Size: ${fontSize.toUpperCase()} (Click to toggle)`}
           style={{
-            height: '36px',
+            height: '34px',
             padding: '0 8px',
-            borderRadius: '8px',
+            borderRadius: '10px',
             border: '1px solid var(--border-color)',
             background: 'var(--input-bg)',
             color: 'var(--text-muted)',
@@ -176,7 +181,7 @@ const Navbar = () => {
             fontSize: '12px'
           }}
         >
-          <FiType size={15} />
+          <FiType size={14} />
           <span style={{ textTransform: 'capitalize', fontSize: '10px' }}>{fontSize}</span>
         </button>
 
@@ -186,9 +191,9 @@ const Navbar = () => {
           onClick={toggleTheme}
           title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
+            width: '34px',
+            height: '34px',
+            borderRadius: '10px',
             border: '1px solid var(--border-color)',
             background: 'var(--input-bg)',
             color: 'var(--text-muted)',
@@ -200,7 +205,7 @@ const Navbar = () => {
             flexShrink: 0
           }}
         >
-          {isDark ? <FiSun size={16} /> : <FiMoon size={16} />}
+          {isDark ? <FiSun size={15} /> : <FiMoon size={15} />}
         </button>
 
         {/* Notifications Button */}
@@ -216,9 +221,9 @@ const Navbar = () => {
               }
             }}
             style={{ 
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
+              width: '34px',
+              height: '34px',
+              borderRadius: '10px',
               border: '1px solid var(--border-color)',
               background: 'var(--input-bg)',
               color: 'var(--text-muted)',
@@ -231,15 +236,15 @@ const Navbar = () => {
               flexShrink: 0
             }}
           >
-            <FiBell size={16} />
+            <FiBell size={15} />
             {/* Pulsing indicator */}
             {unreadCount > 0 && (
               <span style={{
                 position: 'absolute',
-                top: '6px',
-                right: '6px',
-                width: '8px',
-                height: '8px',
+                top: '5px',
+                right: '5px',
+                width: '7px',
+                height: '7px',
                 borderRadius: '50%',
                 background: 'var(--danger)',
                 boxShadow: '0 0 0 2px var(--navbar-bg)'
@@ -317,26 +322,16 @@ const Navbar = () => {
           )}
         </div>
         
-        {/* User Card */}
+        {/* User Avatar Card */}
         <div 
-          className="user-profile" 
-          style={{ 
-            padding: '3px 8px 3px 4px',
-            borderRadius: '8px',
-            border: '1px solid var(--border-color)',
-            background: 'var(--input-bg)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            flexShrink: 0
-          }}
+          className="user-profile p-0 sm:px-2 sm:py-1 rounded-xl sm:border sm:border-[var(--border-color)] sm:bg-[var(--input-bg)] flex items-center gap-1.5 shrink-0"
         >
           <div 
             className="nav-avatar font-bold" 
             style={{ 
               width: '28px', 
               height: '28px', 
-              borderRadius: '6px', 
+              borderRadius: '8px', 
               background: savedProfileImage ? 'transparent' : gradient, 
               color: '#ffffff', 
               display: 'flex', 
@@ -365,9 +360,9 @@ const Navbar = () => {
           onClick={handleLogout} 
           title="Logout"
           style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
+            width: '34px',
+            height: '34px',
+            borderRadius: '10px',
             border: '1px solid color-mix(in srgb, var(--danger) 30%, transparent)',
             background: 'var(--danger-bg)',
             color: 'var(--danger)',
@@ -379,7 +374,7 @@ const Navbar = () => {
             flexShrink: 0
           }}
         >
-          <FiLogOut size={16}/>
+          <FiLogOut size={15}/>
         </button>
       </div>
     </header>
