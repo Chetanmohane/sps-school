@@ -189,7 +189,7 @@ const TeacherMyClasses = () => {
             <main className="main-content">
                 <Navbar />
 
-                <div className="p-8" style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+                <div className="p-3 sm:p-6 max-w-[1400px] mx-auto overflow-x-hidden w-full">
                     {isAdminUser && <AcademicTabs />}
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -199,11 +199,11 @@ const TeacherMyClasses = () => {
                                     📚 Period-Wise Faculty Timetable
                                 </span>
                             </div>
-                            <h1 className="text-2xl font-extrabold text-[var(--text-main)]">My Teaching Schedule & Classes</h1>
-                            <p className="text-[var(--text-muted)] text-sm">Real-time period timings, classroom locations, assigned subjects, and synchronized student schedule.</p>
+                            <h1 className="text-xl sm:text-2xl font-extrabold text-[var(--text-main)]">My Teaching Schedule &amp; Classes</h1>
+                            <p className="text-[var(--text-muted)] text-xs sm:text-sm">Real-time period timings, classroom locations, assigned subjects, and synchronized student schedule.</p>
                         </div>
 
-                        <div className="relative group">
+                        <div className="relative group w-full md:w-auto">
                             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                             <input
                                 type="text"
@@ -216,7 +216,7 @@ const TeacherMyClasses = () => {
                     </div>
 
                     {/* DAY SELECTOR TABS */}
-                    <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none max-w-full">
                         {DAYS.map((day) => {
                             const isSelected = selectedDay === day;
                             const isToday = todayName() === day;
@@ -224,9 +224,9 @@ const TeacherMyClasses = () => {
                                 <button
                                     key={day}
                                     onClick={() => setSelectedDay(day)}
-                                    className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                                    className={`px-4 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
                                         isSelected
-                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 scale-102'
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
                                             : 'bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] hover:bg-[var(--hover-bg)]'
                                     }`}
                                 >
@@ -242,34 +242,34 @@ const TeacherMyClasses = () => {
                     </div>
 
                     {/* STATS OVERVIEW CARDS */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-                            <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-extrabold text-xl">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 sm:p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-extrabold text-lg sm:text-xl shrink-0">
                                 🏫
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Scheduled Periods ({selectedDay})</div>
-                                <div className="text-2xl font-extrabold text-[var(--text-main)]">{dayPeriods.length} Periods</div>
+                                <div className="text-[10px] sm:text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Scheduled Periods ({selectedDay})</div>
+                                <div className="text-xl sm:text-2xl font-extrabold text-[var(--text-main)]">{dayPeriods.length} Periods</div>
                             </div>
                         </div>
-                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-                            <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-extrabold text-xl">
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 sm:p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-extrabold text-lg sm:text-xl shrink-0">
                                 📖
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Selected Day View</div>
-                                <div className="text-sm font-extrabold text-purple-600">
+                                <div className="text-[10px] sm:text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Selected Day View</div>
+                                <div className="text-xs sm:text-sm font-extrabold text-purple-600">
                                     {selectedDay} Period Schedule
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-                            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-extrabold text-xl">
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 sm:p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-extrabold text-lg sm:text-xl shrink-0">
                                 ⏰
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Timetable Status</div>
-                                <div className="text-sm font-extrabold text-emerald-600 flex items-center gap-1.5">
+                                <div className="text-[10px] sm:text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Timetable Status</div>
+                                <div className="text-xs sm:text-sm font-extrabold text-emerald-600 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                                     Synchronized with Student View
                                 </div>
@@ -278,24 +278,24 @@ const TeacherMyClasses = () => {
                     </div>
 
                     {/* TABLE CONTAINER */}
-                    <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
-                        <div className="p-4 bg-[var(--input-bg)] border-b border-[var(--border-color)] flex justify-between items-center flex-wrap gap-2">
-                            <h2 className="font-extrabold text-sm text-[var(--text-main)] flex items-center gap-2">
+                    <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden max-w-full">
+                        <div className="p-3 sm:p-4 bg-[var(--input-bg)] border-b border-[var(--border-color)] flex justify-between items-center flex-wrap gap-2">
+                            <h2 className="font-extrabold text-xs sm:text-sm text-[var(--text-main)] flex items-center gap-2">
                                 📅 Period-Wise Schedule — {selectedDay} ({filteredPeriods.length} Periods)
                             </h2>
-                            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-200">
+                            <span className="text-[10px] sm:text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 rounded-full border border-emerald-200">
                                 🟢 Official Period Timetable
                             </span>
                         </div>
 
-                        <div className="overflow-x-auto">
+                        <div className="overflow-x-auto w-full max-w-full">
                             {loading ? (
                                 <div className="py-20 text-center flex flex-col items-center gap-3">
                                     <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                                     <p className="text-[var(--text-muted)] font-medium">Loading period timetable...</p>
                                 </div>
                             ) : (
-                                <table className="w-full text-left border-collapse">
+                                <table className="w-full text-left border-collapse min-w-[650px]">
                                     <thead>
                                         <tr className="bg-[var(--primary-bg)] text-[var(--text-muted)] text-[11px] font-bold uppercase tracking-wider">
                                             <th className="px-6 py-4">Period No. & Class</th>
