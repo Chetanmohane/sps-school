@@ -270,7 +270,7 @@ const AcademicResultsManagement = () => {
         <Navbar />
         
         {/* Main Wrapper */}
-        <div className="p-3.5 sm:p-6 md:p-8 max-w-[1400px] mx-auto w-full max-w-full overflow-hidden">
+        <div className="p-3.5 sm:p-6 md:p-8 max-w-[1400px] mx-auto w-full max-w-full overflow-x-hidden">
           <AcademicTabs />
           
           {/* Custom Vibrant Header */}
@@ -344,7 +344,7 @@ const AcademicResultsManagement = () => {
           </div>
 
           {/* Search, filters, and records table */}
-          <div className="bg-[var(--card-bg)] rounded-3xl border border-[var(--border-color)] p-4 sm:p-6 shadow-sm mb-8 max-w-full overflow-hidden">
+          <div className="bg-[var(--card-bg)] rounded-3xl border border-[var(--border-color)] p-3.5 sm:p-6 shadow-sm mb-8 max-w-full overflow-x-auto">
             
             {/* Filter controls & Term Selector */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-5 border-b border-[var(--border-color)]">
