@@ -632,18 +632,18 @@ const AcademicAdminDashboard = () => {
           </div>
 
           {/* Main Grid: Interactive Class Explorer & Details Panel */}
-          <div className="bottom-grid" style={{ gridGap: '24px', gridTemplateColumns: '1.6fr 1fr' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-full overflow-hidden">
             
             {/* Interactive Classes Table */}
-            <div className="panel" style={{ padding: '24px', borderRadius: '16px', background: 'var(--card-bg)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: 'none', paddingBottom: 0 }}>
+            <div className="lg:col-span-7 p-4 sm:p-6 rounded-2xl bg-[var(--card-bg)] border border-[var(--border-color)] shadow-sm max-w-full overflow-hidden">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, border: 'none', paddingBottom: 0 }}>📚 Master Class & Teacher Schedule Explorer</h3>
-                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Real-time overview of class sections, timings, room locations, class teachers, and assigned subjects.</p>
+                  <h3 className="text-base sm:text-lg font-black text-[var(--text-main)] m-0">📚 Master Class & Teacher Schedule Explorer</h3>
+                  <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 mb-0">Real-time overview of class sections, timings, room locations, class teachers, and assigned subjects.</p>
                 </div>
                 
                 {/* Micro Search Input */}
-                <div style={{ position: 'relative', width: '220px' }}>
+                <div className="relative w-full sm:w-[220px] shrink-0">
                   <FiSearch style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--text-muted)' }} />
                   <input 
                     type="text" 
@@ -664,8 +664,8 @@ const AcademicAdminDashboard = () => {
                 </div>
               </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table className="data-table" style={{ width: '100%' }}>
+              <div className="overflow-x-auto w-full max-w-full">
+                <table className="data-table w-full min-w-[580px]">
                   <thead>
                     <tr>
                       <th style={{ padding: '12px' }}>Class</th>
@@ -727,7 +727,7 @@ const AcademicAdminDashboard = () => {
             </div>
 
             {/* Department Breakdown & Console Log Monitor */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="lg:col-span-5 flex flex-col gap-6 w-full max-w-full overflow-hidden">
               
               {/* Department Breakdown */}
               <div className="panel" style={{ padding: '24px', borderRadius: '16px', background: 'var(--card-bg)' }}>
