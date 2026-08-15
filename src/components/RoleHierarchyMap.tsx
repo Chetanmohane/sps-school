@@ -629,15 +629,9 @@ const RoleHierarchyMap: React.FC<{ compact?: boolean }> = ({ compact = false }) 
 
   return (
     <div
+      className="p-3.5 sm:p-6 md:p-8 rounded-3xl border border-white/10 shadow-2xl relative max-w-full overflow-hidden text-slate-50"
       style={{
         background: 'linear-gradient(160deg, #020617 0%, #0f172a 50%, #020617 100%)',
-        borderRadius: compact ? '20px' : '28px',
-        padding: compact ? '24px 20px' : '36px 28px',
-        color: '#f8fafc',
-        border: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
-        position: 'relative',
-        overflow: 'hidden',
         fontFamily: "'Inter', system-ui, sans-serif",
       }}
     >
@@ -656,61 +650,26 @@ const RoleHierarchyMap: React.FC<{ compact?: boolean }> = ({ compact = false }) 
       />
 
       {/* Header Banner */}
-      <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+      <div className="text-center mb-6">
         <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 16px',
-            borderRadius: '999px',
-            background: 'rgba(239, 68, 68, 0.12)',
-            border: '1px solid rgba(239, 68, 68, 0.25)',
-            color: '#f87171',
-            fontSize: '12px',
-            fontWeight: 800,
-            letterSpacing: '0.06em',
-            marginBottom: '12px',
-          }}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 color-red-400 text-xs font-extrabold tracking-wider mb-2"
+          style={{ color: '#f87171' }}
         >
           <FiShield size={14} /> SUPER ADMIN • ROLE ACCESS CONTROL
         </div>
 
-        <h2
-          style={{
-            fontSize: compact ? '22px' : '30px',
-            fontWeight: 900,
-            margin: '0 0 8px',
-            letterSpacing: '-0.02em',
-            background: 'linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
+        <h2 className="text-lg sm:text-3xl font-black mt-1 mb-2 tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
           Role Access & Credentials Overview
         </h2>
-        <p style={{ color: '#94a3b8', fontSize: '14px', maxWidth: '620px', margin: '0 auto', lineHeight: 1.5 }}>
+        <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto leading-relaxed">
           Comprehensive role list for Vasant Valley School ERP. Click any role card to inspect permissions or launch its portal directly.
         </p>
       </div>
 
       {/* Control Bar: View Switcher + Search + Level Filter */}
-      <div
-        style={{
-          background: 'rgba(15, 23, 42, 0.7)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          borderRadius: '16px',
-          padding: '12px 16px',
-          marginBottom: '28px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-        }}
-      >
+      <div className="bg-slate-900/80 border border-white/10 rounded-2xl p-3 mb-6 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 max-w-full overflow-hidden">
         {/* View Modes */}
-        <div style={{ display: 'flex', gap: '6px', background: '#020617', padding: '4px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-white/5 w-full md:w-auto">
           {[
             { id: 'cards', label: '📇 Role Cards', icon: <FiGrid size={13} /> },
             { id: 'quick', label: '⚡ Credentials Table', icon: <FiKeyIcon size={13} /> },
@@ -718,20 +677,9 @@ const RoleHierarchyMap: React.FC<{ compact?: boolean }> = ({ compact = false }) 
             <button
               key={mode.id}
               onClick={() => setViewMode(mode.id as any)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '8px',
-                border: 'none',
-                background: viewMode === mode.id ? '#3b82f6' : 'transparent',
-                color: viewMode === mode.id ? '#fff' : '#94a3b8',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s',
-              }}
+              className={`px-3 py-2 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                viewMode === mode.id ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              }`}
             >
               {mode.label}
             </button>
@@ -739,9 +687,9 @@ const RoleHierarchyMap: React.FC<{ compact?: boolean }> = ({ compact = false }) 
         </div>
 
         {/* Level Filters & Search */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          {/* Level Pills */}
-          <div style={{ display: 'flex', gap: '4px' }}>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+          {/* Level Pills (Scrollable) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full w-full sm:w-auto scrollbar-none">
             {[
               { id: 'all', label: 'All Levels' },
               { id: 1, label: 'L1 Top' },
@@ -752,16 +700,11 @@ const RoleHierarchyMap: React.FC<{ compact?: boolean }> = ({ compact = false }) 
               <button
                 key={String(lvl.id)}
                 onClick={() => setLevelFilter(lvl.id as any)}
-                style={{
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  border: levelFilter === lvl.id ? '1px solid #3b82f6' : '1px solid rgba(255,255,255,0.08)',
-                  background: levelFilter === lvl.id ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.03)',
-                  color: levelFilter === lvl.id ? '#60a5fa' : '#64748b',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                  levelFilter === lvl.id 
+                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50' 
+                    : 'bg-white/5 text-slate-400 border border-white/5 hover:bg-white/10'
+                }`}
               >
                 {lvl.label}
               </button>
@@ -769,23 +712,14 @@ const RoleHierarchyMap: React.FC<{ compact?: boolean }> = ({ compact = false }) 
           </div>
 
           {/* Search Box */}
-          <div style={{ position: 'relative', minWidth: '180px' }}>
+          <div className="relative w-full sm:w-[180px] shrink-0">
             <FiSearch size={13} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
             <input
               type="text"
               placeholder="Search role..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '6px 10px 6px 30px',
-                borderRadius: '8px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: '#020617',
-                color: '#f8fafc',
-                fontSize: '12px',
-                outline: 'none',
-              }}
+              className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-white/10 bg-slate-950 text-slate-100 text-xs outline-none focus:border-blue-500"
             />
           </div>
         </div>
