@@ -2721,7 +2721,7 @@ const SuperAdminDashboard = () => {
               </div>
 
               {/* Profile Widget (Right Column) */}
-              <div style={{ width: '300px', flexShrink: 0 }}>
+              <div className="w-full lg:w-[300px] shrink-0">
                 <div style={{
                   backgroundColor: 'var(--card-bg)',
                   border: '1px solid var(--border-color)',
@@ -4265,8 +4265,8 @@ const SuperAdminDashboard = () => {
       {/* Custom Delete Confirm Modal */}
       {studentToDelete && (
 
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <div style={{ background: 'var(--card-bg)', padding: '24px', borderRadius: '12px', width: '350px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px' }}>
+          <div style={{ background: 'var(--card-bg)', padding: '24px', borderRadius: '12px', width: '90%', maxWidth: '380px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', textAlign: 'center' }}>
             <div style={{ color: '#ef4444', marginBottom: '16px' }}>
               <FiTrash2 size={40} />
             </div>
