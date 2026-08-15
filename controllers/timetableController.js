@@ -163,24 +163,35 @@ exports.getTeacherSchedule = async (req, res) => {
     if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
     const teacherName = user.name || '';
+    const userRole = (user.role || '').toLowerCase();
+    const isAdmin = ['super-admin', 'manager-admin', 'academic-admin', 'operations-admin', 'admin', 'manager'].some(r => userRole.includes(r));
 
-    // Fetch teacher profile to get assigned subjects and classes
+    // Fetch teacher profile
     const teacher = await Teacher.findOne({ user: user._id }).populate('subjects').populate('classes');
 
-    // Fetch all timetables
-    const allTimetables = await Timetable.find({}).sort({ dayOfWeek: 1 });
+    // Fetch all timetables created in system
+    const allTimetables = await Timetable.find({}).sort({ className: 1, section: 1, dayOfWeek: 1 });
 
     const dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-    // Build flat schedule list from timetable periods matching this teacher
     const schedule = [];
+    const tNameLower = teacherName.trim().toLowerCase();
+    const tFirstWord = tNameLower.split(' ')[0];
+
     for (const tt of allTimetables) {
       for (const period of tt.periods) {
-        if (!period.isBreak && period.teacher && period.teacher.trim() !== '') {
-          const ptName = period.teacher.trim().toLowerCase();
-          const tName = teacherName.trim().toLowerCase();
-          if (ptName.includes(tName) || tName.includes(ptName)) {
+        if (!period.isBreak) {
+          const ptName = (period.teacher || '').trim().toLowerCase();
+          const matchesTeacher = ptName && (
+            ptName.includes(tNameLower) || 
+            tNameLower.includes(ptName) || 
+            (tFirstWord && tFirstWord.length > 2 && ptName.includes(tFirstWord))
+          );
+
+          if (isAdmin || matchesTeacher) {
             schedule.push({
+              _id: `${tt._id}_${period.period}_${tt.className}_${tt.section}`,
+              timetableId: tt._id,
               dayOfWeek: tt.dayOfWeek,
               dayOrder: dayOrder.indexOf(tt.dayOfWeek),
               className: tt.className,
@@ -188,23 +199,26 @@ exports.getTeacherSchedule = async (req, res) => {
               period: period.period,
               startTime: period.startTime,
               endTime: period.endTime,
-              subject: period.subject,
+              subject: period.subject || 'General',
+              teacher: period.teacher || teacherName || 'Faculty',
               room: period.room || '',
+              isBreak: Boolean(period.isBreak)
             });
           }
         }
       }
     }
 
-    // Sort by day order then period
+    // Sort by day order then startTime/period
     schedule.sort((a, b) => {
       if (a.dayOrder !== b.dayOrder) return a.dayOrder - b.dayOrder;
-      return String(a.period).localeCompare(String(b.period));
+      return (a.startTime || '').localeCompare(b.startTime || '');
     });
 
     return res.status(200).json({
       success: true,
       data: schedule,
+      allTimetables,
       teacher: {
         name: teacherName,
         email,

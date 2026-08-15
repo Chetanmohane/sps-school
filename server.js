@@ -86,5 +86,5 @@ const server = http.createServer(app);
 initSocket(server);
 
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} with Real-Time Socket.IO ⚡`);
+  console.log(`Server running on http://localhost:${PORT} with Real-Time Socket.IO ⚡`);
 });

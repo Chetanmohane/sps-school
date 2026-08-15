@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
+import AcademicTabs from '../../components/AcademicTabs';
 import { FiSearch, FiClock, FiMapPin, FiInbox, FiLayers, FiStar, FiBookOpen } from 'react-icons/fi';
 import API from "../../api/axios"; 
 
@@ -74,45 +75,112 @@ const defaultSubjectSchedule: ClassItem[] = [
     }
 ];
 
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+const todayName = () => {
+    const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const today = names[new Date().getDay()];
+    return today === 'Sunday' ? 'Monday' : today;
+};
+
 const TeacherMyClasses = () => {
     const [search, setSearch] = useState("");
-    const [classes, setClasses] = useState<ClassItem[]>(defaultSubjectSchedule);
+    const [selectedDay, setSelectedDay] = useState<string>(todayName());
+    const [allTimetables, setAllTimetables] = useState<any[]>([]);
+    const [teacherSchedule, setTeacherSchedule] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
-    const email = localStorage.getItem('userEmail');
+    const email = localStorage.getItem('userEmail') || '';
+    const userRole = (localStorage.getItem('role') || '').toLowerCase();
+    const isAdminUser = ['super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin', 'manager'].some(r => userRole.includes(r));
 
     useEffect(() => {
-        fetchClasses();
+        fetchTimetables();
     }, [email]);
 
-    const fetchClasses = async () => {
+    const fetchTimetables = async () => {
         try {
             setLoading(true);
-            if (email) {
-                const response = await API.get(`/api/teacher/my-classes/${email}`);
-                if (response.data && response.data.data && response.data.data.length > 0) {
-                    setClasses(response.data.data);
-                } else {
-                    setClasses(defaultSubjectSchedule);
-                }
-            } else {
-                setClasses(defaultSubjectSchedule);
+            const [ttRes, schedRes] = await Promise.all([
+                API.get('/api/timetable').catch(() => null),
+                email ? API.get(`/api/timetable/teacher-schedule?email=${encodeURIComponent(email)}`).catch(() => null) : Promise.resolve(null)
+            ]);
+
+            if (ttRes?.data?.data) {
+                setAllTimetables(ttRes.data.data || []);
             }
-            setError(null);
+
+            if (schedRes?.data?.data) {
+                setTeacherSchedule(schedRes.data.data || []);
+            }
         } catch (err) {
-            console.error("Error fetching classes:", err);
-            setClasses(defaultSubjectSchedule);
-            setError(null);
+            console.error("Error loading timetable data:", err);
         } finally {
             setLoading(false);
         }
     };
 
-    const filtered = classes.filter((c) =>
-        c.className?.toLowerCase().includes(search.toLowerCase()) ||
-        c.section?.toLowerCase().includes(search.toLowerCase()) ||
-        c.subjects?.some(sub => sub.name.toLowerCase().includes(search.toLowerCase()))
+    // Extract period items for the selected day
+    const getPeriodsForDay = () => {
+        const periodList: any[] = [];
+
+        // 1. If teacher schedule returned period items for selectedDay
+        const matchingTeacherPeriods = teacherSchedule.filter(s => s.dayOfWeek === selectedDay);
+
+        if (matchingTeacherPeriods.length > 0 && !isAdminUser) {
+            matchingTeacherPeriods.forEach(p => {
+                periodList.push({
+                    period: p.period || '1',
+                    className: p.className,
+                    section: p.section,
+                    subject: p.subject,
+                    startTime: p.startTime,
+                    endTime: p.endTime,
+                    room: p.room,
+                    teacher: p.teacher || 'Assigned Faculty',
+                    isBreak: p.isBreak
+                });
+            });
+        } else {
+            // 2. Otherwise get periods from all Timetable documents matching selectedDay
+            const dayTTs = allTimetables.filter(t => t.dayOfWeek === selectedDay);
+            dayTTs.forEach(tt => {
+                (tt.periods || []).forEach((p: any) => {
+                    if (!p.isBreak) {
+                        periodList.push({
+                            period: p.period || '1',
+                            className: tt.className,
+                            section: tt.section,
+                            subject: p.subject || 'General',
+                            startTime: p.startTime,
+                            endTime: p.endTime,
+                            room: p.room || 'Main Block',
+                            teacher: p.teacher || 'Faculty Teacher',
+                            isBreak: p.isBreak
+                        });
+                    }
+                });
+            });
+        }
+
+        // Sort by startTime / period number
+        periodList.sort((a, b) => {
+            const tA = a.startTime || '';
+            const tB = b.startTime || '';
+            return tA.localeCompare(tB);
+        });
+
+        return periodList;
+    };
+
+    const dayPeriods = getPeriodsForDay();
+
+    const filteredPeriods = dayPeriods.filter(p =>
+        (p.className || '').toLowerCase().includes(search.toLowerCase()) ||
+        (p.section || '').toLowerCase().includes(search.toLowerCase()) ||
+        (p.subject || '').toLowerCase().includes(search.toLowerCase()) ||
+        (p.teacher || '').toLowerCase().includes(search.toLowerCase()) ||
+        (p.room || '').toLowerCase().includes(search.toLowerCase())
     );
 
     return (
@@ -122,59 +190,88 @@ const TeacherMyClasses = () => {
                 <Navbar />
 
                 <div className="p-8" style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+                    {isAdminUser && <AcademicTabs />}
+
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
-                                    📚 Subject Faculty Timetable
+                                    📚 Period-Wise Faculty Timetable
                                 </span>
                             </div>
                             <h1 className="text-2xl font-extrabold text-[var(--text-main)]">My Teaching Schedule & Classes</h1>
-                            <p className="text-[var(--text-muted)] text-sm">Real-time daily period timing, class room locations, assigned subjects, and quick period management.</p>
+                            <p className="text-[var(--text-muted)] text-sm">Real-time period timings, classroom locations, assigned subjects, and synchronized student schedule.</p>
                         </div>
 
                         <div className="relative group">
                             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Search class or subject..."
+                                placeholder="Search class, subject, or period..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="pl-11 pr-4 py-3 bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-2xl w-full md:w-80 outline-none focus:ring-2 ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm text-sm"
+                                className="pl-11 pr-4 py-2.5 bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-2xl w-full md:w-72 outline-none focus:ring-2 ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm text-xs"
                             />
                         </div>
                     </div>
 
+                    {/* DAY SELECTOR TABS */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none">
+                        {DAYS.map((day) => {
+                            const isSelected = selectedDay === day;
+                            const isToday = todayName() === day;
+                            return (
+                                <button
+                                    key={day}
+                                    onClick={() => setSelectedDay(day)}
+                                    className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                                        isSelected
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 scale-102'
+                                            : 'bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] hover:bg-[var(--hover-bg)]'
+                                    }`}
+                                >
+                                    <span>{day}</span>
+                                    {isToday && (
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isSelected ? 'bg-white text-blue-600' : 'bg-emerald-500 text-white'}`}>
+                                            TODAY
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+
                     {/* STATS OVERVIEW CARDS */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4">
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4 shadow-sm">
                             <div className="w-12 h-12 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center font-extrabold text-xl">
                                 🏫
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Assigned Subject Classes</div>
-                                <div className="text-2xl font-extrabold text-[var(--text-main)]">{classes.length} Periods Daily</div>
+                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Scheduled Periods ({selectedDay})</div>
+                                <div className="text-2xl font-extrabold text-[var(--text-main)]">{dayPeriods.length} Periods</div>
                             </div>
                         </div>
-                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4">
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4 shadow-sm">
                             <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-extrabold text-xl">
                                 📖
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Primary Subject Taught</div>
+                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Selected Day View</div>
                                 <div className="text-sm font-extrabold text-purple-600">
-                                    Mathematics & Physics
+                                    {selectedDay} Period Schedule
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4">
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-5 rounded-2xl flex items-center gap-4 shadow-sm">
                             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center font-extrabold text-xl">
                                 ⏰
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Teaching Hours</div>
-                                <div className="text-sm font-extrabold text-emerald-600">
-                                    09:00 AM – 03:15 PM
+                                <div className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Timetable Status</div>
+                                <div className="text-sm font-extrabold text-emerald-600 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    Synchronized with Student View
                                 </div>
                             </div>
                         </div>
@@ -182,12 +279,12 @@ const TeacherMyClasses = () => {
 
                     {/* TABLE CONTAINER */}
                     <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
-                        <div className="p-4 bg-[var(--input-bg)] border-b border-[var(--border-color)] flex justify-between items-center">
+                        <div className="p-4 bg-[var(--input-bg)] border-b border-[var(--border-color)] flex justify-between items-center flex-wrap gap-2">
                             <h2 className="font-extrabold text-sm text-[var(--text-main)] flex items-center gap-2">
-                                📅 Today's Subject Teaching Schedule ({filtered.length} Periods)
+                                📅 Period-Wise Schedule — {selectedDay} ({filteredPeriods.length} Periods)
                             </h2>
                             <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1 rounded-full border border-emerald-200">
-                                🟢 Timetable Active
+                                🟢 Official Period Timetable
                             </span>
                         </div>
 
@@ -195,84 +292,79 @@ const TeacherMyClasses = () => {
                             {loading ? (
                                 <div className="py-20 text-center flex flex-col items-center gap-3">
                                     <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                    <p className="text-[var(--text-muted)] font-medium">Loading your timetable...</p>
+                                    <p className="text-[var(--text-muted)] font-medium">Loading period timetable...</p>
                                 </div>
                             ) : (
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-[var(--primary-bg)] text-[var(--text-muted)] text-[11px] font-bold uppercase tracking-wider">
-                                            <th className="px-6 py-4">Period & Class</th>
-                                            <th className="px-6 py-4">Subject Name & Code</th>
+                                            <th className="px-6 py-4">Period No. & Class</th>
+                                            <th className="px-6 py-4">Subject Name</th>
                                             <th className="px-6 py-4">Exact Period Timing</th>
+                                            <th className="px-6 py-4">Assigned Teacher</th>
                                             <th className="px-6 py-4">Room & Location</th>
                                             <th className="px-6 py-4 text-right">Quick Period Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[var(--border-color)]">
-                                        {filtered.length > 0 ? (
-                                            filtered.map((c, i) => (
+                                        {filteredPeriods.length > 0 ? (
+                                            filteredPeriods.map((p, i) => (
                                                 <tr key={i} className="hover:bg-[var(--primary-bg)]/40 transition-colors group">
                                                     {/* 1. Period & Class */}
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-600 flex items-center justify-center font-black text-sm border border-purple-500/20">
-                                                                P{i + 1}
+                                                            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center font-black text-xs border border-indigo-500/20 shrink-0">
+                                                                P{p.period}
                                                             </div>
                                                             <div>
                                                                 <div className="font-extrabold text-[var(--text-main)] text-base flex items-center gap-2">
-                                                                    Class {c.className}-{c.section}
+                                                                    Class {p.className}-{p.section}
                                                                 </div>
                                                                 <div className="text-xs text-[var(--text-muted)] font-medium mt-0.5">
-                                                                    Subject Teaching Batch ({c.capacity || 40} Students)
+                                                                    Official Student Period
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
 
-                                                    {/* 2. Subject Name & Code */}
+                                                    {/* 2. Subject Name */}
                                                     <td className="px-6 py-4">
-                                                        <div className="flex flex-col gap-1">
-                                                            {c.subjects && c.subjects.length > 0 ? (
-                                                                c.subjects.map((sub, idx) => (
-                                                                    <div key={idx} className="flex items-center gap-2">
-                                                                        <span className="bg-purple-600 text-white px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase shadow-xs">
-                                                                            {sub.code || 'SUB'}
-                                                                        </span>
-                                                                        <span className="text-sm text-[var(--text-main)] font-extrabold">{sub.name}</span>
-                                                                    </div>
-                                                                ))
-                                                            ) : (
-                                                                <div className="flex items-center gap-2">
-                                                                    <FiBookOpen className="text-purple-500" />
-                                                                    <span className="text-sm text-[var(--text-main)] font-bold">Mathematics</span>
-                                                                </div>
-                                                            )}
+                                                        <div className="flex items-center gap-2">
+                                                            <FiBookOpen className="text-indigo-500" />
+                                                            <span className="text-sm text-[var(--text-main)] font-black">{p.subject}</span>
                                                         </div>
                                                     </td>
 
                                                     {/* 3. Exact Period Timing */}
                                                     <td className="px-6 py-4">
-                                                        <div className="flex items-center gap-2 text-sm font-black text-[var(--text-main)] bg-[var(--input-bg)] px-3 py-1.5 rounded-xl border border-[var(--border-color)] w-fit">
+                                                        <div className="flex items-center gap-2 text-xs font-black text-[var(--text-main)] bg-[var(--input-bg)] px-3 py-1.5 rounded-xl border border-[var(--border-color)] w-fit">
                                                             <FiClock className="text-blue-500" />
-                                                            {c.startTime || '09:00 AM'} – {c.endTime || '09:45 AM'}
+                                                            {p.startTime} – {p.endTime}
                                                         </div>
                                                     </td>
 
-                                                    {/* 4. Room & Location */}
+                                                    {/* 4. Teacher Name */}
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-xs font-extrabold text-[var(--text-main)] bg-purple-50 dark:bg-purple-950/30 text-purple-600 border border-purple-200 px-2.5 py-1 rounded-lg">
+                                                            🧑‍🏫 {p.teacher}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* 5. Room & Location */}
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-main)]">
-                                                            <FiMapPin className="text-rose-500" /> {c.room || 'Main Block - Room 102'}
+                                                            <FiMapPin className="text-rose-500" /> {p.room || 'Academic Block'}
                                                         </div>
                                                     </td>
 
-                                                    {/* 5. Quick Actions */}
+                                                    {/* 6. Quick Actions */}
                                                     <td className="px-6 py-4 text-right">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <a 
                                                                 href="/teacher/attendanceMark" 
                                                                 className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 px-3 py-1.5 rounded-xl transition-all border border-emerald-200"
                                                             >
-                                                                ✅ Mark Attendance
+                                                                ✅ Attendance
                                                             </a>
                                                             <a 
                                                                 href="/teacher/assignments" 
@@ -286,8 +378,12 @@ const TeacherMyClasses = () => {
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan={5} className="px-8 py-20 text-center text-slate-400 italic font-medium">
-                                                    No classes assigned for today.
+                                                <td colSpan={6} className="px-8 py-16 text-center text-[var(--text-muted)] font-medium">
+                                                    <div className="max-w-md mx-auto space-y-3">
+                                                        <div className="text-3xl">🗓️</div>
+                                                        <p className="font-extrabold text-sm text-[var(--text-main)]">No period-wise timetable set for {selectedDay} yet.</p>
+                                                        <p className="text-xs text-[var(--text-muted)]">Official period timetable configured by Manager Admin & Super Admin will appear here.</p>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         )}

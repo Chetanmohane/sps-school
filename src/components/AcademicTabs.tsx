@@ -61,8 +61,8 @@ const AcademicTabs: React.FC = () => {
       className="academic-tabs-wrapper"
       style={{
         position: 'sticky',
-        top: '56px',
-        zIndex: 25,
+        top: '64px',
+        zIndex: 45,
         marginBottom: '24px',
         backgroundColor: 'var(--card-bg)',
         border: '1px solid var(--border-color)',
@@ -72,7 +72,8 @@ const AcademicTabs: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        backdropFilter: 'blur(12px)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
         width: '100%',
         boxSizing: 'border-box',
         maxWidth: '100%'

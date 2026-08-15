@@ -32,8 +32,10 @@ const StudentAdminTabs = () => {
         flexWrap: 'wrap',
         gap: '8px',
         position: 'sticky',
-        top: '56px',
-        zIndex: 10
+        top: '64px',
+        zIndex: 45,
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)'
       }}
     >
       {tabs.map((tab) => {

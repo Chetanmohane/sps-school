@@ -20,7 +20,7 @@ const TeachersAcademicManagement = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container" style={{ padding: '24px' }}>
+        <div className="dashboard-container" style={{ padding: '12px 24px 24px' }}>
           <AcademicTabs />
 
           {/* Inner Tab Switcher */}

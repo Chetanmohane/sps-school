@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Fee = require("../models/Fee");
+const FeeStructure = require("../models/FeeStructure");
 const User = require("../models/User");
 const Student = require("../models/Student");
 const { notifyChange } = require("../config/socket");
@@ -307,5 +308,83 @@ exports.deleteFee = async (req, res) => {
   } 
   catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// ==================== CLASS FEE STRUCTURE MANAGEMENT ====================
+
+exports.getFeeStructures = async (req, res) => {
+  try {
+    let structures = await FeeStructure.find().sort({ className: 1 });
+
+    // Seed default fee structures if database is empty
+    if (structures.length === 0) {
+      const defaults = [
+        { className: "Class 12th", tuitionFee: 18500, admissionFee: 5000, examFee: 2500, activityFee: 1500, totalAnnualFee: 83000, remarks: "Official Science & Commerce Batch Structure", updatedBy: "Super Admin" },
+        { className: "Class 11th", tuitionFee: 17500, admissionFee: 5000, examFee: 2500, activityFee: 1500, totalAnnualFee: 79000, remarks: "Official Senior Secondary Structure", updatedBy: "Super Admin" },
+        { className: "Class 10th", tuitionFee: 15000, admissionFee: 4000, examFee: 2000, activityFee: 1200, totalAnnualFee: 67200, remarks: "Board Batch Standard Fee Schedule", updatedBy: "Super Admin" },
+        { className: "Class 9th",  tuitionFee: 14500, admissionFee: 4000, examFee: 2000, activityFee: 1200, totalAnnualFee: 65200, remarks: "Secondary School Fee Schedule", updatedBy: "Super Admin" },
+        { className: "Class 8th",  tuitionFee: 12500, admissionFee: 3500, examFee: 1800, activityFee: 1000, totalAnnualFee: 56300, remarks: "Middle School Grade 8 Schedule", updatedBy: "Super Admin" },
+        { className: "Class 7th",  tuitionFee: 12000, admissionFee: 3500, examFee: 1800, activityFee: 1000, totalAnnualFee: 54300, remarks: "Middle School Grade 7 Schedule", updatedBy: "Super Admin" },
+        { className: "Class 6th",  tuitionFee: 11500, admissionFee: 3500, examFee: 1800, activityFee: 1000, totalAnnualFee: 52300, remarks: "Middle School Grade 6 Schedule", updatedBy: "Super Admin" },
+        { className: "Class 1st to 5th", tuitionFee: 9500, admissionFee: 3000, examFee: 1500, activityFee: 800, totalAnnualFee: 43300, remarks: "Primary Wing Unified Fee Schedule", updatedBy: "Super Admin" }
+      ];
+      await FeeStructure.insertMany(defaults);
+      structures = await FeeStructure.find().sort({ className: 1 });
+    }
+
+    res.json({ message: "Fee structures retrieved successfully", data: structures });
+  } catch (error) {
+    console.error("Error in getFeeStructures:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+exports.createOrUpdateFeeStructure = async (req, res) => {
+  try {
+    const { className, tuitionFee, admissionFee, examFee, activityFee, totalAnnualFee, remarks, updatedBy } = req.body;
+
+    if (!className) {
+      return res.status(400).json({ message: "Class name is required" });
+    }
+
+    const calculatedTotal = totalAnnualFee 
+      ? Number(totalAnnualFee) 
+      : ((Number(tuitionFee || 0) * 4) + Number(admissionFee || 0) + Number(examFee || 0) + Number(activityFee || 0));
+
+    const updaterInfo = updatedBy || (req.user ? `${req.user.name || req.user.email} (${req.user.role})` : "Super Admin");
+
+    const structure = await FeeStructure.findOneAndUpdate(
+      { className: className.trim() },
+      {
+        className: className.trim(),
+        tuitionFee: Number(tuitionFee || 0),
+        admissionFee: Number(admissionFee || 0),
+        examFee: Number(examFee || 0),
+        activityFee: Number(activityFee || 0),
+        totalAnnualFee: calculatedTotal,
+        remarks: remarks || "Updated by Admin",
+        updatedBy: updaterInfo,
+        status: "Active"
+      },
+      { new: true, upsert: true }
+    );
+
+    notifyChange("FEE_STRUCTURE_CHANGED", { action: "update", structure });
+    res.status(200).json({ message: `Class fee structure for ${className} saved successfully!`, data: structure });
+  } catch (error) {
+    console.error("Error in createOrUpdateFeeStructure:", error);
+    res.status(500).json({ message: "Failed to save fee structure: " + error.message });
+  }
+};
+
+exports.deleteFeeStructure = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await FeeStructure.findByIdAndDelete(id);
+    notifyChange("FEE_STRUCTURE_CHANGED", { action: "delete", id });
+    res.json({ message: "Fee structure deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting fee structure", error: error.message });
   }
 };

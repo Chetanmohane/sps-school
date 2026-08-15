@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
+import AcademicTabs from '../../components/AcademicTabs';
 import { 
   FiDollarSign, FiCreditCard, FiDownload, FiCheckCircle, FiClock, 
   FiAlertCircle, FiLoader, FiShield, FiFileText, FiPrinter, FiCheck, FiX
@@ -47,6 +48,7 @@ const StudentFees = () => {
   ];
 
   const [fees, setFees] = useState<any[]>(DEFAULT_FEES);
+  const [feeStructures, setFeeStructures] = useState<any[]>([]);
 
   const [payingFee, setPayingFee] = useState<any>(null);
   const [paymentSuccessMsg, setPaymentSuccessMsg] = useState<string | null>(null);
@@ -56,10 +58,16 @@ const StudentFees = () => {
 
   useEffect(() => {
     fetchData();
-    const unsubscribe = onEvent('FEE_CHANGED', () => {
+    const unsubscribe1 = onEvent('FEE_CHANGED', () => {
       fetchData();
     });
-    return () => unsubscribe();
+    const unsubscribe2 = onEvent('FEE_STRUCTURE_CHANGED', () => {
+      fetchData();
+    });
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
   }, [onEvent]);
 
   const fetchData = async () => {
@@ -74,7 +82,9 @@ const StudentFees = () => {
         ? API.get('/api/finance/my-fees', { params: { email } }).catch(() => null)
         : Promise.resolve(null);
 
-      const [profRes, feesRes] = await Promise.all([profilePromise, feesPromise]);
+      const structurePromise = API.get('/api/finance/fee-structure').catch(() => null);
+
+      const [profRes, feesRes, structRes] = await Promise.all([profilePromise, feesPromise, structurePromise]);
 
       if (profRes && profRes.data) {
         setStudentProfile(profRes.data);
@@ -84,6 +94,11 @@ const StudentFees = () => {
         setFees(feesRes.data);
       } else {
         setFees(DEFAULT_FEES);
+      }
+
+      if (structRes && structRes.data && (structRes.data.data || structRes.data)) {
+        const structList = structRes.data.data || structRes.data || [];
+        setFeeStructures(structList);
       }
     } catch (err) {
       console.error("Error loading fee data:", err);
@@ -167,17 +182,33 @@ const StudentFees = () => {
     setReceiptFee(fee);
   };
 
-  const studentName = studentProfile?.user?.name || localStorage.getItem('userName') || 'Student';
-  const rollNumber = studentProfile?.rollNumber || 'STU-1001';
+  const studentName = studentProfile?.user?.name || studentProfile?.name || savedName;
   const className = studentProfile?.className || '10';
   const section = studentProfile?.section || 'A';
+  const rollNumber = studentProfile?.rollNumber || studentProfile?.rollNo || 'STU-1001';
+
+  const matchedClassStructure = React.useMemo(() => {
+    if (!feeStructures || feeStructures.length === 0) return null;
+    const clsStr = (className || '').toString().toLowerCase();
+    const normCls = clsStr.replace(/\D/g, '');
+    return feeStructures.find((s: any) => {
+      const sName = (s.className || '').toString().toLowerCase();
+      const sNorm = sName.replace(/\D/g, '');
+      return (sNorm && sNorm === normCls) || sName.includes(clsStr);
+    }) || feeStructures[0];
+  }, [feeStructures, className]);
 
   return (
     <div className="app-layout">
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="p-6 md:p-8 bg-[var(--input-bg)] min-h-screen">
+        <div className="p-4 md:p-6 bg-[var(--input-bg)] min-h-screen">
+          {(() => {
+            const userRole = localStorage.getItem('role') || '';
+            const isAdminUser = ['super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin'].includes(userRole) || userRole.includes('admin') || userRole.includes('manager');
+            return isAdminUser && <AcademicTabs />;
+          })()}
           
           {/* Page Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
@@ -241,6 +272,52 @@ const StudentFees = () => {
               </p>
             </div>
           </div>
+
+          {/* Official Class Fee Structure & Finance Remarks Card */}
+          {matchedClassStructure && (
+            <div className="bg-[var(--card-bg)] rounded-3xl border border-[var(--border-color)] p-6 shadow-sm mb-8">
+              <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <div>
+                  <h3 className="font-black text-base text-emerald-600 flex items-center gap-2">
+                    📑 Official Fee Structure Breakdown — {matchedClassStructure.className}
+                  </h3>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">Grade level fee structure configured by Super Admin & Finance Admin.</p>
+                </div>
+                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-bold rounded-xl flex items-center gap-1">
+                  👔 Last Modified By: {matchedClassStructure.updatedBy || 'Super Admin'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 bg-[var(--input-bg)] p-4 rounded-2xl border border-[var(--border-color)] mb-4">
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Tuition Fee (Quarterly)</p>
+                  <p className="text-sm font-black text-[var(--text-main)] mt-0.5">₹{(matchedClassStructure.tuitionFee || 0).toLocaleString('en-IN')}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Admission Fee (One-Time)</p>
+                  <p className="text-sm font-black text-[var(--text-main)] mt-0.5">₹{(matchedClassStructure.admissionFee || 0).toLocaleString('en-IN')}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Exam & Lab Fee</p>
+                  <p className="text-sm font-black text-[var(--text-main)] mt-0.5">₹{(matchedClassStructure.examFee || 0).toLocaleString('en-IN')}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Activity & Sports Fee</p>
+                  <p className="text-sm font-black text-[var(--text-main)] mt-0.5">₹{(matchedClassStructure.activityFee || 0).toLocaleString('en-IN')}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">Total Annual Fee</p>
+                  <p className="text-sm font-black text-emerald-500 mt-0.5">₹{(matchedClassStructure.totalAnnualFee || 0).toLocaleString('en-IN')}</p>
+                </div>
+              </div>
+
+              {matchedClassStructure.remarks && (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-700 dark:text-amber-300 font-medium">
+                  <strong>📝 Finance Admin Remark / Audit Notes:</strong> {matchedClassStructure.remarks}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Fee Installments & Receipts Table */}
           <div className="bg-[var(--card-bg)] rounded-3xl border border-[var(--border-color)] shadow-sm overflow-hidden mb-8">

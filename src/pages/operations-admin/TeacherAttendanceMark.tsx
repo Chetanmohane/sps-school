@@ -376,10 +376,11 @@ const TeacherAttendanceMark = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container" style={{ padding: '20px' }}>
+        <div className="dashboard-container" style={{ padding: '12px 20px 20px' }}>
           {(() => {
             const userRole = localStorage.getItem('role') || '';
-            return (userRole === 'academic-admin' || userRole === 'super-admin') && <AcademicTabs />;
+            const isAdminUser = ['super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin'].includes(userRole) || userRole.includes('admin') || userRole.includes('manager');
+            return isAdminUser && <AcademicTabs />;
           })()}
           
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">

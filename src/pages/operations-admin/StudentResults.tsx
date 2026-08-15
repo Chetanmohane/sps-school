@@ -38,47 +38,37 @@ const StudentResults = () => {
 
 
 
-  // Mock default Result Data matching the Student's details
-  const defaultExamTerms = [
-    {
-      termName: "Term-1 Examinations (Mid-Term)",
-      overallGpa: "9.2 / 10",
-      grade: "A+",
-      totalMarks: "460 / 500",
-      status: "PASSED",
-      subjects: [
-        { name: "Mathematics", marks: 95, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-        { name: "Science & Tech", marks: 88, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-        { name: "English Literature", marks: 92, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-        { name: "Social Science", marks: 91, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-        { name: "Computer Applications", marks: 94, maxMarks: 100, grade: "O", remarks: "Outstanding" }
-      ]
-    },
-    {
-      termName: "Term-2 Examinations (Final Exam)",
-      overallGpa: "9.4 / 10",
-      grade: "O",
-      totalMarks: "471 / 500",
-      status: "PASSED",
-      subjects: [
-        { name: "Mathematics", marks: 98, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-        { name: "Science & Tech", marks: 91, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-        { name: "English Literature", marks: 94, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-        { name: "Social Science", marks: 93, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-        { name: "Computer Applications", marks: 95, maxMarks: 100, grade: "O", remarks: "Outstanding" }
-      ]
-    }
-  ];
+  const createDefaultZeroTerm = (termName: string) => ({
+    termName,
+    overallGpa: "0.0 / 10",
+    grade: "F",
+    totalMarks: "0 / 500",
+    status: "PENDING",
+    subjects: [
+      { name: "Mathematics", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+      { name: "Science & Tech", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+      { name: "English Literature", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+      { name: "Social Science", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+      { name: "Computer Applications", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" }
+    ]
+  });
 
   const getStudentExamTerms = () => {
-    if (!studentProfile || !(studentProfile as any)._id) return [];
-    const studentGrades = (studentProfile as any).results;
-    if (!studentGrades) return [];
+    const defaultTerms = [
+      createDefaultZeroTerm("First Term Examinations"),
+      createDefaultZeroTerm("Second Term Examinations"),
+      createDefaultZeroTerm("Final Term Examinations")
+    ];
 
-    const terms = [];
-    if (studentGrades['Term-1']) terms.push(studentGrades['Term-1']);
-    if (studentGrades['Term-2']) terms.push(studentGrades['Term-2']);
-    return terms;
+    if (!studentProfile || !(studentProfile as any)._id) return defaultTerms;
+    const studentGrades = (studentProfile as any).results;
+    if (!studentGrades || Object.keys(studentGrades).length === 0) return defaultTerms;
+
+    return [
+      studentGrades['Term-1'] || createDefaultZeroTerm("First Term Examinations"),
+      studentGrades['Term-2'] || createDefaultZeroTerm("Second Term Examinations"),
+      studentGrades['Final'] || createDefaultZeroTerm("Final Term Examinations")
+    ];
   };
 
   const handlePrint = () => {
@@ -132,15 +122,43 @@ const StudentResults = () => {
                 <div className="text-left md:text-right">
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Cumulative GPA</p>
                   <p className="text-2xl font-black text-green-600 flex items-center gap-1 md:justify-end">
-                    <FiAward /> 9.3 / 10
+                    <FiAward /> {(() => {
+                      const termsList = getStudentExamTerms();
+                      const validGpaTerms = termsList.filter((t: any) => t.status === 'PASSED' || t.status === 'FAILED');
+                      if (validGpaTerms.length === 0) return '0.0 / 10';
+                      const avg = validGpaTerms.reduce((acc: number, t: any) => acc + (parseFloat(t.overallGpa) || 0), 0) / validGpaTerms.length;
+                      return `${avg.toFixed(1)} / 10`;
+                    })()}
                   </p>
                 </div>
                 <div className="h-10 w-px bg-[var(--border-color)]"></div>
                 <div>
                   <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Result Status</p>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-green-600 text-xs font-bold mt-1">
-                    <FiCheckCircle /> PASSED
-                  </span>
+                  {(() => {
+                    const termsList = getStudentExamTerms();
+                    const validGpaTerms = termsList.filter((t: any) => t.status === 'PASSED' || t.status === 'FAILED');
+                    const isPassed = validGpaTerms.length > 0 && validGpaTerms.every((t: any) => t.status === 'PASSED');
+                    const isFailed = validGpaTerms.some((t: any) => t.status === 'FAILED');
+                    if (isPassed) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-green-600 text-xs font-bold mt-1">
+                          <FiCheckCircle /> PASSED
+                        </span>
+                      );
+                    }
+                    if (isFailed) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-bold mt-1">
+                          FAILED
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-bold mt-1">
+                        PENDING UPDATE
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

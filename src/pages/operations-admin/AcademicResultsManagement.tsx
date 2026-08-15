@@ -111,45 +111,30 @@ const AcademicResultsManagement = () => {
     setFilteredStudents(result);
   }, [searchTerm, classFilter, sectionFilter, students]);
 
-  // Fallback default grades
+  // Fallback default grades with 3 Terms (Term-1, Term-2, Final) initialized to 0 marks until Admin updates
+  const createDefaultZeroTerm = (termName: string) => ({
+    termName,
+    overallGpa: "0.0 / 10",
+    grade: "F",
+    totalMarks: "0 / 500",
+    status: "PENDING",
+    subjects: [
+      { name: "Mathematics", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+      { name: "Science & Tech", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+      { name: "English Literature", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+      { name: "Social Science", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+      { name: "Computer Applications", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" }
+    ]
+  });
+
   const getOrInitializeStudentResults = (studentId: string) => {
     const studentResults = resultsData[studentId];
-    if (studentResults) return studentResults;
-
-    // Default mock template
-    const defaultT1 = {
-      termName: "Term-1 Examinations (Mid-Term)",
-      overallGpa: "9.0 / 10",
-      grade: "A+",
-      totalMarks: "450 / 500",
-      status: "PASSED",
-      subjects: [
-        { name: "Mathematics", marks: 92, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-        { name: "Science & Tech", marks: 88, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-        { name: "English Literature", marks: 90, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-        { name: "Social Science", marks: 87, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-        { name: "Computer Applications", marks: 93, maxMarks: 100, grade: "A+", remarks: "Excellent" }
-      ]
-    };
-
-    const defaultT2 = {
-      termName: "Term-2 Examinations (Final Exam)",
-      overallGpa: "9.2 / 10",
-      grade: "A+",
-      totalMarks: "461 / 500",
-      status: "PASSED",
-      subjects: [
-        { name: "Mathematics", marks: 95, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-        { name: "Science & Tech", marks: 90, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-        { name: "English Literature", marks: 91, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-        { name: "Social Science", marks: 89, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-        { name: "Computer Applications", marks: 96, maxMarks: 100, grade: "O", remarks: "Outstanding" }
-      ]
-    };
+    if (studentResults && Object.keys(studentResults).length > 0) return studentResults;
 
     return {
-      'Term-1': defaultT1,
-      'Term-2': defaultT2
+      'Term-1': createDefaultZeroTerm("First Term Examinations"),
+      'Term-2': createDefaultZeroTerm("Second Term Examinations"),
+      'Final': createDefaultZeroTerm("Final Term Examinations")
     };
   };
 
@@ -161,7 +146,7 @@ const AcademicResultsManagement = () => {
     if (termResults && termResults.subjects) {
       const getMark = (subjName: string) => {
         const found = termResults.subjects.find((s: any) => s.name === subjName);
-        return found ? found.marks : 90;
+        return found ? Number(found.marks) || 0 : 0;
       };
       setMathMarks(getMark("Mathematics"));
       setScienceMarks(getMark("Science & Tech"));
@@ -169,11 +154,11 @@ const AcademicResultsManagement = () => {
       setSocialMarks(getMark("Social Science"));
       setComputerMarks(getMark("Computer Applications"));
     } else {
-      setMathMarks(90);
-      setScienceMarks(90);
-      setEnglishMarks(90);
-      setSocialMarks(90);
-      setComputerMarks(90);
+      setMathMarks(0);
+      setScienceMarks(0);
+      setEnglishMarks(0);
+      setSocialMarks(0);
+      setComputerMarks(0);
     }
     setShowModal(true);
   };
@@ -187,7 +172,7 @@ const AcademicResultsManagement = () => {
     if (termResults && termResults.subjects) {
       const getMark = (subjName: string) => {
         const found = termResults.subjects.find((s: any) => s.name === subjName);
-        return found ? found.marks : 90;
+        return found ? Number(found.marks) || 0 : 0;
       };
       setMathMarks(getMark("Mathematics"));
       setScienceMarks(getMark("Science & Tech"));
@@ -195,15 +180,16 @@ const AcademicResultsManagement = () => {
       setSocialMarks(getMark("Social Science"));
       setComputerMarks(getMark("Computer Applications"));
     } else {
-      setMathMarks(90);
-      setScienceMarks(90);
-      setEnglishMarks(90);
-      setSocialMarks(90);
-      setComputerMarks(90);
+      setMathMarks(0);
+      setScienceMarks(0);
+      setEnglishMarks(0);
+      setSocialMarks(0);
+      setComputerMarks(0);
     }
   }, [selectedTerm, selectedStudent]);
 
   const getGradeFromMarks = (m: number) => {
+    if (m === 0) return { grade: "F", remarks: "Pending Update" };
     if (m >= 95) return { grade: "O", remarks: "Outstanding" };
     if (m >= 85) return { grade: "A+", remarks: "Excellent" };
     if (m >= 75) return { grade: "A", remarks: "Very Good" };
@@ -223,12 +209,16 @@ const AcademicResultsManagement = () => {
     const gpa = (avgScore / 10).toFixed(1);
     const overallGrade = getGradeFromMarks(avgScore).grade;
 
+    let termTitle = "First Term Examinations";
+    if (selectedTerm === 'Term-2') termTitle = "Second Term Examinations";
+    if (selectedTerm === 'Final') termTitle = "Final Term Examinations";
+
     const termResults = {
-      termName: selectedTerm === 'Term-1' ? "Term-1 Examinations (Mid-Term)" : "Term-2 Examinations (Final Exam)",
+      termName: termTitle,
       overallGpa: `${gpa} / 10`,
       grade: overallGrade,
       totalMarks: `${totalScore} / 500`,
-      status: avgScore >= 40 ? "PASSED" : "FAILED",
+      status: avgScore >= 40 ? "PASSED" : (totalScore === 0 ? "PENDING" : "FAILED"),
       subjects: [
         { name: "Mathematics", marks: mathMarks, maxMarks: 100, ...getGradeFromMarks(mathMarks) },
         { name: "Science & Tech", marks: scienceMarks, maxMarks: 100, ...getGradeFromMarks(scienceMarks) },
@@ -255,7 +245,7 @@ const AcademicResultsManagement = () => {
       };
 
       setResultsData(updatedResults);
-      alert(`Exam grades saved successfully for ${selectedStudent.name}!`);
+      alert(`Exam grades saved & published successfully for ${selectedStudent.name} (${selectedTerm})!`);
       setShowModal(false);
     } catch (err: any) {
       console.error("Error saving grades:", err);
@@ -280,7 +270,7 @@ const AcademicResultsManagement = () => {
         <Navbar />
         
         {/* Main Wrapper */}
-        <div className="dashboard-container" style={{ padding: '28px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="dashboard-container" style={{ padding: '12px 28px 28px', maxWidth: '1400px', margin: '0 auto' }}>
           <AcademicTabs />
           
           {/* Custom Vibrant Header */}
@@ -524,7 +514,7 @@ const AcademicResultsManagement = () => {
                     transition: 'all 0.2s'
                   }}
                 >
-                  📝 Term-1 (Mid-Term)
+                  📝 First Term
                 </button>
                 <button
                   type="button"
@@ -541,7 +531,24 @@ const AcademicResultsManagement = () => {
                     transition: 'all 0.2s'
                   }}
                 >
-                  🏅 Term-2 (Final Exam)
+                  📘 Second Term
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTerm('Final')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    fontWeight: '800',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    backgroundColor: selectedTerm === 'Final' ? '#4f46e5' : 'transparent',
+                    color: selectedTerm === 'Final' ? '#ffffff' : 'var(--text-muted)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🏅 Final Term
                 </button>
               </div>
             </div>
@@ -688,45 +695,65 @@ const AcademicResultsManagement = () => {
               {/* Term Tab Selector */}
               <div style={{ 
                 display: 'flex', 
-                gap: '10px', 
+                gap: '8px', 
                 backgroundColor: 'rgba(0,0,0,0.02)', 
                 padding: '6px', 
                 borderRadius: '12px', 
                 marginBottom: '24px' 
               }}>
                 <button 
+                  type="button"
                   onClick={() => setSelectedTerm('Term-1')}
                   style={{
                     flex: 1,
-                    padding: '10px 14px',
+                    padding: '10px 10px',
                     borderRadius: '8px',
                     border: 'none',
                     fontWeight: 'bold',
-                    fontSize: '13px',
+                    fontSize: '12px',
                     cursor: 'pointer',
                     backgroundColor: selectedTerm === 'Term-1' ? '#4f46e5' : 'transparent',
                     color: selectedTerm === 'Term-1' ? '#fff' : 'var(--text-muted)',
                     transition: 'all 0.2s'
                   }}
                 >
-                  Mid-Term (Term-1)
+                  First Term
                 </button>
                 <button 
+                  type="button"
                   onClick={() => setSelectedTerm('Term-2')}
                   style={{
                     flex: 1,
-                    padding: '10px 14px',
+                    padding: '10px 10px',
                     borderRadius: '8px',
                     border: 'none',
                     fontWeight: 'bold',
-                    fontSize: '13px',
+                    fontSize: '12px',
                     cursor: 'pointer',
                     backgroundColor: selectedTerm === 'Term-2' ? '#4f46e5' : 'transparent',
                     color: selectedTerm === 'Term-2' ? '#fff' : 'var(--text-muted)',
                     transition: 'all 0.2s'
                   }}
                 >
-                  Final Exam (Term-2)
+                  Second Term
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setSelectedTerm('Final')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    backgroundColor: selectedTerm === 'Final' ? '#4f46e5' : 'transparent',
+                    color: selectedTerm === 'Final' ? '#fff' : 'var(--text-muted)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Final Term
                 </button>
               </div>
 

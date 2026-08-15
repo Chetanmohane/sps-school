@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
 import API from '../../api/axios';
-import { FiPlus, FiTrash2, FiSave, FiLoader, FiClock, FiEdit3, FiCheck, FiCalendar } from 'react-icons/fi';
+import { 
+  FiPlus, FiTrash2, FiSave, FiLoader, FiClock, FiEdit3, FiCheck, FiCalendar,
+  FiDownload, FiPrinter, FiFileText, FiEye, FiX, FiGrid
+} from 'react-icons/fi';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const SUBJECTS: string[] = [];
@@ -29,6 +32,31 @@ const ManageTimetable = () => {
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
+  const [showMasterModal, setShowMasterModal] = useState(false);
+
+  const handleExportCSV = () => {
+    if (!savedSchedules || savedSchedules.length === 0) {
+      alert("No saved timetables available for this class to export.");
+      return;
+    }
+    let csv = "Class,Section,Day,Period Number,Start Time,End Time,Subject,Assigned Teacher,Room Location\n";
+    DAYS.forEach(day => {
+      const daySched = savedSchedules.find(s => s.dayOfWeek === day);
+      if (daySched) {
+        (daySched.periods || []).forEach(p => {
+          csv += `"Class ${daySched.className}","Section ${daySched.section}","${day}","${p.period}","${p.startTime}","${p.endTime}","${p.subject || ''}","${p.teacher || ''}","${p.room || ''}"\n`;
+        });
+      }
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Class_${selectedClass}_${selectedSection}_Weekly_Master_Timetable.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Dynamic Catalog Subjects & Teachers state
   const [catalogSubjects, setCatalogSubjects] = useState<any[]>([]);
@@ -55,10 +83,17 @@ const ManageTimetable = () => {
         const subList = subjRes.data.data || subjRes.data || [];
         if (Array.isArray(subList)) setCatalogSubjects(subList);
       }
+      let teachList: any[] = [];
       if (teacherRes?.data?.data || teacherRes?.data) {
-        const teachList = teacherRes.data.data || teacherRes.data || [];
-        if (Array.isArray(teachList)) setCatalogTeachers(teachList);
+        teachList = teacherRes.data.data || teacherRes.data || [];
       }
+      if (!Array.isArray(teachList) || teachList.length === 0) {
+        const altTeacherRes = await API.get('/api/super-admin/role/teacher').catch(() => null);
+        if (altTeacherRes?.data?.data || altTeacherRes?.data) {
+          teachList = altTeacherRes.data.data || altTeacherRes.data || [];
+        }
+      }
+      if (Array.isArray(teachList)) setCatalogTeachers(teachList);
     } catch (err) {
       console.error('Error fetching catalog data:', err);
     }
@@ -67,6 +102,17 @@ const ManageTimetable = () => {
   useEffect(() => {
     fetchCatalogData();
   }, []);
+
+  // Compute available registered teachers list
+  const availableTeachers = React.useMemo(() => {
+    if (!catalogTeachers || catalogTeachers.length === 0) return [];
+    const teacherNames = catalogTeachers.map((t: any) => {
+      if (typeof t === 'string') return t.trim();
+      const name = t.user?.name || t.name || t.fullName || t.user?.email || t.email || '';
+      return name.trim();
+    }).filter(Boolean);
+    return Array.from(new Set(teacherNames));
+  }, [catalogTeachers]);
 
   // Compute available subjects STRICTLY from Academic Subjects Catalog (no extra hardcoded subjects)
   const availableCatalogSubjects = React.useMemo(() => {
@@ -235,14 +281,61 @@ const ManageTimetable = () => {
         <div className="dashboard-container" style={{ margin: '20px' }}>
 
           {/* Page Header */}
-          <div style={{ marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '22px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-              <FiCalendar style={{ color: '#6366f1' }} />
-              Daily Timetable Management
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
-              Create weekly class schedules. Students will automatically see today's timetable.
-            </p>
+          <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div>
+              <h2 style={{ fontSize: '22px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                <FiCalendar style={{ color: '#6366f1' }} />
+                Daily Timetable Management
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginTop: '4px' }}>
+                Create weekly class schedules. Super Admin, Manager Admin, and Teacher Admin can view and download all days' timetables.
+              </p>
+            </div>
+
+            {selectedClass && (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowMasterModal(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: '12px',
+                    backgroundColor: '#6366f1',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(99, 102, 241, 0.3)'
+                  }}
+                >
+                  <FiEye size={16} /> 👁️ View & Download All Days Timetable
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportCSV}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 18px',
+                    borderRadius: '12px',
+                    backgroundColor: '#10b981',
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '13px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+                  }}
+                >
+                  <FiDownload size={16} /> 📊 Export CSV
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Top Selectors */}
@@ -377,19 +470,19 @@ const ManageTimetable = () => {
 
                           <div>
                             <label style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '3px' }}>Teacher</label>
-                            <input
+                            <select
                               value={period.teacher}
                               onChange={e => handlePeriodChange(idx, 'teacher', e.target.value)}
-                              placeholder="Teacher Name"
-                              list="timetable-teachers-list"
                               style={{ width: '100%', padding: '6px 8px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', fontSize: '13px' }}
-                            />
-                            <datalist id="timetable-teachers-list">
-                              {catalogTeachers.map((t: any, ti: number) => {
-                                const tName = t.user?.name || t.name || 'Teacher';
-                                return <option key={t._id || ti} value={tName} />;
-                              })}
-                            </datalist>
+                            >
+                              <option value="">Select Teacher</option>
+                              {period.teacher && !availableTeachers.includes(period.teacher) && (
+                                <option value={period.teacher}>{period.teacher}</option>
+                              )}
+                              {availableTeachers.map((tName: string) => (
+                                <option key={tName} value={tName}>{tName}</option>
+                              ))}
+                            </select>
                           </div>
 
                           <div>
@@ -552,6 +645,126 @@ const ManageTimetable = () => {
               <button onClick={() => setScheduleToDelete(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'transparent', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
               <button onClick={confirmDeleteSchedule} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', backgroundColor: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}>Delete</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Master Weekly Timetable View & Download Modal */}
+      {showMasterModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-5xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-[var(--border-color)] relative max-h-[92vh] overflow-y-auto my-auto">
+            
+            {/* Header Toolbar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border-color)]">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 font-bold text-xs">
+                    🏫 VASANT VALLEY HIGHER SECONDARY SCHOOL
+                  </span>
+                </div>
+                <h3 className="text-xl font-black text-[var(--text-main)] mt-1">
+                  Master Weekly Timetable — Class {selectedClass} Section {selectedSection}
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                  Complete 6-day period schedule configured by Super Admin & Manager Admin.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+                >
+                  <FiPrinter size={14} /> Print / Save PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportCSV}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer"
+                >
+                  <FiDownload size={14} /> Export CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMasterModal(false)}
+                  className="p-2 bg-[var(--input-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] rounded-xl border border-[var(--border-color)] transition-all cursor-pointer"
+                  title="Close"
+                >
+                  <FiX size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Master Timetable Days Schedule Grid */}
+            <div className="py-6 space-y-6">
+              {DAYS.map((day) => {
+                const daySched = savedSchedules.find(s => s.dayOfWeek === day);
+                return (
+                  <div key={day} className="bg-[var(--input-bg)] rounded-2xl p-5 border border-[var(--border-color)]">
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="font-black text-base text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                        📅 {day} Schedule
+                      </h4>
+                      <span className="text-xs font-bold text-[var(--text-muted)]">
+                        {daySched ? `${(daySched.periods || []).length} Periods` : 'No timetable set'}
+                      </span>
+                    </div>
+
+                    {daySched && daySched.periods && daySched.periods.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-[var(--card-bg)] text-[var(--text-muted)] font-bold uppercase tracking-wider border-b border-[var(--border-color)]">
+                              <th className="px-4 py-2.5">Period</th>
+                              <th className="px-4 py-2.5">Timing</th>
+                              <th className="px-4 py-2.5">Subject</th>
+                              <th className="px-4 py-2.5">Assigned Teacher</th>
+                              <th className="px-4 py-2.5">Room</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[var(--border-color)] font-medium">
+                            {daySched.periods.map((p: any, idx: number) => (
+                              <tr key={idx} className={p.isBreak ? 'bg-amber-500/10 text-amber-700' : ''}>
+                                <td className="px-4 py-2.5 font-bold">
+                                  {p.isBreak ? '☕ Break' : `P${p.period}`}
+                                </td>
+                                <td className="px-4 py-2.5 font-mono font-bold">
+                                  {p.startTime} – {p.endTime}
+                                </td>
+                                <td className="px-4 py-2.5 font-bold">
+                                  {p.subject || (p.isBreak ? 'Recess Break' : '—')}
+                                </td>
+                                <td className="px-4 py-2.5">
+                                  {p.teacher ? `🧑‍🏫 ${p.teacher}` : '—'}
+                                </td>
+                                <td className="px-4 py-2.5">
+                                  {p.room || '—'}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[var(--text-muted)] italic">No period timetable set for {day}.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-4 border-t border-[var(--border-color)] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowMasterModal(false)}
+                className="px-6 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl font-bold text-xs hover:bg-[var(--hover-bg)] transition-all cursor-pointer"
+              >
+                Close View
+              </button>
+            </div>
+
           </div>
         </div>
       )}

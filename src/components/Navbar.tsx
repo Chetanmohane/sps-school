@@ -100,7 +100,10 @@ const Navbar = () => {
       padding: '0 16px',
       width: '100%',
       maxWidth: '100vw',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      position: 'sticky',
+      top: 0,
+      zIndex: 50
     }}>
       {/* Welcome & Date Section */}
       <div className="nav-left-section" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

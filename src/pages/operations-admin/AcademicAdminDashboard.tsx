@@ -134,7 +134,7 @@ const AcademicAdminDashboard = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container" style={{ padding: '20px', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden', background: 'linear-gradient(135deg, var(--bg-color) 0%, rgba(30, 58, 138, 0.03) 100%)' }}>
+        <div className="dashboard-container" style={{ padding: '12px 20px 20px', maxWidth: '100%', boxSizing: 'border-box', background: 'linear-gradient(135deg, var(--bg-color) 0%, rgba(30, 58, 138, 0.03) 100%)' }}>
           <AcademicTabs />
 
           {activeTab === 'admissions' && <Admissions />}

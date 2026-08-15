@@ -30,30 +30,59 @@ const FinanceAdminDashboard = () => {
   const [startDateFilter, setStartDateFilter] = useState('');
   const [endDateFilter, setEndDateFilter] = useState('');
 
+  // Fee Structures Catalog State
+  const [feeStructures, setFeeStructures] = useState<any[]>([]);
+  const [showStructureModal, setShowStructureModal] = useState(false);
+  const [editingStructureId, setEditingStructureId] = useState<string | null>(null);
+  const [structureFormData, setStructureFormData] = useState({
+    className: '',
+    tuitionFee: '',
+    admissionFee: '',
+    examFee: '',
+    activityFee: '',
+    totalAnnualFee: '',
+    remarks: ''
+  });
+  const [inlineEditingId, setInlineEditingId] = useState<string | null>(null);
+  const [inlineFormData, setInlineFormData] = useState<any>({});
+
   // Fetch initial data & subscribe to live socket updates
   useEffect(() => {
     fetchData();
-    const unsubscribe = onEvent('FEE_CHANGED', () => {
+    const unsubscribe1 = onEvent('FEE_CHANGED', () => {
       fetchData();
-      if (window.showToast) {
-        window.showToast("⚡ Real-time Update: Student fee statement updated!", "success");
+      if ((window as any).showToast) {
+        (window as any).showToast("⚡ Real-time Update: Student fee statement updated!", "success");
       }
     });
-    return () => unsubscribe();
+    const unsubscribe2 = onEvent('FEE_STRUCTURE_CHANGED', () => {
+      fetchData();
+      if ((window as any).showToast) {
+        (window as any).showToast("⚡ Real-time Update: Class Fee Structure catalog updated!", "success");
+      }
+    });
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
   }, [onEvent]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       
-      // Fetch all students and fees from DB in parallel with allSettled
-      const [studentsRes, feesRes] = await Promise.allSettled([
+      // Fetch all students, fees, and fee structures from DB in parallel with allSettled
+      const [studentsRes, feesRes, structuresRes] = await Promise.allSettled([
         API.get('/api/admin/student-admin/students'),
-        API.get('/api/finance/all')
+        API.get('/api/finance/all'),
+        API.get('/api/finance/fee-structure')
       ]);
 
       const dbStudents = studentsRes.status === 'fulfilled' ? (studentsRes.value.data?.data || []) : [];
       const dbFees = feesRes.status === 'fulfilled' ? (feesRes.value.data || []) : [];
+      const dbStructures = structuresRes.status === 'fulfilled' ? (structuresRes.value.data?.data || []) : [];
+      
+      setFeeStructures(dbStructures);
 
       // Map DB students to expected frontend format
       const mappedStudents = dbStudents.map((s: any) => ({
@@ -191,6 +220,78 @@ const FinanceAdminDashboard = () => {
       await fetchData();
     } catch (err: any) {
       alert("Error saving fee: " + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveFeeStructure = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const adminUserName = localStorage.getItem("userName") || "Admin";
+      const adminUserRole = localStorage.getItem("role") || "admin";
+      const formattedAdmin = `${adminUserName} (${adminUserRole.replace('-', ' ').toUpperCase()})`;
+
+      await API.post('/api/finance/fee-structure', {
+        ...structureFormData,
+        updatedBy: formattedAdmin
+      });
+
+      alert(`✅ Fee Structure for ${structureFormData.className} updated successfully by ${formattedAdmin}!`);
+      setShowStructureModal(false);
+      setEditingStructureId(null);
+      setStructureFormData({ className: '', tuitionFee: '', admissionFee: '', examFee: '', activityFee: '', totalAnnualFee: '', remarks: '' });
+      await fetchData();
+    } catch (err: any) {
+      alert("Error saving fee structure: " + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteFeeStructure = async (id: string, clsName: string) => {
+    if (!window.confirm(`Are you sure you want to delete fee structure for ${clsName}?`)) return;
+    try {
+      setLoading(true);
+      await API.delete(`/api/finance/fee-structure/${id}`);
+      await fetchData();
+      if ((window as any).showToast) (window as any).showToast(`Fee structure for ${clsName} deleted!`, "success");
+    } catch (err: any) {
+      alert("Failed to delete fee structure");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInlineSave = async (row: any) => {
+    try {
+      setLoading(true);
+      const adminUserName = localStorage.getItem("userName") || "Admin";
+      const adminUserRole = localStorage.getItem("role") || "admin";
+      const formattedAdmin = `${adminUserName} (${adminUserRole.replace('-', ' ').toUpperCase()})`;
+
+      const payload = {
+        className: row.className,
+        tuitionFee: Number(inlineFormData.tuitionFee !== undefined ? inlineFormData.tuitionFee : row.tuitionFee || 0),
+        admissionFee: Number(inlineFormData.admissionFee !== undefined ? inlineFormData.admissionFee : row.admissionFee || 0),
+        examFee: Number(inlineFormData.examFee !== undefined ? inlineFormData.examFee : row.examFee || 0),
+        activityFee: Number(inlineFormData.activityFee !== undefined ? inlineFormData.activityFee : row.activityFee || 0),
+        totalAnnualFee: Number(inlineFormData.totalAnnualFee !== undefined ? inlineFormData.totalAnnualFee : row.totalAnnualFee || 0),
+        remarks: inlineFormData.remarks !== undefined ? inlineFormData.remarks : (row.remarks || ''),
+        updatedBy: formattedAdmin
+      };
+
+      await API.post('/api/finance/fee-structure', payload);
+
+      if ((window as any).showToast) {
+        (window as any).showToast(`✅ ${row.className} fee structure updated!`, "success");
+      }
+      setInlineEditingId(null);
+      setInlineFormData({});
+      await fetchData();
+    } catch (err: any) {
+      alert("Error updating fee structure: " + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -776,48 +877,225 @@ const FinanceAdminDashboard = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#10b981' }}>📑 Class-Wise Fee Structure Catalog (Academic Session 2026)</h3>
-                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Official tuition, admission, examination, and laboratory fee schedules for all grades.</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Official tuition, admission, examination, activity fee schedules & audit remarks per class grade.</p>
                 </div>
+                <button
+                  onClick={() => {
+                    setEditingStructureId(null);
+                    setStructureFormData({ className: '', tuitionFee: '', admissionFee: '', examFee: '', activityFee: '', totalAnnualFee: '', remarks: '' });
+                    setShowStructureModal(true);
+                  }}
+                  style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(16,185,129,0.3)' }}
+                >
+                  ➕ Set / Edit Class Fee Structure
+                </button>
               </div>
 
               <div className="table-container">
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Grade Level</th>
+                      <th>Grade Level / Class</th>
                       <th>Tuition Fee (Quarterly)</th>
                       <th>Admission Fee (One-Time)</th>
                       <th>Exam & Lab Fee</th>
-                      <th>Sports & Activity Fee</th>
+                      <th>Activity Fee</th>
                       <th>Total Annual Fee</th>
-                      <th>Status</th>
+                      <th>Last Modified By</th>
+                      <th>Remark / Notes</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[
-                      { grade: 'Class 12th (Science/Commerce)', tuition: '₹18,500', admission: '₹5,000', exam: '₹2,500', activity: '₹1,500', total: '₹83,000', status: 'Active' },
-                      { grade: 'Class 11th (Science/Commerce)', tuition: '₹17,500', admission: '₹5,000', exam: '₹2,500', activity: '₹1,500', total: '₹79,000', status: 'Active' },
-                      { grade: 'Class 10th (Secondary)', tuition: '₹15,000', admission: '₹4,000', exam: '₹2,000', activity: '₹1,200', total: '₹67,200', status: 'Active' },
-                      { grade: 'Class 9th (Secondary)', tuition: '₹14,500', admission: '₹4,000', exam: '₹2,000', activity: '₹1,200', total: '₹65,200', status: 'Active' },
-                      { grade: 'Class 8th (Middle)', tuition: '₹12,500', admission: '₹3,500', exam: '₹1,800', activity: '₹1,000', total: '₹56,300', status: 'Active' },
-                      { grade: 'Class 7th (Middle)', tuition: '₹12,000', admission: '₹3,500', exam: '₹1,800', activity: '₹1,000', total: '₹54,300', status: 'Active' },
-                      { grade: 'Class 6th (Middle)', tuition: '₹11,500', admission: '₹3,500', exam: '₹1,800', activity: '₹1,000', total: '₹52,300', status: 'Active' },
-                      { grade: 'Class 1st to 5th (Primary)', tuition: '₹9,500', admission: '₹3,000', exam: '₹1,500', activity: '₹800', total: '₹43,300', status: 'Active' },
-                    ].map((row, idx) => (
-                      <tr key={idx}>
-                        <td><strong style={{ color: 'var(--text-main)' }}>{row.grade}</strong></td>
-                        <td>{row.tuition}</td>
-                        <td>{row.admission}</td>
-                        <td>{row.exam}</td>
-                        <td>{row.activity}</td>
-                        <td><strong style={{ color: '#10b981' }}>{row.total}</strong></td>
-                        <td>
-                          <span style={{ padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', backgroundColor: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
-                            {row.status}
-                          </span>
-                        </td>
+                    {feeStructures.length > 0 ? (
+                      feeStructures.map((row: any) => {
+                        const isEditingThisRow = inlineEditingId === (row._id || row.className);
+                        return (
+                          <tr key={row._id || row.className} style={{ backgroundColor: isEditingThisRow ? 'rgba(16,185,129,0.06)' : undefined }}>
+                            <td><strong style={{ color: 'var(--text-main)', fontSize: '14px' }}>{row.className}</strong></td>
+
+                            {/* Tuition Fee */}
+                            <td>
+                              {isEditingThisRow ? (
+                                <input
+                                  type="number"
+                                  value={inlineFormData.tuitionFee !== undefined ? inlineFormData.tuitionFee : row.tuitionFee || 0}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const t = Number(val || 0);
+                                    const a = Number(inlineFormData.admissionFee !== undefined ? inlineFormData.admissionFee : row.admissionFee || 0);
+                                    const ex = Number(inlineFormData.examFee !== undefined ? inlineFormData.examFee : row.examFee || 0);
+                                    const ac = Number(inlineFormData.activityFee !== undefined ? inlineFormData.activityFee : row.activityFee || 0);
+                                    const calcTotal = (t * 4) + a + ex + ac;
+                                    setInlineFormData({ ...inlineFormData, tuitionFee: val, totalAnnualFee: calcTotal });
+                                  }}
+                                  style={{ width: '90px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #10b981', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: 'bold' }}
+                                />
+                              ) : (
+                                `₹${(row.tuitionFee || 0).toLocaleString('en-IN')}`
+                              )}
+                            </td>
+
+                            {/* Admission Fee */}
+                            <td>
+                              {isEditingThisRow ? (
+                                <input
+                                  type="number"
+                                  value={inlineFormData.admissionFee !== undefined ? inlineFormData.admissionFee : row.admissionFee || 0}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const t = Number(inlineFormData.tuitionFee !== undefined ? inlineFormData.tuitionFee : row.tuitionFee || 0);
+                                    const a = Number(val || 0);
+                                    const ex = Number(inlineFormData.examFee !== undefined ? inlineFormData.examFee : row.examFee || 0);
+                                    const ac = Number(inlineFormData.activityFee !== undefined ? inlineFormData.activityFee : row.activityFee || 0);
+                                    const calcTotal = (t * 4) + a + ex + ac;
+                                    setInlineFormData({ ...inlineFormData, admissionFee: val, totalAnnualFee: calcTotal });
+                                  }}
+                                  style={{ width: '90px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #10b981', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: 'bold' }}
+                                />
+                              ) : (
+                                `₹${(row.admissionFee || 0).toLocaleString('en-IN')}`
+                              )}
+                            </td>
+
+                            {/* Exam & Lab Fee */}
+                            <td>
+                              {isEditingThisRow ? (
+                                <input
+                                  type="number"
+                                  value={inlineFormData.examFee !== undefined ? inlineFormData.examFee : row.examFee || 0}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const t = Number(inlineFormData.tuitionFee !== undefined ? inlineFormData.tuitionFee : row.tuitionFee || 0);
+                                    const a = Number(inlineFormData.admissionFee !== undefined ? inlineFormData.admissionFee : row.admissionFee || 0);
+                                    const ex = Number(val || 0);
+                                    const ac = Number(inlineFormData.activityFee !== undefined ? inlineFormData.activityFee : row.activityFee || 0);
+                                    const calcTotal = (t * 4) + a + ex + ac;
+                                    setInlineFormData({ ...inlineFormData, examFee: val, totalAnnualFee: calcTotal });
+                                  }}
+                                  style={{ width: '90px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #10b981', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: 'bold' }}
+                                />
+                              ) : (
+                                `₹${(row.examFee || 0).toLocaleString('en-IN')}`
+                              )}
+                            </td>
+
+                            {/* Activity Fee */}
+                            <td>
+                              {isEditingThisRow ? (
+                                <input
+                                  type="number"
+                                  value={inlineFormData.activityFee !== undefined ? inlineFormData.activityFee : row.activityFee || 0}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    const t = Number(inlineFormData.tuitionFee !== undefined ? inlineFormData.tuitionFee : row.tuitionFee || 0);
+                                    const a = Number(inlineFormData.admissionFee !== undefined ? inlineFormData.admissionFee : row.admissionFee || 0);
+                                    const ex = Number(inlineFormData.examFee !== undefined ? inlineFormData.examFee : row.examFee || 0);
+                                    const ac = Number(val || 0);
+                                    const calcTotal = (t * 4) + a + ex + ac;
+                                    setInlineFormData({ ...inlineFormData, activityFee: val, totalAnnualFee: calcTotal });
+                                  }}
+                                  style={{ width: '90px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #10b981', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: 'bold' }}
+                                />
+                              ) : (
+                                `₹${(row.activityFee || 0).toLocaleString('en-IN')}`
+                              )}
+                            </td>
+
+                            {/* Total Annual Fee */}
+                            <td>
+                              {isEditingThisRow ? (
+                                <input
+                                  type="number"
+                                  value={inlineFormData.totalAnnualFee !== undefined ? inlineFormData.totalAnnualFee : row.totalAnnualFee || 0}
+                                  onChange={(e) => setInlineFormData({ ...inlineFormData, totalAnnualFee: e.target.value })}
+                                  style={{ width: '110px', padding: '4px 8px', borderRadius: '6px', border: '2px solid #10b981', backgroundColor: 'var(--input-bg)', color: '#10b981', fontSize: '14px', fontWeight: '900' }}
+                                />
+                              ) : (
+                                <strong style={{ color: '#10b981', fontSize: '14px' }}>₹{(row.totalAnnualFee || 0).toLocaleString('en-IN')}</strong>
+                              )}
+                            </td>
+
+                            {/* Last Modified By */}
+                            <td>
+                              <span style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-main)', backgroundColor: 'var(--panel-bg)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                👔 {row.updatedBy || 'Super Admin'}
+                              </span>
+                            </td>
+
+                            {/* Remark / Notes */}
+                            <td>
+                              {isEditingThisRow ? (
+                                <input
+                                  type="text"
+                                  placeholder="Enter remark e.g. 'Lab fee updated'"
+                                  value={inlineFormData.remarks !== undefined ? inlineFormData.remarks : row.remarks || ''}
+                                  onChange={(e) => setInlineFormData({ ...inlineFormData, remarks: e.target.value })}
+                                  style={{ width: '160px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #10b981', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '12px' }}
+                                />
+                              ) : (
+                                <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: row.remarks ? 'normal' : 'italic' }}>
+                                  📝 {row.remarks || 'No remarks'}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Actions */}
+                            <td>
+                              {isEditingThisRow ? (
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button
+                                    onClick={() => handleInlineSave(row)}
+                                    style={{ padding: '5px 12px', borderRadius: '6px', backgroundColor: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 800 }}
+                                    title="Save Amount & Remark"
+                                  >
+                                    💾 Save
+                                  </button>
+                                  <button
+                                    onClick={() => { setInlineEditingId(null); setInlineFormData({}); }}
+                                    style={{ padding: '5px 10px', borderRadius: '6px', backgroundColor: 'var(--panel-bg)', border: '1px solid var(--border-color)', color: 'var(--text-main)', cursor: 'pointer', fontSize: '12px' }}
+                                    title="Cancel Editing"
+                                  >
+                                    ❌ Cancel
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button
+                                    onClick={() => {
+                                      setInlineEditingId(row._id || row.className);
+                                      setInlineFormData({
+                                        tuitionFee: row.tuitionFee || 0,
+                                        admissionFee: row.admissionFee || 0,
+                                        examFee: row.examFee || 0,
+                                        activityFee: row.activityFee || 0,
+                                        totalAnnualFee: row.totalAnnualFee || 0,
+                                        remarks: row.remarks || ''
+                                      });
+                                    }}
+                                    style={{ padding: '5px 10px', borderRadius: '6px', backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)', color: '#10b981', cursor: 'pointer', fontSize: '12px', fontWeight: 800 }}
+                                    title="Quick Edit Row Amounts"
+                                  >
+                                    ✏️ Edit
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteFeeStructure(row._id, row.className)}
+                                    style={{ padding: '5px 10px', borderRadius: '6px', backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}
+                                    title="Delete Class Fee Structure"
+                                  >
+                                    🗑️ Delete
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={9} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>No fee structure records configured yet.</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1043,6 +1321,174 @@ const FinanceAdminDashboard = () => {
                   Delete Record
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+        {/* Set / Edit Class Fee Structure Modal */}
+        {showStructureModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="rounded-2xl w-full max-w-lg p-8 shadow-2xl animate-in fade-in zoom-in duration-200" style={{ backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)' }}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold" style={{ color: '#10b981' }}>
+                  📑 {editingStructureId ? "Edit Class Fee Structure" : "Set Class-Wise Fee Structure"}
+                </h2>
+                <button onClick={() => setShowStructureModal(false)} style={{ color: 'var(--text-muted)' }} className="hover:opacity-75">
+                  <FiX size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveFeeStructure} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase mb-1" style={{ color: 'var(--text-main)' }}>Class / Grade Level</label>
+                  <select
+                    required
+                    className="w-full p-2.5 border rounded-lg outline-none font-bold"
+                    style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', borderColor: 'var(--border-color)' }}
+                    value={structureFormData.className}
+                    onChange={(e) => {
+                      const selCls = e.target.value;
+                      const matched = feeStructures.find(s => s.className === selCls);
+                      if (matched) {
+                        setStructureFormData({
+                          className: selCls,
+                          tuitionFee: (matched.tuitionFee || 0).toString(),
+                          admissionFee: (matched.admissionFee || 0).toString(),
+                          examFee: (matched.examFee || 0).toString(),
+                          activityFee: (matched.activityFee || 0).toString(),
+                          totalAnnualFee: (matched.totalAnnualFee || 0).toString(),
+                          remarks: matched.remarks || ''
+                        });
+                      } else {
+                        setStructureFormData({ ...structureFormData, className: selCls });
+                      }
+                    }}
+                  >
+                    <option value="">Select Class...</option>
+                    {['Class 12th', 'Class 11th', 'Class 10th', 'Class 9th', 'Class 8th', 'Class 7th', 'Class 6th', 'Class 5th', 'Class 4th', 'Class 3rd', 'Class 2nd', 'Class 1st', 'Class 1st to 5th', 'Nursery / KG'].map(cls => (
+                      <option key={cls} value={cls}>{cls}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Tuition Fee (Quarterly ₹)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 15000"
+                      className="w-full px-3 py-2 border rounded-lg outline-none"
+                      style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', borderColor: 'var(--border-color)' }}
+                      value={structureFormData.tuitionFee}
+                      onChange={(e) => {
+                        const t = Number(e.target.value || 0);
+                        const a = Number(structureFormData.admissionFee || 0);
+                        const ex = Number(structureFormData.examFee || 0);
+                        const ac = Number(structureFormData.activityFee || 0);
+                        const calcTotal = (t * 4) + a + ex + ac;
+                        setStructureFormData({ ...structureFormData, tuitionFee: e.target.value, totalAnnualFee: calcTotal.toString() });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Admission Fee (One-Time ₹)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 4000"
+                      className="w-full px-3 py-2 border rounded-lg outline-none"
+                      style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', borderColor: 'var(--border-color)' }}
+                      value={structureFormData.admissionFee}
+                      onChange={(e) => {
+                        const t = Number(structureFormData.tuitionFee || 0);
+                        const a = Number(e.target.value || 0);
+                        const ex = Number(structureFormData.examFee || 0);
+                        const ac = Number(structureFormData.activityFee || 0);
+                        const calcTotal = (t * 4) + a + ex + ac;
+                        setStructureFormData({ ...structureFormData, admissionFee: e.target.value, totalAnnualFee: calcTotal.toString() });
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Exam & Lab Fee (₹)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 2000"
+                      className="w-full px-3 py-2 border rounded-lg outline-none"
+                      style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', borderColor: 'var(--border-color)' }}
+                      value={structureFormData.examFee}
+                      onChange={(e) => {
+                        const t = Number(structureFormData.tuitionFee || 0);
+                        const a = Number(structureFormData.admissionFee || 0);
+                        const ex = Number(e.target.value || 0);
+                        const ac = Number(structureFormData.activityFee || 0);
+                        const calcTotal = (t * 4) + a + ex + ac;
+                        setStructureFormData({ ...structureFormData, examFee: e.target.value, totalAnnualFee: calcTotal.toString() });
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Activity & Sports Fee (₹)</label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1200"
+                      className="w-full px-3 py-2 border rounded-lg outline-none"
+                      style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', borderColor: 'var(--border-color)' }}
+                      value={structureFormData.activityFee}
+                      onChange={(e) => {
+                        const t = Number(structureFormData.tuitionFee || 0);
+                        const a = Number(structureFormData.admissionFee || 0);
+                        const ex = Number(structureFormData.examFee || 0);
+                        const ac = Number(e.target.value || 0);
+                        const calcTotal = (t * 4) + a + ex + ac;
+                        setStructureFormData({ ...structureFormData, activityFee: e.target.value, totalAnnualFee: calcTotal.toString() });
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase mb-1" style={{ color: '#10b981' }}>Total Annual Class Fee (₹)</label>
+                  <input
+                    type="number" required
+                    placeholder="e.g. 67200"
+                    className="w-full px-3 py-2 border rounded-lg outline-none font-extrabold text-emerald-600"
+                    style={{ backgroundColor: 'var(--input-bg)', borderColor: 'var(--border-color)' }}
+                    value={structureFormData.totalAnnualFee}
+                    onChange={(e) => setStructureFormData({ ...structureFormData, totalAnnualFee: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase mb-1" style={{ color: 'var(--text-main)' }}>Remark / Audit Notes (Who did what)</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Enter remark e.g. 'Set for Session 2026-27 with lab fee revision'"
+                    className="w-full p-2.5 border rounded-lg outline-none text-xs"
+                    style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', borderColor: 'var(--border-color)' }}
+                    value={structureFormData.remarks}
+                    onChange={(e) => setStructureFormData({ ...structureFormData, remarks: e.target.value })}
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowStructureModal(false)}
+                    className="flex-1 px-4 py-2 border rounded-lg transition-all"
+                    style={{ color: 'var(--text-main)', borderColor: 'var(--border-color)', backgroundColor: 'var(--panel-bg)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all shadow-md font-bold"
+                  >
+                    Save Fee Structure & Remark
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

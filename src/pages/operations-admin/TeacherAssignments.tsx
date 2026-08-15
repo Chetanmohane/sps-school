@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Navbar from '../../components/Navbar';
 import API from '../../api/axios';
+import AcademicTabs from '../../components/AcademicTabs';
 import {
   FiPlus, FiBookOpen, FiCalendar, FiLoader, FiAlertCircle,
   FiCheckCircle, FiX, FiAward, FiFileText, FiSave,
@@ -130,6 +131,11 @@ const TeacherAssignments = () => {
       <main className="main-content">
         <Navbar />
         <div className="p-8">
+          {(() => {
+            const userRole = localStorage.getItem('role') || '';
+            const isAdminUser = ['super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin'].includes(userRole) || userRole.includes('admin') || userRole.includes('manager');
+            return isAdminUser && <AcademicTabs />;
+          })()}
 
           {/* Header */}
           <div className="flex justify-between items-center mb-8">

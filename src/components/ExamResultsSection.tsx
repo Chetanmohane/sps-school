@@ -25,35 +25,32 @@ interface ExamResultsSectionProps {
   resultsData?: Record<string, any>;
 }
 
+const createZeroTerm = (termName: string): TermResult => ({
+  termName,
+  overallGpa: "0.0 / 10",
+  grade: "F",
+  totalMarks: "0 / 500",
+  status: "PENDING",
+  subjects: [
+    { name: "Mathematics", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+    { name: "Science & Tech", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+    { name: "English Literature", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+    { name: "Social Science", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" },
+    { name: "Computer Applications", marks: 0, maxMarks: 100, grade: "F", remarks: "Pending Update" }
+  ]
+});
+
 const defaultExamTerms: Record<string, TermResult> = {
-  'Term-1': {
-    termName: "Term-1 Examinations (Mid-Term)",
-    overallGpa: "9.2 / 10",
-    grade: "A+",
-    totalMarks: "460 / 500",
-    status: "PASSED",
-    subjects: [
-      { name: "Mathematics", marks: 95, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-      { name: "Science & Tech", marks: 88, maxMarks: 100, grade: "A+", remarks: "Excellent" },
-      { name: "English Literature", marks: 92, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-      { name: "Social Science", marks: 91, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-      { name: "Computer Applications", marks: 94, maxMarks: 100, grade: "O", remarks: "Outstanding" }
-    ]
-  },
-  'Term-2': {
-    termName: "Term-2 Examinations (Final Exam)",
-    overallGpa: "9.4 / 10",
-    grade: "O",
-    totalMarks: "471 / 500",
-    status: "PASSED",
-    subjects: [
-      { name: "Mathematics", marks: 98, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-      { name: "Science & Tech", marks: 91, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-      { name: "English Literature", marks: 94, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-      { name: "Social Science", marks: 93, maxMarks: 100, grade: "O", remarks: "Outstanding" },
-      { name: "Computer Applications", marks: 95, maxMarks: 100, grade: "O", remarks: "Outstanding" }
-    ]
-  }
+  'Term-1': createZeroTerm("First Term Examinations"),
+  'Term-2': createZeroTerm("Second Term Examinations"),
+  'Final': createZeroTerm("Final Term Examinations")
+};
+
+const getTermLabel = (key: string) => {
+  if (key === 'Term-1') return 'First Term';
+  if (key === 'Term-2') return 'Second Term';
+  if (key === 'Final') return 'Final Term';
+  return key;
 };
 
 const ExamResultsSection: React.FC<ExamResultsSectionProps> = ({ student, resultsData }) => {
@@ -64,10 +61,10 @@ const ExamResultsSection: React.FC<ExamResultsSectionProps> = ({ student, result
   const studentResults = (student && student.results) || (studentId && resultsData ? resultsData[studentId] : null);
 
   const activeTerms: Record<string, TermResult> = studentResults && Object.keys(studentResults).length > 0 
-    ? studentResults 
-    : {};
+    ? { ...defaultExamTerms, ...studentResults }
+    : defaultExamTerms;
 
-  const currentTerm: TermResult | null = activeTerms[selectedTermKey] || activeTerms[Object.keys(activeTerms)[0]] || null;
+  const currentTerm: TermResult = activeTerms[selectedTermKey] || activeTerms['Term-1'];
 
   // Download PDF Report Card
   const handleDownloadPDF = () => {
@@ -188,7 +185,7 @@ const ExamResultsSection: React.FC<ExamResultsSectionProps> = ({ student, result
                     : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
                 }`}
               >
-                {termKey}
+                {getTermLabel(termKey)}
               </button>
             ))}
           </div>

@@ -105,13 +105,13 @@ const ClassTeacherDashboard = () => {
   const [subjMarksClass, setSubjMarksClass] = useState<string>('');
   const [subjMarksSection, setSubjMarksSection] = useState<string>('A');
   const [subjMarksSubject, setSubjMarksSubject] = useState<string>('');
-  const [subjMarksExamTerm, setSubjMarksExamTerm] = useState<'Term-1' | 'Term-2'>('Term-1');
+  const [subjMarksExamTerm, setSubjMarksExamTerm] = useState<'Term-1' | 'Term-2' | 'Final'>('Term-1');
   const [subjMarksStudents, setSubjMarksStudents] = useState<any[]>([]);
   const [subjMarksData, setSubjMarksData] = useState<Record<string, { marks: number; maxMarks: number; remarks: string }>>({});
   const [savingSubjMarks, setSavingSubjMarks] = useState(false);
 
   // Exam Results state for Class Teacher's assigned class
-  const [resultsExamTerm, setResultsExamTerm] = useState<'Term-1' | 'Term-2'>('Term-1');
+  const [resultsExamTerm, setResultsExamTerm] = useState<'Term-1' | 'Term-2' | 'Final'>('Term-1');
   const [studentResultsMap, setStudentResultsMap] = useState<Record<string, any>>({});
   const [editingStudentResultModal, setEditingStudentResultModal] = useState<{
     isOpen: boolean;
@@ -461,7 +461,9 @@ const ClassTeacherDashboard = () => {
       const studentId = student._id;
 
       const termKey = term;
-      const termName = termKey === 'Term-1' ? "Term-1 Examinations (Mid-Term)" : "Term-2 Examinations (Final Exam)";
+      let termName = "First Term Examinations";
+      if (termKey === 'Term-2') termName = "Second Term Examinations";
+      if (termKey === 'Final') termName = "Final Term Examinations";
 
       const processedSubjects = subjects.map(s => {
         const marksNum = Number(s.marks) || 0;
@@ -1219,7 +1221,7 @@ const ClassTeacherDashboard = () => {
                           color: resultsExamTerm === 'Term-1' ? 'white' : 'var(--text-muted)'
                         }}
                       >
-                        📝 Term-1 (Mid-Term)
+                        📝 First Term
                       </button>
                       <button
                         onClick={() => setResultsExamTerm('Term-2')}
@@ -1234,7 +1236,22 @@ const ClassTeacherDashboard = () => {
                           color: resultsExamTerm === 'Term-2' ? 'white' : 'var(--text-muted)'
                         }}
                       >
-                        🏅 Term-2 (Final Exam)
+                        📘 Second Term
+                      </button>
+                      <button
+                        onClick={() => setResultsExamTerm('Final')}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontWeight: '800',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          backgroundColor: resultsExamTerm === 'Final' ? 'var(--primary)' : 'var(--input-bg)',
+                          color: resultsExamTerm === 'Final' ? 'white' : 'var(--text-muted)'
+                        }}
+                      >
+                        🏅 Final Term
                       </button>
                     </div>
                   </div>
@@ -1830,8 +1847,9 @@ const ClassTeacherDashboard = () => {
                         onChange={(e) => setSubjMarksExamTerm(e.target.value as any)}
                         style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', fontSize: '13px', fontWeight: '700' }}
                       >
-                        <option value="Term-1">Term-1 (Mid-Term)</option>
-                        <option value="Term-2">Term-2 (Final Exam)</option>
+                        <option value="Term-1">First Term</option>
+                        <option value="Term-2">Second Term</option>
+                        <option value="Final">Final Term</option>
                       </select>
 
                       <button

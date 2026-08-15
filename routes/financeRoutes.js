@@ -16,4 +16,9 @@ router.post("/pay/:feeId", auth, role(allRoles), financeController.payFee);
 router.put("/update/:feeId", auth, role(allowedFinanceRoles), financeController.updateFee);
 router.delete("/delete/:feeId", auth, role(allowedFinanceRoles), financeController.deleteFee);
 
+// Fee Structure Catalog routes
+router.get("/fee-structure", auth, financeController.getFeeStructures);
+router.post("/fee-structure", auth, role(allowedFinanceRoles), financeController.createOrUpdateFeeStructure);
+router.delete("/fee-structure/:id", auth, role(allowedFinanceRoles), financeController.deleteFeeStructure);
+
 module.exports = router;
