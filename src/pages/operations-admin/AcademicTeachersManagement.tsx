@@ -664,30 +664,32 @@ const TeacherDirectory = () => {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowModal(false)}>
-          <div className="w-full max-w-2xl bg-[var(--card-bg)] text-[var(--text-main)] rounded-lg shadow-xl overflow-hidden border border-[var(--border-color)]" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-color)]">
-              <h2 className="text-xl font-semibold">{editingTeacher ? 'Edit Teacher' : 'Add New Teacher'}</h2>
-              <button type="button" className="text-gray-400 hover:text-[var(--text-muted)] text-2xl" onClick={() => setShowModal(false)}>&times;</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4" onClick={() => setShowModal(false)}>
+          <div className="w-full max-w-2xl max-h-[90vh] bg-[var(--card-bg)] text-[var(--text-main)] rounded-3xl shadow-2xl border border-[var(--border-color)] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[var(--border-color)] shrink-0">
+              <h2 className="text-lg sm:text-xl font-black">{editingTeacher ? 'Edit Teacher Profile' : 'Add New Faculty Profile'}</h2>
+              <button type="button" className="text-[var(--text-muted)] hover:text-[var(--text-main)] text-2xl font-bold p-1" onClick={() => setShowModal(false)}>&times;</button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+            
+            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium mb-1">Name *</label>
-                  <input type="text" name="name" className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.name} onChange={handleInputChange} required />
+                  <label className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">Name *</label>
+                  <input type="text" name="name" className="w-full border border-[var(--border-color)] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm" value={formData.name} onChange={handleInputChange} required />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium mb-1">Email *</label>
-                  <input type="email" name="email" className={`w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] ${editingTeacher ? 'opacity-60 cursor-not-allowed' : ''}`} value={formData.email} onChange={handleInputChange} disabled={editingTeacher} required />
+                  <label className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">Email *</label>
+                  <input type="email" name="email" className={`w-full border border-[var(--border-color)] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm ${editingTeacher ? 'opacity-60 cursor-not-allowed' : ''}`} value={formData.email} onChange={handleInputChange} disabled={editingTeacher} required />
                 </div>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium mb-1">Phone *</label>
-                  <input type="tel" name="phone" maxLength={13} className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.phone} onChange={handleInputChange} required />
+                  <label className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">Phone *</label>
+                  <input type="tel" name="phone" maxLength={13} className="w-full border border-[var(--border-color)] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm" value={formData.phone} onChange={handleInputChange} required />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium mb-1">
+                  <label className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">
                     {editingTeacher ? 'New Password (optional)' : 'Password *'}
                   </label>
                   <div className="relative">
@@ -695,48 +697,51 @@ const TeacherDirectory = () => {
                       type={showPassword ? 'text' : 'password'} 
                       name="password" 
                       placeholder={editingTeacher ? 'Leave blank to keep current' : 'Enter password'} 
-                      className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" 
+                      className="w-full border border-[var(--border-color)] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm pr-10" 
                       value={formData.password} 
                       onChange={handleInputChange} 
                       required={!editingTeacher} 
                     />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-[var(--text-muted)]">
-                      {showPassword ? <FiEyeOff /> : <FiEye />}
+                      {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                     </button>
                   </div>
                 </div>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium mb-1">Specialization *</label>
-                  <input type="text" name="specialization" className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.specialization} onChange={handleInputChange} placeholder="e.g., Mathematics" required />
+                  <label className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">Specialization *</label>
+                  <input type="text" name="specialization" className="w-full border border-[var(--border-color)] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm" value={formData.specialization} onChange={handleInputChange} placeholder="e.g., Mathematics" required />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium mb-1">Department</label>
-                  <input type="text" name="department" className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.department} onChange={handleInputChange} placeholder="e.g., Science" />
+                  <label className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">Department</label>
+                  <input type="text" name="department" className="w-full border border-[var(--border-color)] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm" value={formData.department} onChange={handleInputChange} placeholder="e.g., Science" />
                 </div>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium mb-1">Experience (Years)</label>
-                  <input type="number" name="experience" className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.experience} onChange={handleInputChange} min="0" />
+                  <label className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">Experience (Years)</label>
+                  <input type="number" name="experience" className="w-full border border-[var(--border-color)] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm" value={formData.experience} onChange={handleInputChange} min="0" />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium mb-1">Qualifications</label>
-                  <input type="text" name="qualifications" className="w-full border border-[var(--border-color)] rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)]" value={formData.qualifications} onChange={handleInputChange} placeholder="e.g., B.Sc, M.Ed" />
+                  <label className="text-xs font-bold uppercase text-[var(--text-muted)] mb-1">Qualifications</label>
+                  <input type="text" name="qualifications" className="w-full border border-[var(--border-color)] rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm" value={formData.qualifications} onChange={handleInputChange} placeholder="e.g., B.Sc, M.Ed" />
                 </div>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Assign Subjects */}
                 <div className="flex flex-col">
-                  <label className="text-sm font-bold mb-1 flex items-center gap-1 text-[var(--text-main)]">
+                  <label className="text-xs font-bold uppercase mb-1 flex items-center gap-1 text-[var(--text-main)]">
                     📚 Assign Particular Subject(s) *
                   </label>
-                  <div className="grid grid-cols-1 gap-1.5 p-3 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] max-h-36 overflow-y-auto" style={{ width: '100%', boxSizing: 'border-box' }}>
+                  <div className="grid grid-cols-1 gap-1.5 p-3 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] max-h-36 overflow-y-auto w-full box-border">
                     {subjectsList.map((sub: any) => {
                       const isChecked = formData.subjects.includes(sub._id);
                       return (
-                        <label key={sub._id} className="flex items-center gap-2 text-xs font-semibold cursor-pointer p-1.5 hover:bg-[var(--card-bg)] rounded-lg transition-colors" style={{ color: 'var(--text-main)' }}>
+                        <label key={sub._id} className="flex items-center gap-2 text-xs font-semibold cursor-pointer p-1.5 hover:bg-[var(--card-bg)] rounded-lg transition-colors text-[var(--text-main)]">
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -764,14 +769,14 @@ const TeacherDirectory = () => {
 
                 {/* Assign Classes & Sections */}
                 <div className="flex flex-col">
-                  <label className="text-sm font-bold mb-1 flex items-center gap-1 text-[var(--text-main)]">
+                  <label className="text-xs font-bold uppercase mb-1 flex items-center gap-1 text-[var(--text-main)]">
                     🏫 Assign Particular Class(es) &amp; Section(s) *
                   </label>
-                  <div className="grid grid-cols-1 gap-1.5 p-3 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] max-h-36 overflow-y-auto" style={{ width: '100%', boxSizing: 'border-box' }}>
+                  <div className="grid grid-cols-1 gap-1.5 p-3 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] max-h-36 overflow-y-auto w-full box-border">
                     {classesList.map((cls: any) => {
                       const isChecked = formData.classes.includes(cls._id);
                       return (
-                        <label key={cls._id} className="flex items-center gap-2 text-xs font-semibold cursor-pointer p-1.5 hover:bg-[var(--card-bg)] rounded-lg transition-colors" style={{ color: 'var(--text-main)' }}>
+                        <label key={cls._id} className="flex items-center gap-2 text-xs font-semibold cursor-pointer p-1.5 hover:bg-[var(--card-bg)] rounded-lg transition-colors text-[var(--text-main)]">
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -797,9 +802,22 @@ const TeacherDirectory = () => {
                   </div>
                 </div>
               </div>
-              <div className="form-buttons space-x-4">
-                <button type="submit" className="btn-primary">{editingTeacher ? 'Update Teacher' : 'Create Teacher'}</button>
-                <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+
+              {/* Action Buttons Sticky Footer */}
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-4 border-t border-[var(--border-color)] sticky bottom-0 bg-[var(--card-bg)] z-10">
+                <button 
+                  type="button" 
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] font-bold text-xs sm:text-sm hover:bg-[var(--hover-bg)] transition-all cursor-pointer text-center" 
+                  onClick={() => setShowModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm shadow-lg hover:shadow-indigo-500/30 transition-all cursor-pointer active:scale-95 text-center"
+                >
+                  {editingTeacher ? 'Update Faculty Profile' : '💾 Save & Create Faculty Profile'}
+                </button>
               </div>
             </form>
           </div>
