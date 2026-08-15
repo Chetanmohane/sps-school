@@ -43,15 +43,15 @@ const LandingNavbar = () => {
   return (
     <nav className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${scrolled ? (isDark ? "bg-[#081526]/95 border-b border-slate-800" : "bg-white/95 border-b border-slate-200") + " backdrop-blur-xl shadow-md py-2.5" : (isDark ? "bg-[#081526]" : "bg-white/90") + " py-3.5 sm:py-4"}`}>
       <div className="container mx-auto px-4 sm:px-6 flex justify-between items-center">
-        {/* Brand Logo */}
+        {/* Brand Logo & Name */}
         <div 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className={`flex items-center gap-2 font-black text-lg sm:text-2xl italic tracking-tight cursor-pointer ${isDark ? "text-blue-500" : "text-blue-600"}`}
+          onClick={() => navigate('/')} 
+          className="flex items-center gap-1.5 sm:gap-2 cursor-pointer max-w-[170px] sm:max-w-none shrink"
         >
           <div className="p-1.5 sm:p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/20 shrink-0">
-            <GraduationCap size={22} className="text-white sm:w-6 sm:h-6" />
+            <GraduationCap size={20} className="text-white sm:w-6 sm:h-6" />
           </div>
-          <span className="truncate">Vasant Valley School</span>
+          <span className="truncate font-black text-xs sm:text-xl tracking-tight">Vasant Valley School</span>
         </div>
 
         {/* Desktop Navigation Links */}
@@ -77,15 +77,15 @@ const LandingNavbar = () => {
         </div>
 
         {/* Mobile Control Buttons */}
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden shrink-0">
           <button onClick={toggleTheme} className={`p-2 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800 text-amber-400" : "bg-slate-100 border-slate-200 text-slate-700"}`}>
-            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            {isDark ? <Sun size={17} /> : <Moon size={17} />}
           </button>
-          <button onClick={() => navigate('/login')} className="bg-blue-600 text-white p-2 rounded-xl font-bold text-xs">
-            <LogIn size={18} />
+          <button onClick={() => navigate('/login')} className="bg-blue-600 text-white p-2 rounded-xl font-bold text-xs flex items-center justify-center">
+            <LogIn size={17} />
           </button>
           <button className={`p-2 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`} onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={22} /> : <Menu size={22} />}
+            {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
@@ -175,11 +175,11 @@ const LandingPage = () => {
   };
 
   return (
-    <div className={`scroll-smooth font-sans antialiased pt-20 sm:pt-24 w-full max-w-full overflow-x-hidden ${isDark ? "bg-[#0a192f] text-slate-200" : "bg-[var(--card-bg)] text-[var(--text-main)]"}`}>
+    <div className={`scroll-smooth font-sans antialiased pt-20 sm:pt-24 w-full max-w-[100vw] overflow-x-hidden ${isDark ? "bg-[#0a192f] text-slate-200" : "bg-[var(--card-bg)] text-[var(--text-main)]"}`}>
       <LandingNavbar />
 
       {/* --- ULTRA PREMIUM HERO SECTION --- */}
-      <section id="home" className={`relative min-h-[85vh] flex flex-col justify-center overflow-hidden transition-colors duration-500 w-full max-w-full ${isDark ? "bg-[#081526] text-white" : "bg-slate-50/90 text-slate-900"}`}>
+      <section id="home" className={`relative min-h-[85vh] flex flex-col justify-center overflow-hidden transition-colors duration-500 w-full max-w-[100vw] ${isDark ? "bg-[#081526] text-white" : "bg-slate-50/90 text-slate-900"}`}>
         
         {/* Dynamic Glowing Mesh Grid & Ambient Light Orbs */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:36px_36px] -z-0" />
@@ -187,7 +187,7 @@ const LandingPage = () => {
         <div className={`absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full blur-[140px] -z-0 ${isDark ? "bg-blue-600/30" : "bg-blue-300/45"} animate-pulse`} />
         <div className={`absolute bottom-0 right-10 w-[480px] h-[480px] rounded-full blur-[130px] -z-0 ${isDark ? "bg-indigo-600/25" : "bg-indigo-200/60"}`} />
 
-        <div className="container mx-auto px-3.5 sm:px-6 pt-4 sm:pt-8 pb-10 grid lg:grid-cols-12 gap-8 items-center z-10 my-auto w-full max-w-full">
+        <div className="container mx-auto px-3 sm:px-6 pt-4 sm:pt-8 pb-10 grid lg:grid-cols-12 gap-8 items-center z-10 my-auto w-full max-w-full">
 
           {/* ── LEFT: Hero Headline & Interactive Vision (Col 7) ── */}
           <motion.div 
@@ -198,14 +198,14 @@ const LandingPage = () => {
           >
 
             {/* Top Badges Row */}
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 w-full max-w-full">
-              <div className={`inline-flex items-center gap-2 ${isDark ? "bg-blue-950/90 border-blue-500/60 text-blue-300 shadow-blue-950/50" : "bg-blue-50 border-blue-200 text-blue-800 shadow-blue-500/10"} border px-3 py-1.5 rounded-full shadow-md backdrop-blur-xl shrink-0`}>
+            <div className="flex flex-wrap items-center gap-2 w-full max-w-full">
+              <div className={`inline-flex items-center gap-1.5 ${isDark ? "bg-blue-950/90 border-blue-500/60 text-blue-300 shadow-blue-950/50" : "bg-blue-50 border-blue-200 text-blue-800 shadow-blue-500/10"} border px-2.5 sm:px-3.5 py-1.5 rounded-full shadow-md backdrop-blur-xl shrink-0`}>
                 <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-ping"></span>
                 <span className="text-[10px] sm:text-xs font-black tracking-wide uppercase">Admissions Open 2026–27</span>
               </div>
 
-              <div className={`inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-black px-3 py-1.5 rounded-full border shadow-sm shrink-0 ${isDark ? "border-emerald-500/50 text-emerald-300 bg-emerald-950/70" : "border-emerald-300 text-emerald-700 bg-emerald-50"}`}>
-                <ShieldCheck size={13} className="text-emerald-500 shrink-0" /> M.P. Board Code: 231
+              <div className={`inline-flex items-center gap-1 text-[10px] sm:text-xs font-black px-2.5 sm:px-3.5 py-1.5 rounded-full border shadow-sm shrink-0 ${isDark ? "border-emerald-500/50 text-emerald-300 bg-emerald-950/70" : "border-emerald-300 text-emerald-700 bg-emerald-50"}`}>
+                <ShieldCheck size={13} className="text-emerald-500 shrink-0" /> Code: 231
               </div>
             </div>
 
@@ -216,10 +216,10 @@ const LandingPage = () => {
                 Inspiring <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 italic">Excellence.</span>
               </h1>
               
-              <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 pt-1 w-full max-w-full">
-                <div className={`inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold tracking-wide uppercase px-3 py-1.5 rounded-xl border backdrop-blur-md max-w-full ${isDark ? "bg-slate-800/90 text-slate-200 border-slate-700" : "bg-white/90 text-slate-800 border-slate-200 shadow-sm"}`}>
+              <div className="flex flex-wrap items-center gap-2 pt-1 w-full max-w-full">
+                <div className={`inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold tracking-wide uppercase px-2.5 sm:px-3 py-1.5 rounded-xl border backdrop-blur-md max-w-full ${isDark ? "bg-slate-800/90 text-slate-200 border-slate-700" : "bg-white/90 text-slate-800 border-slate-200 shadow-sm"}`}>
                   <MapPin size={13} className="text-blue-500 shrink-0 animate-bounce" />
-                  <span className="truncate sm:whitespace-normal">Shree Dham Colony, Malikhedi, Bhopal</span>
+                  <span className="truncate">Shree Dham Colony, Malikhedi, Bhopal</span>
                 </div>
                 <div className={`inline-flex items-center gap-1 text-[10px] sm:text-xs font-black px-2.5 py-1.5 rounded-xl border shrink-0 ${isDark ? "bg-blue-900/40 border-blue-700/60 text-blue-300" : "bg-blue-50 border-blue-200 text-blue-800"}`}>
                   <GraduationCap size={13} /> Nursery to 12th
@@ -231,14 +231,14 @@ const LandingPage = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1 w-full max-w-full">
               <a 
                 href="#contact" 
-                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white px-4 sm:px-6 py-3 rounded-2xl font-black text-[11px] sm:text-xs uppercase tracking-wider shadow-xl shadow-blue-600/30 hover:scale-[1.01] active:scale-95 transition-all duration-300 border border-blue-400/30 text-center w-full sm:w-auto"
+                className="flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white px-3 sm:px-6 py-3 rounded-2xl font-black text-[11px] sm:text-xs uppercase tracking-normal sm:tracking-wider shadow-xl shadow-blue-600/30 hover:scale-[1.01] active:scale-95 transition-all duration-300 border border-blue-400/30 text-center w-full sm:w-auto shrink-0"
               >
-                <span>🚀 Apply for Admission 2026–27</span>
+                <span className="truncate">🚀 Apply for Admission 2026–27</span>
                 <ArrowRight size={15} className="shrink-0" />
               </a>
               <a 
                 href="#about" 
-                className={`flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-2xl font-bold text-[11px] sm:text-xs uppercase tracking-wider border backdrop-blur-md hover:scale-[1.01] active:scale-95 transition-all duration-300 text-center w-full sm:w-auto ${
+                className={`flex items-center justify-center gap-1.5 px-3 sm:px-5 py-3 rounded-2xl font-bold text-[11px] sm:text-xs uppercase tracking-normal sm:tracking-wider border backdrop-blur-md hover:scale-[1.01] active:scale-95 transition-all duration-300 text-center w-full sm:w-auto shrink-0 ${
                   isDark 
                     ? "bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 hover:border-slate-600" 
                     : "bg-white/90 border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm"
@@ -250,7 +250,7 @@ const LandingPage = () => {
             </div>
 
             {/* Guiding Vision Glassmorphic Card (4 Pillars) */}
-            <div className={`relative overflow-hidden rounded-3xl border p-3.5 sm:p-5 shadow-xl backdrop-blur-2xl transition-all w-full max-w-full ${
+            <div className={`relative overflow-hidden rounded-3xl border p-3 sm:p-5 shadow-xl backdrop-blur-2xl transition-all w-full max-w-full ${
               isDark 
                 ? "bg-slate-900/85 border-blue-500/40 text-white shadow-blue-500/10" 
                 : "bg-white/95 border-blue-200 text-slate-900 shadow-blue-500/15"
@@ -258,19 +258,19 @@ const LandingPage = () => {
               {/* Top Accent Gradient Bar */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-400" />
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 mb-3 w-full">
-                <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${
+              <div className="flex items-center justify-between gap-1.5 mb-3 w-full">
+                <span className={`text-[9px] sm:text-[11px] font-black uppercase tracking-wide sm:tracking-wider px-2 py-1 rounded-lg ${
                   isDark ? "bg-blue-950 text-blue-300 border border-blue-800/60" : "bg-blue-100 text-blue-800 font-black"
                 }`}>
                   ✨ OUR 4 PILLARS OF EXCELLENCE
                 </span>
-                <span className={`text-[10px] font-extrabold uppercase tracking-wider ${isDark ? "text-blue-400" : "text-blue-700"}`}>
+                <span className={`text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wide ${isDark ? "text-blue-400" : "text-blue-700"}`}>
                   Holistic Growth
                 </span>
               </div>
 
               {/* 4 Pillars Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 w-full">
                 {[
                   { en: "LEARN", hi: "सीखें", desc: "Digital & STEM", icon: BookOpen, color: "text-blue-500", bg: isDark ? "bg-blue-950/60 border-blue-800/50" : "bg-blue-50 border-blue-200" },
                   { en: "GROW", hi: "बढ़ें", desc: "Holistic Mindset", icon: Sparkles, color: "text-indigo-500", bg: isDark ? "bg-indigo-950/60 border-indigo-800/50" : "bg-indigo-50 border-indigo-200" },
@@ -279,16 +279,16 @@ const LandingPage = () => {
                 ].map((item, idx) => (
                   <div 
                     key={idx} 
-                    className={`flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${item.bg}`}
+                    className={`flex flex-col items-center justify-center p-2 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md min-w-0 overflow-hidden ${item.bg}`}
                   >
-                    <item.icon className={`w-4 h-4 mb-1 ${item.color}`} />
-                    <span className={`text-xs sm:text-sm font-black tracking-wider ${isDark ? "text-white" : "text-slate-900"}`}>
+                    <item.icon className={`w-3.5 h-3.5 mb-0.5 ${item.color}`} />
+                    <span className={`text-xs font-black tracking-wider ${isDark ? "text-white" : "text-slate-900"}`}>
                       {item.en}
                     </span>
                     <span className={`text-[10px] font-extrabold mt-0.5 ${isDark ? "text-blue-300" : "text-blue-700"}`}>
                       {item.hi}
                     </span>
-                    <span className={`text-[9px] font-medium mt-0.5 leading-tight ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    <span className={`text-[8.5px] sm:text-[9px] font-medium mt-0.5 leading-tight truncate max-w-full ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                       {item.desc}
                     </span>
                   </div>
