@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   FiHome, FiUsers, FiSettings, FiBookOpen, FiCalendar, FiFileText,
   FiUserPlus, FiDollarSign, FiCheckSquare, FiEdit3, FiMail,
-  FiShield, FiActivity, FiLayers, FiChevronRight, FiAward, FiUserCheck, FiType, FiSliders
+  FiShield, FiActivity, FiLayers, FiChevronRight, FiAward, FiUserCheck, FiType, FiSliders, FiX
 } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
 
@@ -94,7 +94,6 @@ const Sidebar = () => {
     },
   ];
 
-  // ── Other roles menu configuration ─────────────────────────────────────────
   const sidebarMenus: Record<string, Array<{ path: string; name: string; icon: React.ReactNode }>> = {
     'manager-admin': [
       { path: '/manager-admin', name: 'Manager Executive Hub', icon: <FiUserCheck /> },
@@ -108,7 +107,6 @@ const Sidebar = () => {
       { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
-
     'academic-admin': [
       { path: '/academic-admin', name: 'Teacher Admin Dashboard', icon: <FiHome /> },
       { path: '/academic-admin/teachers', name: 'Teacher Section', icon: <FiUsers /> },
@@ -126,7 +124,6 @@ const Sidebar = () => {
       { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
-
     'teacher-admin': [
       { path: '/academic-admin', name: 'Teacher Admin Dashboard', icon: <FiHome /> },
       { path: '/academic-admin/teachers', name: 'Teacher Section', icon: <FiUsers /> },
@@ -144,7 +141,6 @@ const Sidebar = () => {
       { path: '/admin/audit-logs', name: 'Account Creation Log', icon: <FiShield /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
     ],
-
     'finance-admin': [
       { path: '/finance-admin', name: 'Finance Admin Dashboard', icon: <FiHome /> },
       { path: '/settings', name: 'Settings', icon: <FiSettings /> },
@@ -274,11 +270,16 @@ const Sidebar = () => {
     <>
       <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} onClick={closeSidebar}></div>
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="logo-icon" style={{ background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '8px', marginRight: '8px', display: 'inline-flex', flexShrink: 0 }}>
-            <FiShield size={18} />
+        <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="logo-icon" style={{ background: 'var(--primary)', color: 'white', padding: '6px', borderRadius: '8px', marginRight: '8px', display: 'inline-flex', flexShrink: 0 }}>
+              <FiShield size={18} />
+            </div>
+            <span style={{ fontSize: '15px', fontWeight: 700, lineHeight: '1.3', wordBreak: 'break-word' }}>Vasant Valley School ERP</span>
           </div>
-          <span style={{ fontSize: '15px', fontWeight: 700, lineHeight: '1.3', wordBreak: 'break-word' }}>Vasant Valley School ERP</span>
+          <button onClick={closeSidebar} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px' }}>
+            <FiX size={20} />
+          </button>
         </div>
         <div style={{ padding: '0 16px 10px 16px', textAlign: 'center' }}>
           <div style={{ fontSize: '9px', fontWeight: '800', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.55)', textTransform: 'uppercase', lineHeight: '1.6' }}>
@@ -309,9 +310,11 @@ const Sidebar = () => {
                     } else {
                       navigate(cat.path);
                       setTeacherAdminExpanded(true);
+                      closeSidebar();
                     }
                   } else {
                     navigate(cat.path);
+                    closeSidebar();
                   }
                 }}
                 className={`admin-sidebar-btn ${active ? 'active' : ''}`}
@@ -372,6 +375,7 @@ const Sidebar = () => {
                       <li key={sIdx}>
                         <Link
                           to={sub.path}
+                          onClick={closeSidebar}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -401,7 +405,7 @@ const Sidebar = () => {
           );
         })}
 
-        {/* ── ALL OTHER ROLES (Including Manager, Teacher Admin, Student Admin, Admission Desk, Teacher, Student) ── */}
+        {/* ── ALL OTHER ROLES ── */}
         {!isSuperAdmin && (
           location.pathname.startsWith('/class-teacher')
             ? sidebarMenus['class-teacher']
@@ -410,6 +414,7 @@ const Sidebar = () => {
           <Link
             key={index}
             to={link.path}
+            onClick={closeSidebar}
             className={isLinkActive(link.path) ? 'sidebar-item active' : 'sidebar-item'}
           >
             <span className="nav-icon">{link.icon}</span>
