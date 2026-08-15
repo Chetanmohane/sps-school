@@ -1625,4 +1625,51 @@ html.dark-mode .theme-toggle-btn:hover {
   }
 }
 
+/* ===== STUDENT PORTAL MOBILE ENHANCEMENTS ===== */
+@media (max-width: 640px) {
+  .student-welcome-banner {
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+    border-radius: 18px !important;
+  }
+  .student-welcome-avatar {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 14px !important;
+    font-size: 20px !important;
+  }
+  .student-welcome-title {
+    font-size: 18px !important;
+  }
+  .student-welcome-subtitle {
+    font-size: 11px !important;
+  }
+  .student-welcome-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .student-action-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 10px 14px !important;
+  }
+  .student-stats-row {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .student-stat-card-gradient {
+    padding: 12px !important;
+    height: auto !important;
+    min-height: 115px !important;
+    border-radius: 18px !important;
+  }
+  .student-stat-value {
+    font-size: 18px !important;
+  }
+  .student-stat-label {
+    font-size: 9px !important;
+  }
+}
+
 

@@ -80,48 +80,48 @@ const StudentResults = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="p-8 bg-[var(--input-bg)] min-h-screen">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="p-3.5 sm:p-6 md:p-8 bg-[var(--input-bg)] min-h-screen">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-2xl font-black text-[var(--text-main)] flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-[var(--text-main)] flex items-center gap-2">
                 <FiFileText className="text-blue-500" /> Academic Results
               </h1>
-              <p className="text-[var(--text-muted)] text-sm">
+              <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">
                 View your term-wise report cards, subject grades, and overall GPA performance.
               </p>
             </div>
             <button 
               onClick={handlePrint}
-              className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 active:scale-95 transition-all w-fit"
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-lg hover:bg-blue-700 active:scale-95 transition-all w-fit"
             >
               <FiDownload /> Download Report Card
             </button>
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 flex items-center gap-2 border border-red-100">
+            <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 flex items-center gap-2 border border-red-100 text-xs sm:text-sm">
               <FiLoader /> {error}
             </div>
           )}
 
           {/* Student Banner */}
           {studentProfile && (
-            <div className="bg-[var(--card-bg)] text-[var(--text-main)] p-6 rounded-3xl border border-[var(--border-color)] shadow-sm mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center font-black text-2xl">
+            <div className="bg-[var(--card-bg)] text-[var(--text-main)] p-4 sm:p-6 rounded-3xl border border-[var(--border-color)] shadow-sm mb-6 sm:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+              <div className="flex items-center gap-3.5">
+                <div className="h-12 w-12 sm:h-16 sm:w-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center font-black text-xl sm:text-2xl shrink-0">
                   {studentProfile.user?.name ? studentProfile.user.name.charAt(0).toUpperCase() : 'S'}
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-[var(--text-main)]">{studentProfile.user?.name}</h2>
-                  <p className="text-sm text-[var(--text-muted)]">
-                    Roll Number: <span className="font-bold text-blue-600">{studentProfile.rollNumber}</span> | Class: <span className="font-bold text-blue-600">{studentProfile.className} ({studentProfile.section})</span>
+                  <h2 className="text-lg sm:text-xl font-black text-[var(--text-main)]">{studentProfile.user?.name}</h2>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                    Roll: <span className="font-bold text-blue-600">{studentProfile.rollNumber}</span> | Class: <span className="font-bold text-blue-600">{studentProfile.className} ({studentProfile.section})</span>
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-4 sm:gap-6 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--border-color)]">
                 <div className="text-left md:text-right">
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Cumulative GPA</p>
-                  <p className="text-2xl font-black text-green-600 flex items-center gap-1 md:justify-end">
+                  <p className="text-[10px] sm:text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Cumulative GPA</p>
+                  <p className="text-xl sm:text-2xl font-black text-green-600 flex items-center gap-1 md:justify-end">
                     <FiAward /> {(() => {
                       const termsList = getStudentExamTerms();
                       const validGpaTerms = termsList.filter((t: any) => t.status === 'PASSED' || t.status === 'FAILED');
@@ -131,9 +131,9 @@ const StudentResults = () => {
                     })()}
                   </p>
                 </div>
-                <div className="h-10 w-px bg-[var(--border-color)]"></div>
+                <div className="h-8 sm:h-10 w-px bg-[var(--border-color)]"></div>
                 <div>
-                  <p className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Result Status</p>
+                  <p className="text-[10px] sm:text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">Result Status</p>
                   {(() => {
                     const termsList = getStudentExamTerms();
                     const validGpaTerms = termsList.filter((t: any) => t.status === 'PASSED' || t.status === 'FAILED');

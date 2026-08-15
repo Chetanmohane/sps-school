@@ -203,7 +203,7 @@ const StudentFees = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="p-4 md:p-6 bg-[var(--input-bg)] min-h-screen">
+        <div className="p-3.5 sm:p-5 md:p-6 bg-[var(--input-bg)] min-h-screen">
           {(() => {
             const userRole = localStorage.getItem('role') || '';
             const isAdminUser = ['super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin'].includes(userRole) || userRole.includes('admin') || userRole.includes('manager');
@@ -211,12 +211,12 @@ const StudentFees = () => {
           })()}
           
           {/* Page Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-2xl font-black text-[var(--text-main)] flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-[var(--text-main)] flex items-center gap-2">
                 <FiDollarSign className="text-emerald-500" /> Student Fee Statement & Receipts
               </h1>
-              <p className="text-[var(--text-muted)] text-sm mt-1">
+              <p className="text-[var(--text-muted)] text-xs sm:text-sm mt-1">
                 View fee structure, payment history, pay outstanding dues online, and download official receipts.
               </p>
             </div>
@@ -224,7 +224,7 @@ const StudentFees = () => {
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => window.print()}
-                className="flex items-center gap-2 bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] px-4 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-[var(--hover-bg)] active:scale-95 transition-all"
+                className="flex items-center gap-2 bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm shadow-sm hover:bg-[var(--hover-bg)] active:scale-95 transition-all"
               >
                 <FiPrinter /> Print Statement
               </button>
@@ -232,42 +232,42 @@ const StudentFees = () => {
           </div>
 
           {/* Student Info & Fee Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 sm:mb-8">
             {/* Card 1: Student Profile */}
-            <div className="bg-[var(--card-bg)] p-5 rounded-2xl border border-[var(--border-color)] shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-black text-xl shrink-0">
+            <div className="bg-[var(--card-bg)] p-4 sm:p-5 rounded-2xl border border-[var(--border-color)] shadow-sm flex items-center gap-3 col-span-2 lg:col-span-1">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-black text-lg sm:text-xl shrink-0">
                 {studentName.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <h3 className="font-black text-sm text-[var(--text-main)] truncate">{studentName}</h3>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Roll: <span className="font-bold text-indigo-600">{rollNumber}</span></p>
-                <p className="text-xs text-[var(--text-muted)]">Class: <span className="font-bold">{className} ({section})</span></p>
+                <h3 className="font-black text-xs sm:text-sm text-[var(--text-main)] truncate">{studentName}</h3>
+                <p className="text-[11px] sm:text-xs text-[var(--text-muted)] mt-0.5">Roll: <span className="font-bold text-indigo-600">{rollNumber}</span></p>
+                <p className="text-[11px] sm:text-xs text-[var(--text-muted)]">Class: <span className="font-bold">{className} ({section})</span></p>
               </div>
             </div>
 
             {/* Card 2: Total Fee */}
-            <div className="bg-[var(--card-bg)] p-5 rounded-2xl border border-[var(--border-color)] shadow-sm">
-              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Total Fee Amount</p>
-              <h3 className="text-2xl font-black text-[var(--text-main)]">₹{totalAmount.toLocaleString('en-IN')}</h3>
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">Full academic session</p>
+            <div className="bg-[var(--card-bg)] p-4 sm:p-5 rounded-2xl border border-[var(--border-color)] shadow-sm">
+              <p className="text-[10px] sm:text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Total Fee</p>
+              <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)]">₹{totalAmount.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] sm:text-[11px] text-[var(--text-muted)] mt-1">Full academic session</p>
             </div>
 
             {/* Card 3: Total Paid */}
-            <div className="bg-[var(--card-bg)] p-5 rounded-2xl border border-[var(--border-color)] shadow-sm">
-              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Amount Paid</p>
-              <h3 className="text-2xl font-black text-emerald-500">₹{totalPaid.toLocaleString('en-IN')}</h3>
-              <p className="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-                <FiCheckCircle size={12} /> Received in account
+            <div className="bg-[var(--card-bg)] p-4 sm:p-5 rounded-2xl border border-[var(--border-color)] shadow-sm">
+              <p className="text-[10px] sm:text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Amount Paid</p>
+              <h3 className="text-xl sm:text-2xl font-black text-emerald-500">₹{totalPaid.toLocaleString('en-IN')}</h3>
+              <p className="text-[10px] sm:text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                <FiCheckCircle size={12} /> Received
               </p>
             </div>
 
             {/* Card 4: Pending Dues */}
-            <div className="bg-[var(--card-bg)] p-5 rounded-2xl border border-[var(--border-color)] shadow-sm">
-              <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Pending Balance</p>
-              <h3 className={`text-2xl font-black ${totalPending > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+            <div className="bg-[var(--card-bg)] p-4 sm:p-5 rounded-2xl border border-[var(--border-color)] shadow-sm col-span-2 lg:col-span-1">
+              <p className="text-[10px] sm:text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">Pending Balance</p>
+              <h3 className={`text-xl sm:text-2xl font-black ${totalPending > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                 ₹{totalPending.toLocaleString('en-IN')}
               </h3>
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">
+              <p className="text-[10px] sm:text-[11px] text-[var(--text-muted)] mt-1">
                 {totalPending > 0 ? 'Due for upcoming term' : 'No outstanding dues'}
               </p>
             </div>
