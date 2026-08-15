@@ -41,58 +41,81 @@ const LandingNavbar = () => {
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${scrolled ? (isDark ? "bg-[#0a192f]/90" : "bg-[var(--card-bg)] text-[var(--text-main)]/90") + " backdrop-blur-xl shadow-lg py-3" : (isDark ? "bg-[#0a192f]" : "bg-[var(--card-bg)] text-[var(--text-main)]") + " py-5"}`}>
-      <div className="container mx-auto px-6 flex justify-between items-center">
-        <div className={`flex items-center gap-2 font-black text-2xl italic tracking-tighter ${isDark ? "text-blue-600" : "text-blue-700"}`}>
-          <div className="p-1.5 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/30">
-            <GraduationCap size={28} className="text-white" />
+    <nav className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${scrolled ? (isDark ? "bg-[#081526]/95 border-b border-slate-800" : "bg-white/95 border-b border-slate-200") + " backdrop-blur-xl shadow-md py-2.5" : (isDark ? "bg-[#081526]" : "bg-white/90") + " py-3.5 sm:py-4"}`}>
+      <div className="container mx-auto px-4 sm:px-6 flex justify-between items-center">
+        {/* Brand Logo */}
+        <div 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className={`flex items-center gap-2 font-black text-lg sm:text-2xl italic tracking-tight cursor-pointer ${isDark ? "text-blue-500" : "text-blue-600"}`}
+        >
+          <div className="p-1.5 sm:p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl shadow-lg shadow-blue-500/20 shrink-0">
+            <GraduationCap size={22} className="text-white sm:w-6 sm:h-6" />
           </div>
-          <span>Vasant Valley School</span>
+          <span className="truncate">Vasant Valley School</span>
         </div>
 
-        <div className="hidden lg:flex items-center space-x-7">
-          <div className={`flex space-x-6 font-bold ${isDark ? "text-slate-200" : "text-[var(--text-main)]"}`}>
+        {/* Desktop Navigation Links */}
+        <div className="hidden lg:flex items-center space-x-6">
+          <div className={`flex space-x-5 font-bold ${isDark ? "text-slate-200" : "text-slate-700"}`}>
             {navLinks.map((link) => (
-              <a key={link.name} href={link.href} className={`relative text-sm uppercase tracking-widest hover:text-blue-500 transition-colors group`}>
+              <a key={link.name} href={link.href} className="relative text-xs uppercase tracking-wider hover:text-blue-500 transition-colors group py-1">
                 {link.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
               </a>
             ))}
           </div>
 
-          <div className={`flex items-center gap-4 pl-6 border-l ${isDark ? "border-slate-700" : "border-[var(--border-color)]"}`}>
-            {/* Theme Toggle */}
-            <button onClick={toggleTheme} title={isDark ? "Light Mode" : "Dark Mode"} className={`p-2 rounded-full transition-all ${isDark ? "bg-slate-800 text-yellow-400 hover:bg-slate-700" : "bg-slate-100 text-[var(--text-main)] hover:bg-slate-200"}`}>
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          <div className={`flex items-center gap-3 pl-5 border-l ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+            {/* Theme Toggle Button */}
+            <button onClick={toggleTheme} title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"} className={`p-2 rounded-xl transition-all border ${isDark ? "bg-slate-900 border-slate-800 text-amber-400 hover:bg-slate-800" : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"}`}>
+              {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
-            <button onClick={() => navigate('/login')} className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl">
-              <LogIn size={16} /> ERP Login
+            <button onClick={() => navigate('/login')} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-5 py-2.5 rounded-xl font-extrabold text-xs uppercase tracking-wider hover:shadow-lg hover:shadow-blue-600/30 transition-all active:scale-95">
+              <LogIn size={15} /> ERP Login
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 lg:hidden">
-          <button onClick={toggleTheme} className={`p-2 rounded-full ${isDark ? "bg-slate-800 text-yellow-400" : "bg-slate-100 text-[var(--text-main)]"}`}>
+        {/* Mobile Control Buttons */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <button onClick={toggleTheme} className={`p-2 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800 text-amber-400" : "bg-slate-100 border-slate-200 text-slate-700"}`}>
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
-          <button className={`p-1 ${isDark ? "text-slate-200" : "text-[var(--text-main)]"}`} onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X size={30} /> : <Menu size={30} />}
+          <button onClick={() => navigate('/login')} className="bg-blue-600 text-white p-2 rounded-xl font-bold text-xs">
+            <LogIn size={18} />
+          </button>
+          <button className={`p-2 rounded-xl border ${isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-100 border-slate-200 text-slate-800"}`} onClick={() => setIsOpen(!isOpen)}>
+            {isOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className={`lg:hidden ${isDark ? "bg-[#0a192f] border-slate-800" : "bg-[var(--card-bg)] text-[var(--text-main)] border-[var(--border-color)]"} border-t overflow-hidden shadow-2xl`}>
-            <div className="container mx-auto px-6 py-8 flex flex-col space-y-5">
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: "auto" }} 
+            exit={{ opacity: 0, height: 0 }} 
+            className={`lg:hidden ${isDark ? "bg-[#081526] border-slate-800" : "bg-white border-slate-200"} border-t overflow-hidden shadow-2xl`}
+          >
+            <div className="container mx-auto px-4 py-6 flex flex-col space-y-3">
               {navLinks.map((link) => (
-                <motion.a key={link.name} href={link.href} onClick={() => setIsOpen(false)} className={`text-xl font-black italic transition-colors ${isDark ? "text-slate-200 hover:text-blue-600" : "text-[var(--text-main)] hover:text-blue-600"}`}>
-                  {link.name}
-                </motion.a>
+                <a 
+                  key={link.name} 
+                  href={link.href} 
+                  onClick={() => setIsOpen(false)} 
+                  className={`text-base font-extrabold py-2 px-3 rounded-xl transition-colors flex items-center justify-between ${
+                    isDark ? "text-slate-200 hover:bg-slate-900 hover:text-blue-400" : "text-slate-800 hover:bg-blue-50 hover:text-blue-600"
+                  }`}
+                >
+                  <span>{link.name}</span>
+                  <span className="text-xs text-blue-500">›</span>
+                </a>
               ))}
-              <div className={`pt-6 border-t ${isDark ? "border-slate-800" : "border-[var(--border-color)]"} flex flex-col gap-4`}>
-                <button onClick={() => navigate('/login')} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] flex items-center justify-center gap-2 shadow-lg">
-                  <LogIn size={18} /> ERP Login
+              <div className={`pt-4 border-t ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                <button onClick={() => { setIsOpen(false); navigate('/login'); }} className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg">
+                  <LogIn size={16} /> Access School ERP Portal
                 </button>
               </div>
             </div>
@@ -152,132 +175,123 @@ const LandingPage = () => {
   };
 
   return (
-    <div className={`scroll-smooth font-sans antialiased pt-20 ${isDark ? "bg-[#0a192f] text-slate-200" : "bg-[var(--card-bg)] text-[var(--text-main)] text-[var(--text-main)]"}`}>
+    <div className={`scroll-smooth font-sans antialiased pt-24 ${isDark ? "bg-[#0a192f] text-slate-200" : "bg-[var(--card-bg)] text-[var(--text-main)] text-[var(--text-main)]"}`}>
       <LandingNavbar />
 
       {/* --- ULTRA PREMIUM HERO SECTION --- */}
-      <section id="home" className={`relative min-h-[92vh] flex flex-col justify-center overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#081526] text-white" : "bg-slate-50/90 text-slate-900"}`}>
+      <section id="home" className={`relative min-h-[85vh] flex flex-col justify-center overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#081526] text-white" : "bg-slate-50/90 text-slate-900"}`}>
         
-        {/* Dynamic Glowing Mesh Grid Background */}
+        {/* Dynamic Glowing Mesh Grid & Ambient Light Orbs */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:36px_36px] -z-0" />
-        <div className={`absolute top-0 right-0 w-2/3 h-full ${isDark ? "bg-gradient-to-l from-blue-600/20 via-indigo-600/10 to-transparent" : "bg-gradient-to-l from-blue-300/35 via-sky-200/20 to-transparent"} -z-0 pointer-events-none`} />
-        <div className={`absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full blur-[140px] -z-0 ${isDark ? "bg-blue-600/25" : "bg-blue-300/40"} animate-pulse`} />
-        <div className={`absolute bottom-0 right-20 w-[450px] h-[450px] rounded-full blur-[120px] -z-0 ${isDark ? "bg-indigo-600/20" : "bg-indigo-200/50"}`} />
+        <div className={`absolute top-0 right-0 w-2/3 h-full ${isDark ? "bg-gradient-to-l from-blue-600/25 via-indigo-600/15 to-transparent" : "bg-gradient-to-l from-blue-300/40 via-sky-200/25 to-transparent"} -z-0 pointer-events-none`} />
+        <div className={`absolute -top-32 -left-32 w-[520px] h-[520px] rounded-full blur-[140px] -z-0 ${isDark ? "bg-blue-600/30" : "bg-blue-300/45"} animate-pulse`} />
+        <div className={`absolute bottom-0 right-10 w-[480px] h-[480px] rounded-full blur-[130px] -z-0 ${isDark ? "bg-indigo-600/25" : "bg-indigo-200/60"}`} />
 
-        <div className="container mx-auto px-4 sm:px-6 pt-20 pb-16 grid lg:grid-cols-12 gap-12 lg:gap-8 items-center z-10 my-auto">
+        <div className="container mx-auto px-4 sm:px-6 pt-4 sm:pt-8 pb-10 grid lg:grid-cols-12 gap-8 lg:gap-8 items-center z-10 my-auto">
 
           {/* ── LEFT: Hero Headline & Interactive Vision (Col 7) ── */}
           <motion.div 
-            initial={{ opacity: 0, y: 35 }} 
+            initial={{ opacity: 0, y: 30 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.8 }} 
-            className="lg:col-span-7 flex flex-col gap-6"
+            className="lg:col-span-7 flex flex-col gap-4 sm:gap-5"
           >
 
-            {/* Badges Row */}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className={`inline-flex items-center gap-2.5 ${isDark ? "bg-blue-950/90 border-blue-500/50 text-blue-300 shadow-blue-950/50" : "bg-blue-50 border-blue-200 text-blue-800 shadow-blue-500/10"} border px-4 py-2 rounded-full shadow-md backdrop-blur-xl`}>
+            {/* Top Badges Row */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className={`inline-flex items-center gap-2 ${isDark ? "bg-blue-950/90 border-blue-500/60 text-blue-300 shadow-blue-950/50" : "bg-blue-50 border-blue-200 text-blue-800 shadow-blue-500/10"} border px-3 sm:px-3.5 py-1.5 rounded-full shadow-md backdrop-blur-xl`}>
                 <span className="flex h-2.5 w-2.5 rounded-full bg-blue-500 animate-ping"></span>
-                <span className="text-xs font-black tracking-widest uppercase">Admissions Open 2026–27</span>
+                <span className="text-[10px] sm:text-xs font-black tracking-wider uppercase">Admissions Open 2026–27</span>
               </div>
 
-              <div className={`inline-flex items-center gap-1.5 text-xs font-black px-3.5 py-1.5 rounded-full border shadow-sm ${isDark ? "border-emerald-500/50 text-emerald-300 bg-emerald-950/70" : "border-emerald-300 text-emerald-700 bg-emerald-50"}`}>
-                <ShieldCheck size={14} className="text-emerald-500" /> M.P. Board Recognized
-              </div>
-
-              <div className={`inline-flex items-center gap-1.5 text-xs font-black px-3.5 py-1.5 rounded-full border shadow-sm ${isDark ? "border-amber-500/50 text-amber-300 bg-amber-950/70" : "border-amber-300 text-amber-700 bg-amber-50"}`}>
-                <Award size={14} className="text-amber-500" /> Code: 231
+              <div className={`inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-black px-3 sm:px-3.5 py-1.5 rounded-full border shadow-sm ${isDark ? "border-emerald-500/50 text-emerald-300 bg-emerald-950/70" : "border-emerald-300 text-emerald-700 bg-emerald-50"}`}>
+                <ShieldCheck size={14} className="text-emerald-500 shrink-0" /> M.P. Board Code: 231
               </div>
             </div>
 
-            {/* Hero Main Headline */}
-            <div>
-              <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.10] tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
-                Shaping Character, <br />
+            {/* Hero Headline & Location */}
+            <div className="space-y-2.5 sm:space-y-3">
+              <h1 className={`text-3xl sm:text-5xl lg:text-6xl font-black leading-tight sm:leading-none tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                Shaping Character, <br className="hidden sm:block" />
                 Inspiring <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 italic">Excellence.</span>
               </h1>
               
-              <div className={`inline-flex items-center gap-2 mt-3.5 text-xs sm:text-sm font-bold tracking-wide uppercase px-3.5 py-2 rounded-xl border backdrop-blur-md ${isDark ? "bg-slate-800/90 text-slate-200 border-slate-700" : "bg-white/90 text-slate-800 border-slate-200 shadow-sm"}`}>
-                <MapPin size={16} className="text-blue-500 shrink-0 animate-bounce" />
-                <span>Shree Dham Colony, Malikhedi, Bhopal</span>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <div className={`inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold tracking-wide uppercase px-3 py-1.5 rounded-xl border backdrop-blur-md ${isDark ? "bg-slate-800/90 text-slate-200 border-slate-700" : "bg-white/90 text-slate-800 border-slate-200 shadow-sm"}`}>
+                  <MapPin size={14} className="text-blue-500 shrink-0 animate-bounce" />
+                  <span>Shree Dham Colony, Malikhedi, Bhopal</span>
+                </div>
+                <div className={`inline-flex items-center gap-1 text-[11px] sm:text-xs font-black px-2.5 py-1.5 rounded-xl border ${isDark ? "bg-blue-900/40 border-blue-700/60 text-blue-300" : "bg-blue-50 border-blue-200 text-blue-800"}`}>
+                  <GraduationCap size={14} /> Nursery to 12th
+                </div>
               </div>
             </div>
 
-            {/* Guiding Vision Glassmorphic Card (LEARN • GROW • LEAD • SERVE) */}
-            <div className={`relative overflow-hidden rounded-3xl border p-5 sm:p-6 shadow-2xl backdrop-blur-2xl transition-all ${
+            {/* Action CTA Buttons (Full width on mobile, inline on desktop) */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1">
+              <a 
+                href="#contact" 
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-800 text-white px-6 py-3.5 sm:py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-600/30 hover:scale-[1.01] active:scale-95 transition-all duration-300 border border-blue-400/30 text-center"
+              >
+                <span>🚀 Apply for Admission 2026–27</span>
+                <ArrowRight size={16} />
+              </a>
+              <a 
+                href="#about" 
+                className={`flex items-center justify-center gap-2 px-5 py-3.5 sm:py-3 rounded-2xl font-bold text-xs uppercase tracking-widest border backdrop-blur-md hover:scale-[1.01] active:scale-95 transition-all duration-300 text-center ${
+                  isDark 
+                    ? "bg-slate-900/80 border-slate-700 text-slate-200 hover:bg-slate-800 hover:border-slate-600" 
+                    : "bg-white/90 border-slate-300 text-slate-800 hover:bg-slate-100 shadow-sm"
+                }`}
+              >
+                <Sparkles size={16} className="text-amber-500 shrink-0" />
+                <span>Explore Campus</span>
+              </a>
+            </div>
+
+            {/* Guiding Vision Glassmorphic Card (4 Pillars) */}
+            <div className={`relative overflow-hidden rounded-3xl border p-4 sm:p-5 shadow-xl backdrop-blur-2xl transition-all ${
               isDark 
-                ? "bg-slate-900/80 border-blue-500/40 text-white shadow-blue-500/10" 
+                ? "bg-slate-900/85 border-blue-500/40 text-white shadow-blue-500/10" 
                 : "bg-white/95 border-blue-200 text-slate-900 shadow-blue-500/15"
             }`}>
               {/* Top Accent Gradient Bar */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-400" />
 
-              <div className="flex items-center justify-between gap-2 mb-3.5">
-                <div className="flex items-center gap-2">
-                  <span className={`text-[11px] font-black uppercase tracking-[0.25em] px-3 py-1 rounded-lg ${
-                    isDark 
-                      ? "bg-blue-950 text-blue-300 border border-blue-800/60" 
-                      : "bg-blue-100 text-blue-800 font-black"
-                  }`}>
-                    ✨ OUR GUIDING VISION
-                  </span>
-                </div>
-                <span className={`text-xs font-extrabold uppercase tracking-wider ${isDark ? "text-blue-400" : "text-blue-700"}`}>
-                  Nursery to 12th
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${
+                  isDark ? "bg-blue-950 text-blue-300 border border-blue-800/60" : "bg-blue-100 text-blue-800 font-black"
+                }`}>
+                  ✨ OUR 4 PILLARS OF EXCELLENCE
+                </span>
+                <span className={`text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider ${isDark ? "text-blue-400" : "text-blue-700"}`}>
+                  Holistic Growth
                 </span>
               </div>
 
-              {/* 4 Pillars Grid with Micro-Interactions */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2">
+              {/* 4 Pillars Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { en: "LEARN", hi: "सीखें", desc: "Digital & STEM Excellence", icon: BookOpen, color: "text-blue-500" },
-                  { en: "GROW", hi: "बढ़ें", desc: "Holistic Development", icon: Sparkles, color: "text-indigo-500" },
-                  { en: "LEAD", hi: "नेतृत्व", desc: "Confidence & Values", icon: Target, color: "text-amber-500" },
-                  { en: "SERVE", hi: "सेवा", desc: "Community Contribution", icon: ShieldCheck, color: "text-emerald-500" },
+                  { en: "LEARN", hi: "सीखें", desc: "Digital & STEM", icon: BookOpen, color: "text-blue-500", bg: isDark ? "bg-blue-950/60 border-blue-800/50" : "bg-blue-50 border-blue-200" },
+                  { en: "GROW", hi: "बढ़ें", desc: "Holistic Mindset", icon: Sparkles, color: "text-indigo-500", bg: isDark ? "bg-indigo-950/60 border-indigo-800/50" : "bg-indigo-50 border-indigo-200" },
+                  { en: "LEAD", hi: "नेतृत्व", desc: "Ethics & Rank", icon: Target, color: "text-amber-500", bg: isDark ? "bg-amber-950/60 border-amber-800/50" : "bg-amber-50 border-amber-200" },
+                  { en: "SERVE", hi: "सेवा", desc: "Community", icon: ShieldCheck, color: "text-emerald-500", bg: isDark ? "bg-emerald-950/60 border-emerald-800/50" : "bg-emerald-50 border-emerald-200" },
                 ].map((item, idx) => (
                   <div 
                     key={idx} 
-                    className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
-                      isDark 
-                        ? "bg-slate-950/70 border-slate-800 hover:border-blue-500/60 hover:bg-slate-900" 
-                        : "bg-slate-50/90 border-slate-200 hover:border-blue-300 hover:bg-white"
-                    }`}
+                    className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border text-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${item.bg}`}
                   >
-                    <item.icon className={`w-6 h-6 mb-1.5 ${item.color}`} />
+                    <item.icon className={`w-4 h-4 mb-1 ${item.color}`} />
                     <span className={`text-xs sm:text-sm font-black tracking-wider ${isDark ? "text-white" : "text-slate-900"}`}>
                       {item.en}
                     </span>
-                    <span className={`text-xs font-extrabold mt-0.5 ${isDark ? "text-blue-300" : "text-blue-700"}`}>
+                    <span className={`text-[10px] font-extrabold mt-0.5 ${isDark ? "text-blue-300" : "text-blue-700"}`}>
                       {item.hi}
                     </span>
-                    <span className={`text-[10px] font-medium mt-1 leading-tight hidden sm:block ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                    <span className={`text-[9px] font-medium mt-0.5 leading-tight ${isDark ? "text-slate-400" : "text-slate-500"}`}>
                       {item.desc}
                     </span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick ERP Role Login Bar */}
-            <div className={`p-4 rounded-2xl border backdrop-blur-xl ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-white/80 border-slate-200"}`}>
-              <div className="text-xs font-black uppercase tracking-wider mb-2.5 flex items-center justify-between">
-                <span className={isDark ? "text-slate-300" : "text-slate-700"}>⚡ Quick Portal Access:</span>
-                <span className="text-blue-500 font-bold">1-Click Login</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { role: "Student", icon: GraduationCap, color: "bg-blue-600 hover:bg-blue-700" },
-                  { role: "Teacher", icon: Book, color: "bg-indigo-600 hover:bg-indigo-700" },
-                  { role: "Admin", icon: ShieldCheck, color: "bg-purple-600 hover:bg-purple-700" },
-                  { role: "Parent", icon: LogIn, color: "bg-emerald-600 hover:bg-emerald-700" },
-                ].map((r, i) => (
-                  <button
-                    key={i}
-                    onClick={() => navigate('/login')}
-                    className={`${r.color} text-white py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95`}
-                  >
-                    <r.icon size={14} /> {r.role}
-                  </button>
                 ))}
               </div>
             </div>
@@ -286,20 +300,20 @@ const LandingPage = () => {
 
           {/* ── RIGHT: Interactive Visual Showcase & Counter Stats (Col 5) ── */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.92 }} 
+            initial={{ opacity: 0, scale: 0.94 }} 
             animate={{ opacity: 1, scale: 1 }} 
             transition={{ duration: 0.9, delay: 0.2 }} 
-            className="lg:col-span-5 flex flex-col gap-4 relative"
+            className="lg:col-span-5 flex flex-col gap-3.5 relative"
           >
             {/* Tab Selector Buttons */}
-            <div className={`flex p-1.5 rounded-2xl border backdrop-blur-xl gap-1 overflow-x-auto ${isDark ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200 shadow-sm"}`}>
+            <div className={`flex p-1 sm:p-1.5 rounded-2xl border backdrop-blur-xl gap-1 max-w-full overflow-x-auto scrollbar-none ${isDark ? "bg-slate-900/90 border-slate-800" : "bg-white/90 border-slate-200 shadow-sm"}`}>
               {heroShowcases.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => setHeroTab(s.id as any)}
-                  className={`flex-1 py-2 px-3 rounded-xl font-black text-xs transition-all whitespace-nowrap ${
+                  className={`flex-1 py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-xl font-black text-[11px] sm:text-xs transition-all whitespace-nowrap ${
                     heroTab === s.id
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-[1.02]"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-600/30 scale-[1.02]"
                       : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -309,7 +323,7 @@ const LandingPage = () => {
             </div>
 
             {/* Main Visual Showcase Frame */}
-            <div className={`relative z-10 w-full h-[380px] sm:h-[420px] rounded-[36px] shadow-2xl overflow-hidden border-4 sm:border-8 ${isDark ? "border-slate-800/90" : "border-white"}`}>
+            <div className={`relative z-10 w-full h-[280px] sm:h-[350px] lg:h-[380px] rounded-3xl shadow-2xl overflow-hidden border-2 sm:border-4 ${isDark ? "border-slate-800/90" : "border-white"}`}>
               <AnimatePresence mode="wait">
                 <motion.img
                   key={heroTab}
@@ -327,31 +341,30 @@ const LandingPage = () => {
               <div className={`absolute inset-0 bg-gradient-to-t ${isDark ? "from-[#081526]/95 via-[#081526]/30" : "from-slate-950/85 via-slate-900/20"} to-transparent`} />
 
               {/* Badge Header inside Image */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-20">
-                <div className="bg-slate-950/80 backdrop-blur-md text-white border border-white/20 px-3 py-1.5 rounded-full text-xs font-black flex items-center gap-1.5 shadow-lg">
-                  <Award size={14} className="text-amber-400" />
-                  <span>25+ Years Excellence</span>
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20">
+                <div className="bg-slate-950/80 backdrop-blur-md text-white border border-white/20 px-2.5 py-1 rounded-full text-[11px] font-black flex items-center gap-1 shadow-lg">
+                  <Award size={13} className="text-amber-400" />
+                  <span>25+ Yrs Legacy</span>
                 </div>
-                <div className="bg-emerald-600/90 backdrop-blur-md text-white px-3 py-1 rounded-full text-[11px] font-black shadow-lg uppercase tracking-wider">
+                <div className="bg-emerald-600/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-[10px] font-black shadow-lg uppercase tracking-wider">
                   {currentHeroVisual.badge}
                 </div>
               </div>
 
               {/* Title & Stats Overlay at Bottom */}
-              <div className="absolute bottom-4 left-4 right-4 z-20 flex flex-col gap-2">
-                <div className="text-white font-black text-lg drop-shadow-md">
+              <div className="absolute bottom-3 left-3 right-3 z-20 flex flex-col gap-2">
+                <div className="text-white font-black text-base sm:text-lg drop-shadow-md">
                   {currentHeroVisual.title}
                 </div>
                 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Classes", val: "Nursery–12th" },
-                    { label: "Board", val: "M.P. Board" },
-                    { label: "Hours", val: "8:45 AM–1:50 PM" },
+                    { label: "Classes Offered", val: "Nursery–12th" },
+                    { label: "Affiliation Board", val: "M.P. Board" },
                   ].map((s, i) => (
-                    <div key={i} className="bg-white/95 backdrop-blur-md rounded-2xl p-2 shadow-xl text-center border border-white/40">
+                    <div key={i} className="bg-white/95 backdrop-blur-md rounded-xl p-1.5 shadow-xl text-center border border-white/40">
                       <div className="text-blue-700 font-black text-xs sm:text-sm">{s.val}</div>
-                      <div className="text-slate-600 text-[10px] font-extrabold leading-tight">{s.label}</div>
+                      <div className="text-slate-600 text-[9px] sm:text-[10px] font-extrabold leading-tight">{s.label}</div>
                     </div>
                   ))}
                 </div>
@@ -366,9 +379,9 @@ const LandingPage = () => {
                 { val: "100%", label: "Board Pass" },
                 { val: "50+", label: "Faculty" },
               ].map((stat, i) => (
-                <div key={i} className={`p-3 rounded-2xl border text-center backdrop-blur-md ${isDark ? "bg-slate-900/80 border-slate-800" : "bg-white/90 border-slate-200 shadow-sm"}`}>
-                  <div className="text-blue-500 font-black text-sm sm:text-base">{stat.val}</div>
-                  <div className={`text-[10px] font-extrabold uppercase mt-0.5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>{stat.label}</div>
+                <div key={i} className={`p-2 sm:p-2.5 rounded-2xl border text-center backdrop-blur-md ${isDark ? "bg-slate-900/80 border-slate-800" : "bg-white/90 border-slate-200 shadow-sm"}`}>
+                  <div className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-indigo-500 font-black text-xs sm:text-base">{stat.val}</div>
+                  <div className={`text-[9px] sm:text-[10px] font-extrabold uppercase mt-0.5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -377,76 +390,248 @@ const LandingPage = () => {
 
         </div>
 
-        {/* Bottom Trust Highlights Ticker */}
-        <div className={`w-full border-t py-4 ${isDark ? "bg-slate-900/90 border-slate-800 text-slate-300" : "bg-white/90 border-slate-200 text-slate-700"}`}>
-          <div className="container mx-auto px-4 flex flex-wrap items-center justify-around gap-4 text-xs font-black uppercase tracking-wider text-center">
-            <span className="flex items-center gap-2"><Book className="w-4 h-4 text-blue-500" /> Digital Smart Classrooms</span>
-            <span className="flex items-center gap-2"><Laptop className="w-4 h-4 text-indigo-500" /> Computer & Science Labs</span>
-            <span className="flex items-center gap-2"><Bus className="w-4 h-4 text-emerald-500" /> Safe GPS Transport</span>
-            <span className="flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" /> Sports & Activity Arena</span>
+        {/* Bottom Trust Highlights Cards */}
+        <div className={`w-full border-y py-3.5 backdrop-blur-xl relative z-10 ${
+          isDark ? "bg-slate-950/80 border-slate-800/80" : "bg-white/95 border-slate-200/90 shadow-sm"
+        }`}>
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+              {[
+                { icon: Book, title: "Digital Smart Classrooms", color: "text-blue-500", bg: isDark ? "bg-blue-950/50 border-blue-800/50" : "bg-blue-50/90 border-blue-200" },
+                { icon: Laptop, title: "Computer & STEM Labs", color: "text-indigo-500", bg: isDark ? "bg-indigo-950/50 border-indigo-800/50" : "bg-indigo-50/90 border-indigo-200" },
+                { icon: Bus, title: "Safe GPS Transport", color: "text-emerald-500", bg: isDark ? "bg-emerald-950/50 border-emerald-800/50" : "bg-emerald-50/90 border-emerald-200" },
+                { icon: Trophy, title: "Sports & Activity Arena", color: "text-amber-500", bg: isDark ? "bg-amber-950/50 border-amber-800/50" : "bg-amber-50/90 border-amber-200" },
+              ].map((item, idx) => (
+                <div 
+                  key={idx}
+                  className={`flex items-center justify-center gap-2 px-3 py-2 sm:py-2.5 rounded-xl border transition-all duration-300 hover:scale-[1.02] shadow-sm ${item.bg}`}
+                >
+                  <item.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${item.color}`} />
+                  <span className={`text-[10px] sm:text-xs font-black tracking-wide uppercase text-center ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+                    {item.title}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* --- ABOUT SECTION --- */}
-      <section id="about" className={`py-24 overflow-hidden ${isDark ? "bg-slate-900" : "bg-[var(--card-bg)] text-[var(--text-main)]"}`}>
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-16">
-            {/* Left Side: Legacy Image Module */}
-            <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="flex-1 relative">
-              <div className={`relative z-10 rounded-3xl overflow-hidden shadow-2xl border-8 ${isDark ? "border-slate-800" : "border-[var(--border-color)]"} h-[400px] md:h-[550px]`}>
-                <img src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&q=80&w=2070" alt="Vasant Valley School Library" className="w-full h-full object-cover" />
+      <section id="about" className={`py-10 sm:py-12 relative overflow-hidden transition-colors duration-500 ${isDark ? "bg-slate-900 text-white" : "bg-slate-50/80 text-slate-900"}`}>
+        
+        {/* Subtle Ambient Background Glows */}
+        <div className={`absolute top-1/2 -left-20 w-80 h-80 rounded-full blur-[120px] -z-0 ${isDark ? "bg-blue-600/15" : "bg-blue-200/40"}`} />
+        <div className={`absolute bottom-0 right-0 w-80 h-80 rounded-full blur-[120px] -z-0 ${isDark ? "bg-indigo-600/15" : "bg-indigo-200/40"}`} />
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-14">
+            
+            {/* Left Side: Legacy Image Module (Sleek & Compact) */}
+            <motion.div 
+              initial={{ opacity: 0, x: -40 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }} 
+              transition={{ duration: 0.7 }}
+              className="flex-1 w-full max-w-lg relative"
+            >
+              <div className={`relative z-10 rounded-[28px] overflow-hidden shadow-2xl border-4 sm:border-6 ${isDark ? "border-slate-800" : "border-white"} h-[300px] sm:h-[360px]`}>
+                <img 
+                  src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?auto=format&fit=crop&q=80&w=1400" 
+                  alt="Vasant Valley School Campus Library" 
+                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-105" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4 text-white text-xs font-bold drop-shadow">
+                  📖 Modern Resource Center & Library
+                </div>
               </div>
+
               {/* Floating Experience Badge */}
-              <div className="absolute -bottom-6 -right-6 md:right-10 bg-yellow-500 text-[#0a192f] p-6 rounded-2xl shadow-xl z-20">
-                <p className="text-4xl font-black italic leading-none">25+</p>
-                <p className="text-sm font-bold uppercase tracking-tight leading-tight">Years of <br /> Excellence</p>
+              <div className="absolute -bottom-4 -right-2 sm:-right-4 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 px-5 py-3 rounded-2xl shadow-2xl border border-yellow-300 z-20 flex items-center gap-3">
+                <div className="text-3xl font-black italic leading-none">25+</div>
+                <div className="text-[11px] font-black uppercase tracking-tight leading-tight">
+                  Years of <br /> Academic Excellence
+                </div>
               </div>
             </motion.div>
             
-            {/* Right Side: Narrative Module */}
-            <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="flex-1">
-              <span className="text-blue-500 font-bold tracking-widest uppercase text-sm mb-4 block">About Our Legacy</span>
-              <h2 className={`text-4xl md:text-5xl font-extrabold mb-6 leading-tight italic ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>
-                A Journey of <span className="text-blue-600">Knowledge</span> & Character
-              </h2>
-              <p className={`text-lg mb-8 leading-relaxed ${isDark ? "text-slate-400" : "text-[var(--text-muted)]"}`}>
-                Founded in 2001, Vasant Valley School is dedicated to holistic student development. We provide a perfect balance of modern technology and traditional values, preparing students for global success.
+            {/* Right Side: Narrative & Legacy Details Module */}
+            <motion.div 
+              initial={{ opacity: 0, x: 40 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }} 
+              transition={{ duration: 0.7 }}
+              className="flex-1 space-y-5"
+            >
+              <div>
+                <span className={`inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] px-3.5 py-1.5 rounded-xl border mb-3 ${
+                  isDark ? "bg-blue-950/80 text-blue-300 border-blue-800/60" : "bg-blue-50 text-blue-800 border-blue-200"
+                }`}>
+                  🏛️ ABOUT OUR LEGACY & VISION
+                </span>
+                <h2 className={`text-3xl sm:text-4xl md:text-5xl font-black leading-tight tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  A Journey of <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 italic">Knowledge</span> & Character
+                </h2>
+              </div>
+
+              <p className={`text-sm sm:text-base leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                Established in <strong>2001</strong> at Shree Dham Colony, Malikhedi, Bhopal, <strong>Vasant Valley School</strong> is dedicated to nurturing future leaders through holistic education, cutting-edge STEM labs, and traditional ethical values.
               </p>
-              {/* Legacy Key Features */}
-              <ul className="space-y-4 mb-10">
-                {["Global Standard Curriculum (M.P. Board)", "Classes: Nursery to 12th", "Safe & Inclusive Environment"].map((item, i) => (
-                  <li key={i} className={`flex items-center gap-3 font-medium ${isDark ? "text-slate-300" : "text-[var(--text-main)]"}`}>
-                    <CheckCircle2 className="text-blue-600 w-5 h-5" /> {item}
-                  </li>
+
+              {/* Feature Pills */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                {[
+                  { title: "M.P. Board Recognized", desc: "School Code: 231", icon: ShieldCheck, color: "text-emerald-500" },
+                  { title: "Nursery to 12th", desc: "Complete K-12 Pathway", icon: GraduationCap, color: "text-blue-500" },
+                  { title: "Safe & Tech-Enabled", desc: "GPS & Smart Classes", icon: Award, color: "text-amber-500" },
+                ].map((f, idx) => (
+                  <div key={idx} className={`p-3 rounded-2xl border backdrop-blur-md transition-all ${isDark ? "bg-slate-800/60 border-slate-700/80" : "bg-white border-slate-200 shadow-sm"}`}>
+                    <f.icon className={`w-5 h-5 mb-1 ${f.color}`} />
+                    <div className={`text-xs font-black ${isDark ? "text-white" : "text-slate-900"}`}>{f.title}</div>
+                    <div className={`text-[10px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>{f.desc}</div>
+                  </div>
                 ))}
-              </ul>
+              </div>
+
+              {/* Quick Key Achievements */}
+              <div className={`p-4 rounded-2xl border flex items-center justify-around text-center backdrop-blur-md ${isDark ? "bg-blue-950/30 border-blue-900/50" : "bg-blue-50/70 border-blue-100"}`}>
+                <div>
+                  <div className="text-blue-600 font-black text-lg sm:text-xl">2001</div>
+                  <div className={`text-[10px] font-extrabold uppercase ${isDark ? "text-slate-400" : "text-slate-600"}`}>Founded Year</div>
+                </div>
+                <div className="h-8 w-px bg-slate-300/40" />
+                <div>
+                  <div className="text-indigo-600 font-black text-lg sm:text-xl">100%</div>
+                  <div className={`text-[10px] font-extrabold uppercase ${isDark ? "text-slate-400" : "text-slate-600"}`}>Pass Record</div>
+                </div>
+                <div className="h-8 w-px bg-slate-300/40" />
+                <div>
+                  <div className="text-emerald-600 font-black text-lg sm:text-xl">1500+</div>
+                  <div className={`text-[10px] font-extrabold uppercase ${isDark ? "text-slate-400" : "text-slate-600"}`}>Happy Students</div>
+                </div>
+              </div>
+
             </motion.div>
           </div>
         </div>
       </section>
 
       {/* --- FACILITIES SECTION --- */}
-      <section id="facilities" className={`py-24 relative overflow-hidden ${isDark ? "bg-[#0a192f]" : "bg-[var(--input-bg)]"}`}>
-        <div className="container mx-auto px-6">
-          <div className="text-center max-w-2xl mx-auto mb-20">
-            <span className="text-blue-600 font-bold tracking-[0.2em] uppercase text-sm">Excellence in Every Detail</span>
-            <h2 className={`text-4xl md:text-5xl font-black mt-4 italic ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>Premium <span className="text-blue-600">Facilities</span></h2>
+      <section id="facilities" className={`py-12 sm:py-14 relative overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#081526] text-white" : "bg-slate-50/90 text-slate-900"}`}>
+        
+        {/* Dynamic Glowing Mesh Grid & Ambient Light Orbs */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:36px_36px] -z-0" />
+        <div className={`absolute top-0 right-1/4 w-96 h-96 rounded-full blur-[140px] -z-0 ${isDark ? "bg-blue-600/20" : "bg-blue-300/40"}`} />
+        <div className={`absolute bottom-0 left-1/4 w-96 h-96 rounded-full blur-[140px] -z-0 ${isDark ? "bg-indigo-600/15" : "bg-indigo-200/40"}`} />
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          
+          {/* Section Header Card */}
+          <div className="text-center max-w-3xl mx-auto mb-10">
+            <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border backdrop-blur-md shadow-md mb-3 ${
+              isDark ? "bg-blue-950/90 text-blue-300 border-blue-500/50" : "bg-blue-50 text-blue-800 border-blue-200"
+            }`}>
+              <Sparkles size={15} className="text-amber-400" /> Excellence in Every Detail
+            </span>
+
+            <h2 className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+              World-Class <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 italic">Campus Facilities</span>
+            </h2>
+
+            <p className={`mt-3 text-xs sm:text-sm leading-relaxed max-w-xl mx-auto ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+              State-of-the-art infrastructure designed to provide a safe, tech-enabled, and inspiring learning environment for every student.
+            </p>
           </div>
-          {/* Service/Facilities Card Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+
+          {/* 6 Premium Facilities Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[
-              { icon: <Monitor size={32} />, title: "Digital Classes", desc: "Interactive smart boards aur VR technology in classrooms.", gradient: "from-blue-500 to-cyan-400" },
-              { icon: <Bus size={32} />, title: "Smart Transport", desc: "Fully air-conditioned buses with GPS tracking.", gradient: "from-purple-500 to-pink-500" },
-              { icon: <Book size={32} />, title: "Modern Library", desc: "20,000+ books aur high-speed internet lab.", gradient: "from-emerald-500 to-teal-400" },
-              { icon: <ShieldCheck size={32} />, title: "AI Security", desc: "AI-powered CCTV aur facial recognition campus.", gradient: "from-orange-500 to-amber-400" },
+              { 
+                icon: Monitor, 
+                title: "Digital Smart Classes", 
+                desc: "Interactive smart boards, 3D visual modules & audio-visual digital learning tools.", 
+                badge: "Smart Board Equipped",
+                color: "text-blue-500",
+                bg: isDark ? "bg-blue-950/50 border-blue-800/50" : "bg-blue-50/90 border-blue-200",
+                gradient: "from-blue-600 to-cyan-500" 
+              },
+              { 
+                icon: FlaskConical, 
+                title: "Advanced STEM Labs", 
+                desc: "Fully equipped Science & Physics/Chemistry/Biology labs for practical learning.", 
+                badge: "Practical STEM Labs",
+                color: "text-indigo-500",
+                bg: isDark ? "bg-indigo-950/50 border-indigo-800/50" : "bg-indigo-50/90 border-indigo-200",
+                gradient: "from-indigo-600 to-purple-500" 
+              },
+              { 
+                icon: Bus, 
+                title: "GPS Smart Transport", 
+                desc: "Safe & comfortable school buses with live GPS tracking for real-time parent updates.", 
+                badge: "Live GPS Tracking",
+                color: "text-purple-500",
+                bg: isDark ? "bg-purple-950/50 border-purple-800/50" : "bg-purple-50/90 border-purple-200",
+                gradient: "from-purple-600 to-pink-500" 
+              },
+              { 
+                icon: Book, 
+                title: "Modern Resource Library", 
+                desc: "20,000+ academic books, reference journals & high-speed digital research lab.", 
+                badge: "20,000+ Books",
+                color: "text-emerald-500",
+                bg: isDark ? "bg-emerald-950/50 border-emerald-800/50" : "bg-emerald-50/90 border-emerald-200",
+                gradient: "from-emerald-600 to-teal-500" 
+              },
+              { 
+                icon: Trophy, 
+                title: "Sports & Activity Arena", 
+                desc: "Spacious outdoor playground & indoor arena for cricket, football & gymnastics.", 
+                badge: "Multi-Sport Ground",
+                color: "text-amber-500",
+                bg: isDark ? "bg-amber-950/50 border-amber-800/50" : "bg-amber-50/90 border-amber-200",
+                gradient: "from-amber-500 to-orange-500" 
+              },
+              { 
+                icon: ShieldCheck, 
+                title: "24x7 AI Campus Security", 
+                desc: "100% CCTV surveillance coverage, gated access control & dedicated security team.", 
+                badge: "Full CCTV Coverage",
+                color: "text-rose-500",
+                bg: isDark ? "bg-rose-950/50 border-rose-800/50" : "bg-rose-50/90 border-rose-200",
+                gradient: "from-rose-600 to-pink-500" 
+              },
             ].map((item, i) => (
-              <motion.div key={i} whileHover={{ y: -10 }} className={`p-8 rounded-[32px] shadow-sm hover:shadow-2xl transition-all duration-500 group ${isDark ? "bg-slate-900 border border-slate-800 hover:border-blue-100/20" : "bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)] hover:border-blue-300"}`}>
-                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-8 ${isDark ? "bg-slate-800" : "bg-slate-100"} text-blue-600 group-hover:bg-gradient-to-br ${item.gradient} group-hover:text-white transition-all duration-500`}>
-                  {item.icon}
+              <motion.div 
+                key={i} 
+                whileHover={{ y: -6, scale: 1.01 }} 
+                transition={{ duration: 0.3 }}
+                className={`p-6 rounded-[28px] border backdrop-blur-2xl shadow-md transition-all duration-300 group flex flex-col justify-between ${
+                  isDark ? "bg-slate-900/85 border-slate-800 hover:border-blue-500/50 hover:bg-slate-900" : "bg-white/95 border-slate-200 hover:border-blue-300 hover:shadow-2xl"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`w-13 h-13 rounded-2xl flex items-center justify-center text-white bg-gradient-to-br ${item.gradient} shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300`}>
+                      <item.icon size={24} />
+                    </div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${item.bg} ${item.color}`}>
+                      {item.badge}
+                    </span>
+                  </div>
+
+                  <h3 className={`text-lg font-extrabold mb-2 tracking-tight group-hover:text-blue-600 transition-colors ${isDark ? "text-white" : "text-slate-900"}`}>
+                    {item.title}
+                  </h3>
+                  <p className={`text-xs leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                    {item.desc}
+                  </p>
                 </div>
-                <h3 className={`text-2xl font-bold mb-4 tracking-tight group-hover:text-blue-600 transition-colors ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>{item.title}</h3>
-                <p className={`leading-relaxed mb-8 ${isDark ? "text-slate-400" : "text-[var(--text-muted)]"}`}>{item.desc}</p>
+
+                <div className="mt-4 pt-3 border-t border-slate-200/20 flex items-center gap-1.5 text-xs font-black text-blue-600 group-hover:translate-x-1 transition-transform">
+                  <span>Explore Facility</span>
+                  <ArrowRight size={14} />
+                </div>
               </motion.div>
             ))}
           </div>
@@ -454,7 +639,7 @@ const LandingPage = () => {
       </section>
 
       {/* --- ACADEMIC EXCELLENCE & PROGRAMS SECTION --- */}
-      <section id="programs" className={`py-24 relative overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#091729] text-white" : "bg-slate-50/80 text-slate-900"}`}>
+      <section id="programs" className={`py-10 sm:py-12 relative overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#091729] text-white" : "bg-slate-50/80 text-slate-900"}`}>
         
         {/* Background Mesh Glows */}
         <div className={`absolute -top-32 right-0 w-96 h-96 rounded-full blur-[140px] -z-0 ${isDark ? "bg-blue-600/15" : "bg-blue-200/30"}`} />
@@ -479,21 +664,21 @@ const LandingPage = () => {
               M.P. Board accredited curriculum from Nursery to 12th Class, seamlessly integrating modern STEM labs, digital smart classrooms, and personalized student progress analytics.
             </p>
 
-            {/* Interactive Wing Filter Tabs */}
-            <div className={`mt-8 inline-flex p-1.5 rounded-2xl border backdrop-blur-xl gap-1 flex-wrap justify-center ${isDark ? "bg-slate-900/90 border-slate-800" : "bg-white border-slate-200 shadow-md"}`}>
+            {/* Interactive Wing Filter Tabs (Single Row Compact) */}
+            <div className={`mt-6 inline-flex p-1 sm:p-1.5 rounded-2xl border backdrop-blur-xl gap-1 max-w-full overflow-x-auto ${isDark ? "bg-slate-900/90 border-slate-800" : "bg-white border-slate-200 shadow-sm"}`}>
               {[
                 { id: 'all', label: 'All Wings' },
                 { id: 'pre', label: '🧸 Pre-Primary' },
                 { id: 'primary', label: '📚 Primary (1st–5th)' },
                 { id: 'secondary', label: '🔬 Secondary (6th–10th)' },
-                { id: 'senior', label: '🎓 Senior Secondary (11th–12th)' },
+                { id: 'senior', label: '🎓 Senior (11th–12th)' },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setAcademicWing(tab.id as any)}
-                  className={`py-2.5 px-4 rounded-xl font-extrabold text-xs transition-all duration-300 ${
+                  className={`py-2 px-3 sm:px-3.5 rounded-xl font-bold text-xs transition-all duration-300 whitespace-nowrap ${
                     academicWing === tab.id
-                      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 scale-105"
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 scale-102"
                       : isDark ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-blue-600"
                   }`}
                 >
@@ -503,98 +688,98 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Academic Wings Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Academic Wings Grid (Compact Cards) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               {
                 id: 'pre',
                 title: "Pre-Primary Wing",
                 classes: "Nursery, LKG & UKG",
-                badge: "Foundational Play-Way Stage",
-                desc: "Activity-based learning focusing on phonics, motor skills, color recognition, and social habit formation.",
+                badge: "Play-Way Stage",
+                desc: "Activity-based learning focusing on phonics, motor skills & habit formation.",
                 highlights: ["Phonics & Vocabulary", "Play-Way Activity Lab", "Social Habit Formation", "Color & Shape Skills"],
                 icon: BookOpen,
                 accent: "from-sky-500 via-blue-600 to-indigo-700",
                 shadow: "shadow-sky-500/20",
-                metric: "100% Phonics Readiness"
+                metric: "100% Phonics"
               },
               {
                 id: 'primary',
                 title: "Primary Wing",
                 classes: "Classes 1st – 5th",
-                badge: "Preparatory Knowledge Base",
-                desc: "Strong foundation in Mathematics logic, Language fluency, Science curiosity, and Environmental awareness.",
+                badge: "Knowledge Base",
+                desc: "Strong foundation in Math logic, Language fluency & Science curiosity.",
                 highlights: ["English & Hindi Literacy", "Mental Math & Logic", "EVS & Science Basics", "Smartboard Learning"],
                 icon: FlaskConical,
                 accent: "from-indigo-600 via-purple-600 to-pink-700",
                 shadow: "shadow-indigo-500/20",
-                metric: "Conceptual Mastery"
+                metric: "Math & Logic"
               },
               {
                 id: 'secondary',
                 title: "Secondary Wing",
                 classes: "Classes 6th – 10th",
-                badge: "Middle & Board Preparation",
-                desc: "In-depth M.P. Board curriculum, practical laboratory experiments, Computer Science coding, and Board exam prep.",
+                badge: "Board Prep Stage",
+                desc: "M.P. Board curriculum, practical STEM lab experiments & Board exam coaching.",
                 highlights: ["Physics, Chemistry & Bio", "Advanced Mathematics", "Computer & Coding Lab", "M.P. Board Prep"],
                 icon: Award,
                 accent: "from-emerald-600 via-teal-600 to-cyan-700",
                 shadow: "shadow-emerald-500/20",
-                metric: "100% Board Pass Rate"
+                metric: "100% Board Pass"
               },
               {
                 id: 'senior',
                 title: "Senior Secondary",
                 classes: "Classes 11th – 12th",
-                badge: "Specialization & Board Merit",
-                desc: "Specialized Science (PCM/PCB), Commerce, and Arts streams with M.P. Board Merit mentoring and JEE/NEET guidance.",
+                badge: "Merit & Streams",
+                desc: "Science (PCM/PCB), Commerce & Arts streams with M.P. Board Merit mentoring.",
                 highlights: ["Science (PCM / PCB)", "Commerce & Accounts", "Arts & Humanities", "Competitive Guidance"],
                 icon: Laptop,
                 accent: "from-amber-500 via-orange-600 to-rose-700",
                 shadow: "shadow-amber-500/20",
-                metric: "Merit Rank Coaching"
+                metric: "Merit Rank"
               },
             ]
             .filter(wing => academicWing === 'all' || academicWing === wing.id)
             .map((wing, i) => (
               <motion.div 
                 key={wing.id} 
-                initial={{ opacity: 0, y: 25 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                whileHover={{ y: -10 }} 
+                transition={{ duration: 0.4, delay: i * 0.08 }}
+                whileHover={{ y: -6 }} 
                 className="group flex flex-col justify-between"
               >
-                <div className={`relative overflow-hidden rounded-[36px] p-8 bg-gradient-to-br ${wing.accent} text-white shadow-2xl ${wing.shadow} transition-all duration-500 flex flex-col justify-between h-full border border-white/20`}>
+                <div className={`relative overflow-hidden rounded-3xl p-5 sm:p-6 bg-gradient-to-br ${wing.accent} text-white shadow-xl ${wing.shadow} transition-all duration-300 flex flex-col justify-between h-full border border-white/20`}>
                   
                   {/* Top Glass Badge & Icon */}
                   <div>
-                    <div className="flex items-center justify-between gap-2 mb-6">
-                      <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-lg group-hover:rotate-6 transition-transform">
-                        <wing.icon className="w-7 h-7 text-white" />
+                    <div className="flex items-center justify-between gap-2 mb-4">
+                      <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-md group-hover:rotate-6 transition-transform">
+                        <wing.icon className="w-5 h-5 text-white" />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white/90 border border-white/20">
+                      <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full text-white/95 border border-white/20">
                         {wing.metric}
                       </span>
                     </div>
 
-                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white/80 block mb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/80 block mb-1">
                       {wing.classes}
                     </span>
 
-                    <h3 className="text-2xl font-black mb-2 tracking-tight">
+                    <h3 className="text-lg sm:text-xl font-black mb-1.5 tracking-tight">
                       {wing.title}
                     </h3>
 
-                    <p className="text-xs text-white/90 font-medium leading-relaxed mb-6">
+                    <p className="text-xs text-white/90 font-medium leading-relaxed mb-4">
                       {wing.desc}
                     </p>
 
                     {/* Bullet Highlights */}
-                    <div className="space-y-2 mb-8 pt-4 border-t border-white/20">
+                    <div className="space-y-1.5 mb-5 pt-3 border-t border-white/20">
                       {wing.highlights.map((hl, idx) => (
-                        <div key={idx} className="flex items-center gap-2 text-xs font-bold text-white/95">
-                          <CheckCircle2 size={14} className="text-white shrink-0" />
+                        <div key={idx} className="flex items-center gap-2 text-[11px] font-extrabold text-white/95">
+                          <CheckCircle2 size={13} className="text-white shrink-0" />
                           <span>{hl}</span>
                         </div>
                       ))}
@@ -604,9 +789,9 @@ const LandingPage = () => {
                   {/* Bottom Action */}
                   <button 
                     onClick={() => navigate('/login')}
-                    className="w-full flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider bg-white text-slate-900 px-5 py-3.5 rounded-2xl hover:bg-slate-100 transition-colors shadow-xl group-hover:scale-[1.02] active:scale-95"
+                    className="w-full flex items-center justify-center gap-1.5 text-xs font-black uppercase tracking-wider bg-white text-slate-900 px-4 py-2.5 rounded-xl hover:bg-slate-100 transition-colors shadow-lg group-hover:scale-[1.02] active:scale-95"
                   >
-                    Explore Curriculum <ArrowUpRight size={16} />
+                    <span>Curriculum</span> <ArrowUpRight size={15} />
                   </button>
 
                 </div>
@@ -656,33 +841,33 @@ const LandingPage = () => {
       </section>
 
       {/* --- CO-CURRICULAR ACTIVITIES SECTION --- */}
-      <section id="activities" className={`py-24 relative overflow-hidden ${isDark ? "bg-[#091729]" : "bg-[var(--input-bg)]"}`}>
-        <div className="container mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <span className="text-blue-600 font-bold tracking-[0.2em] uppercase text-sm flex items-center justify-center gap-2">
+      <section id="activities" className={`py-10 sm:py-12 relative overflow-hidden ${isDark ? "bg-[#091729]" : "bg-slate-50/90"}`}>
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
+            <span className="text-blue-600 font-bold tracking-[0.2em] uppercase text-xs sm:text-sm flex items-center justify-center gap-2">
               <Sparkles size={16} /> Holistic Development
             </span>
-            <h2 className={`text-4xl md:text-5xl font-black mt-3 italic ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>
-              Co-Curricular <span className="text-blue-600">Activities</span>
+            <h2 className={`text-3xl sm:text-4xl md:text-5xl font-black mt-2 tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+              Co-Curricular <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 italic">Activities</span>
             </h2>
-            <p className={`mt-4 text-base md:text-lg ${isDark ? "text-slate-400" : "text-[var(--text-muted)]"}`}>
+            <p className={`mt-2.5 text-xs sm:text-sm leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
               Empowering students to discover their passions, hone talents, and develop leadership through a rich spectrum of co-curricular pursuits.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               {
-                title: "Sports",
-                icon: <Trophy size={32} />,
+                title: "Sports & Athletics",
+                icon: <Trophy size={28} />,
                 badge: "Physical Fitness & Teams",
                 desc: "Cricket, Football, Basketball, Athletics, Martial Arts & Indoor Games to build sportsmanship and endurance.",
                 gradient: "from-amber-500 to-orange-600",
                 accentColor: "text-amber-500"
               },
               {
-                title: "Art & Craft",
-                icon: <Palette size={32} />,
+                title: "Art & Craft Studio",
+                icon: <Palette size={28} />,
                 badge: "Creative Expression",
                 desc: "Sketching, Painting, Clay Modeling, Origami, Sculpture, and Design workshops to inspire creative flair.",
                 gradient: "from-purple-500 to-pink-600",
@@ -690,15 +875,15 @@ const LandingPage = () => {
               },
               {
                 title: "Cultural Activities",
-                icon: <Music size={32} />,
+                icon: <Music size={28} />,
                 badge: "Performing Arts",
                 desc: "Classical & Modern Dance, Vocal & Instrumental Music, Drama, Theater & Annual Cultural Celebrations.",
                 gradient: "from-blue-500 to-indigo-600",
                 accentColor: "text-blue-500"
               },
               {
-                title: "Literary Activities",
-                icon: <Feather size={32} />,
+                title: "Literary & Debating",
+                icon: <Feather size={28} />,
                 badge: "Intellectual Excellence",
                 desc: "Debates, Elocution, Creative Writing, Quiz Competitions, Spelling Bee & Public Speaking clubs.",
                 gradient: "from-emerald-500 to-teal-600",
@@ -707,30 +892,34 @@ const LandingPage = () => {
             ].map((activity, i) => (
               <motion.div
                 key={i}
-                whileHover={{ y: -12 }}
-                className={`p-8 rounded-[36px] border shadow-lg hover:shadow-2xl transition-all duration-500 flex flex-col justify-between ${
-                  isDark ? "bg-slate-900 border-slate-800 hover:border-blue-500/30" : "bg-white border-blue-100 hover:border-blue-300"
+                whileHover={{ y: -6 }}
+                transition={{ duration: 0.3 }}
+                className={`p-6 rounded-3xl border shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between ${
+                  isDark ? "bg-slate-900/90 border-slate-800 hover:border-blue-500/30" : "bg-white border-slate-200 hover:border-blue-300"
                 }`}
               >
                 <div>
-                  <div className={`w-16 h-16 rounded-2xl ${isDark ? "bg-slate-800" : "bg-slate-100"} ${activity.accentColor} flex items-center justify-center mb-6 shadow-sm`}>
-                    {activity.icon}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-r ${activity.gradient} text-white flex items-center justify-center shadow-md`}>
+                      {activity.icon}
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-800">
+                      {activity.badge}
+                    </span>
                   </div>
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400 px-3 py-1 rounded-full inline-block mb-3">
-                    {activity.badge}
-                  </span>
-                  <h3 className={`text-2xl font-black mb-3 tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+
+                  <h3 className={`text-lg font-black mb-2 tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
                     {activity.title}
                   </h3>
-                  <p className={`text-sm leading-relaxed ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+                  <p className={`text-xs leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
                     {activity.desc}
                   </p>
                 </div>
 
-                <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Explore Club</span>
-                  <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${activity.gradient} text-white flex items-center justify-center shadow-md`}>
-                    <ArrowUpRight size={16} />
+                <div className="mt-5 pt-3 border-t border-slate-200/40 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider">Explore Club</span>
+                  <div className={`w-7 h-7 rounded-full bg-gradient-to-r ${activity.gradient} text-white flex items-center justify-center shadow-md`}>
+                    <ArrowUpRight size={14} />
                   </div>
                 </div>
               </motion.div>
@@ -754,12 +943,12 @@ const LandingPage = () => {
             </p>
 
             {/* Toggle Class 10th / Class 12th */}
-            <div className="mt-8 inline-flex p-1.5 rounded-2xl bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-inner">
+            <div className="mt-6 sm:mt-8 inline-flex p-1 sm:p-1.5 rounded-2xl bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-inner max-w-full overflow-x-auto">
               <button
                 onClick={() => setTopperTab('10th')}
-                className={`px-8 py-3 rounded-xl font-black text-sm transition-all duration-300 flex items-center gap-2 ${
+                className={`px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-300 flex items-center gap-1.5 whitespace-nowrap ${
                   topperTab === '10th'
-                    ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-105"
+                    ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-102"
                     : "text-slate-600 dark:text-slate-300 hover:text-amber-500"
                 }`}
               >
@@ -767,9 +956,9 @@ const LandingPage = () => {
               </button>
               <button
                 onClick={() => setTopperTab('12th')}
-                className={`px-8 py-3 rounded-xl font-black text-sm transition-all duration-300 flex items-center gap-2 ${
+                className={`px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black text-xs sm:text-sm transition-all duration-300 flex items-center gap-1.5 whitespace-nowrap ${
                   topperTab === '12th'
-                    ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-105"
+                    ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-102"
                     : "text-slate-600 dark:text-slate-300 hover:text-amber-500"
                 }`}
               >
@@ -778,8 +967,8 @@ const LandingPage = () => {
             </div>
           </div>
 
-          {/* Topper Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {/* Topper Cards Grid (Responsive Grid) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5">
             {(topperTab === '10th' ? [
               { rank: 1, name: "Ananya Sharma", percentage: "98.4%", badge: "🥇 Gold Medalist", photo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400", remarks: "100/100 Math & Science" },
               { rank: 2, name: "Rohan Patel", percentage: "97.6%", badge: "🥈 Silver Medalist", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=400", remarks: "100/100 Social Science" },
@@ -846,30 +1035,103 @@ const LandingPage = () => {
       </section>
 
       {/* --- FACULTY SECTION --- */}
-      <section id="faculties" className={`py-24 ${isDark ? "bg-[#0a192f]" : "bg-[var(--input-bg)]"}`}>
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl md:text-5xl font-black italic mb-4 ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>Meet Our <span className="text-blue-600">Expert Faculties</span></h2>
-            <p className={`max-w-xl mx-auto text-lg ${isDark ? "text-slate-400" : "text-[var(--text-muted)]"}`}>Our teachers are mentors and guides who support students at every step.</p>
+      <section id="faculties" className={`py-10 sm:py-12 relative overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#081526] text-white" : "bg-slate-50/90 text-slate-900"}`}>
+        
+        {/* Ambient Glow */}
+        <div className={`absolute top-0 left-1/3 w-80 h-80 rounded-full blur-[130px] -z-0 ${isDark ? "bg-blue-600/15" : "bg-blue-200/40"}`} />
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+            <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-widest border backdrop-blur-md shadow-sm mb-3 ${
+              isDark ? "bg-blue-950/80 text-blue-300 border-blue-800/60" : "bg-blue-50 text-blue-800 border-blue-200"
+            }`}>
+              <Sparkles size={14} className="text-amber-400" /> Dedicated Educators & Mentors
+            </span>
+            <h2 className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+              Meet Our <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 italic">Expert Faculties</span>
+            </h2>
+            <p className={`mt-2.5 text-xs sm:text-sm leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+              Experienced educators and subject experts dedicated to guiding, mentoring, and inspiring student achievement.
+            </p>
           </div>
+
           {/* Faculty Profile Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { name: "Dr. Sarah Johnson", role: "Principal", img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800" },
-              { name: "Mr. Rajesh Kumar", role: "HOD Math", img: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=800" },
-              { name: "Ms. Priya Sharma", role: "English Mentor", img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=800" },
-              { name: "Mr. David Smith", role: "Physics Expert", img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=800" },
+              { 
+                name: "Dr. Sarah Johnson", 
+                role: "Principal & Academic Director", 
+                qual: "Ph.D. Education • 20+ Yrs Exp", 
+                badge: "Academic Head",
+                img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=800" 
+              },
+              { 
+                name: "Mr. Rajesh Kumar", 
+                role: "HOD Mathematics", 
+                qual: "M.Sc. Math • 15+ Yrs Exp", 
+                badge: "Senior Mentor",
+                img: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=800" 
+              },
+              { 
+                name: "Ms. Priya Sharma", 
+                role: "Senior English Instructor", 
+                qual: "M.A. English • 12+ Yrs Exp", 
+                badge: "Literary Club Lead",
+                img: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=800" 
+              },
+              { 
+                name: "Mr. David Smith", 
+                role: "Physics & STEM Specialist", 
+                qual: "M.Tech. Physics • 14+ Yrs Exp", 
+                badge: "STEM Lab Specialist",
+                img: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=800" 
+              },
             ].map((fac, i) => (
-              <motion.div key={i} whileHover={{ y: -10 }} className={`rounded-[40px] overflow-hidden border group ${isDark ? "bg-slate-900 border-slate-800" : "bg-[var(--card-bg)] text-[var(--text-main)] border-[var(--border-color)] shadow-lg"}`}>
-                <div className="h-72 w-full overflow-hidden">
-                  <img src={fac.img} alt={fac.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                </div>
-                <div className="p-6 text-center">
-                  <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>{fac.name}</h3>
-                  <p className="text-blue-500 font-bold text-sm mb-1">{fac.role}</p>
-                  <div className="mt-4 flex justify-center gap-4">
-                    <a href="#" className={`w-8 h-8 rounded-full flex items-center justify-center text-blue-500 hover:bg-blue-600 hover:text-white transition-all ${isDark ? "bg-slate-800" : "bg-slate-100"}`}><Linkedin size={16} /></a>
+              <motion.div 
+                key={i} 
+                whileHover={{ y: -6 }} 
+                transition={{ duration: 0.3 }}
+                className={`rounded-3xl overflow-hidden border backdrop-blur-xl shadow-md transition-all duration-300 group flex flex-col justify-between ${
+                  isDark ? "bg-slate-900/85 border-slate-800 hover:border-blue-500/40" : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-xl"
+                }`}
+              >
+                <div>
+                  <div className="h-56 sm:h-60 w-full overflow-hidden relative">
+                    <img 
+                      src={fac.img} 
+                      alt={fac.name} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                    
+                    <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-white border border-white/20 px-2.5 py-1 rounded-full text-[10px] font-black shadow-md">
+                      {fac.badge}
+                    </div>
                   </div>
+
+                  <div className="p-4 sm:p-5 text-center">
+                    <h3 className={`text-lg font-extrabold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                      {fac.name}
+                    </h3>
+                    <p className="text-blue-500 font-bold text-xs mt-0.5">{fac.role}</p>
+                    <p className={`text-[11px] font-medium mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                      {fac.qual}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="px-5 pb-5 pt-0 flex justify-center gap-3">
+                  <a 
+                    href="#contact" 
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-blue-500 hover:bg-blue-600 hover:text-white transition-all shadow-sm ${
+                      isDark ? "bg-slate-800" : "bg-blue-50"
+                    }`}
+                    title="Connect with Educator"
+                  >
+                    <Linkedin size={15} />
+                  </a>
                 </div>
               </motion.div>
             ))}
@@ -878,26 +1140,102 @@ const LandingPage = () => {
       </section>
       
       {/* --- TESTIMONIALS SECTION --- */}
-      <section id="testimonials" className={`py-24 overflow-hidden ${isDark ? "bg-slate-900" : "bg-[var(--card-bg)] text-[var(--text-main)]"}`}>
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className={`text-3xl md:text-5xl font-black italic mb-4 ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>What <span className="text-blue-600">Parents & Students</span> Say</h2>
+      <section id="testimonials" className={`py-12 sm:py-14 relative overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#081526] text-white" : "bg-slate-50/90 text-slate-900"}`}>
+        
+        {/* Subtle Background Mesh Glow */}
+        <div className={`absolute top-0 right-1/3 w-80 h-80 rounded-full blur-[130px] -z-0 ${isDark ? "bg-indigo-600/15" : "bg-indigo-200/40"}`} />
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-widest border backdrop-blur-md shadow-sm mb-3 ${
+              isDark ? "bg-blue-950/80 text-blue-300 border-blue-800/60" : "bg-blue-50 text-blue-800 border-blue-200"
+            }`}>
+              <Sparkles size={14} className="text-amber-400" /> Real Experiences & Feedback
+            </span>
+
+            <h2 className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+              What <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 italic">Parents & Students</span> Say
+            </h2>
+
+            <p className={`mt-2.5 text-xs sm:text-sm leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+              Hear from our school community about academic growth, character development, and our caring learning environment.
+            </p>
           </div>
-          {/* Testimonial Card Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+          {/* 3 Premium Testimonials Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { name: "Rahul Verma", role: "Parent", quote: "Vasant Valley School has transformed my son. Modern approach is amazing!" },
-              { name: "Aarav Patel", role: "Student (Grade 12)", quote: "Tech integration and flexible learning is exactly what I needed." }
+              { 
+                name: "Mrs. Sunita Sharma", 
+                role: "Parent of Grade 8th Student", 
+                quote: "Vasant Valley School has played a crucial role in my daughter's overall development. The teachers are incredibly supportive, and smart classes make learning enjoyable and effective.",
+                rating: 5,
+                badge: "Verified Parent Review",
+                initial: "S",
+                color: "bg-blue-600"
+              },
+              { 
+                name: "Aarav Patel", 
+                role: "Class 12th Board Achiever", 
+                quote: "The teachers here don't just teach for exams, they mentor us for life. Modern science labs, regular tests, and career guidance helped me secure top marks in M.P. Board!",
+                rating: 5,
+                badge: "Class 12th Merit Student",
+                initial: "A",
+                color: "bg-indigo-600"
+              },
+              { 
+                name: "Mr. Vikramaditya Singh", 
+                role: "Parent of Grade 5th Student", 
+                quote: "The GPS transport tracking gives complete peace of mind every day. Excellent discipline, sports facilities, and friendly school environment. Highly recommended!",
+                rating: 5,
+                badge: "Verified Parent Review",
+                initial: "V",
+                color: "bg-emerald-600"
+              }
             ].map((test, i) => (
-              <motion.div key={i} className={`p-10 rounded-3xl border shadow-xl space-y-6 ${isDark ? "bg-[#0a192f] border-slate-800" : "bg-[var(--input-bg)] border-[var(--border-color)]"}`}>
-                <Quote className="text-blue-600 rotate-180" size={32} />
-                <p className={`text-xl font-medium leading-relaxed ${isDark ? "text-slate-300" : "text-[var(--text-main)]"}`}>"{test.quote}"</p>
-                <div className={`flex items-center gap-4 pt-4 border-t ${isDark ? "border-slate-800" : "border-[var(--border-color)]"}`}>
-                    <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center font-black text-blue-500 text-xl ${isDark ? "bg-slate-800 border-slate-700" : "bg-blue-50 border-blue-200"}`}>{test.name.charAt(0)}</div>
-                    <div>
-                        <p className={`font-bold text-lg ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>{test.name}</p>
-                        <p className={`text-sm ${isDark ? "text-[var(--text-muted)]" : "text-[var(--text-muted)]"}`}>{test.role}</p>
-                    </div>
+              <motion.div 
+                key={i} 
+                whileHover={{ y: -6 }} 
+                transition={{ duration: 0.3 }}
+                className={`p-6 rounded-3xl border backdrop-blur-2xl shadow-md transition-all duration-300 flex flex-col justify-between ${
+                  isDark ? "bg-slate-900/85 border-slate-800 hover:border-blue-500/40" : "bg-white border-slate-200 hover:border-blue-300 hover:shadow-xl"
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <Quote className="text-blue-500 rotate-180 opacity-80" size={24} />
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-300 px-2.5 py-1 rounded-full border border-blue-200 dark:border-blue-800">
+                      {test.badge}
+                    </span>
+                  </div>
+
+                  {/* 5-Star Rating */}
+                  <div className="flex items-center gap-1 mb-3 text-amber-400">
+                    {[...Array(test.rating)].map((_, rIdx) => (
+                      <span key={rIdx} className="text-sm">★</span>
+                    ))}
+                    <span className="text-xs font-bold text-slate-400 ml-1.5">5.0 / 5.0</span>
+                  </div>
+
+                  <p className={`text-xs leading-relaxed italic ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                    "{test.quote}"
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3.5 pt-4 mt-5 border-t border-slate-200/30 dark:border-slate-800">
+                  <div className={`w-10 h-10 rounded-full ${test.color} text-white font-black text-sm flex items-center justify-center shadow-md shrink-0`}>
+                    {test.initial}
+                  </div>
+                  <div>
+                    <h4 className={`text-sm font-extrabold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                      {test.name}
+                    </h4>
+                    <p className={`text-[11px] font-medium ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                      {test.role}
+                    </p>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -906,99 +1244,311 @@ const LandingPage = () => {
       </section>
 
       {/* --- CONTACT SECTION --- */}
-      <section id="contact" className={`py-24 relative overflow-hidden ${isDark ? "bg-[#0a192f]" : "bg-[var(--input-bg)]"}`}>
-        <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-stretch">
-          {/* Left Side: Contact Information Module */}
-          <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="space-y-10">
-            <div>
-              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-widest mb-6 border ${isDark ? "bg-blue-900/30 text-blue-500 border-blue-800" : "bg-blue-50 text-blue-600 border-blue-200"}`}>
-                <Sparkles size={14} /> Contact Us
+      <section id="contact" className={`py-12 sm:py-16 relative overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#081526] text-white" : "bg-slate-50/90 text-slate-900"}`}>
+        
+        {/* Dynamic Mesh & Ambient Glow */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:36px_36px] -z-0" />
+        <div className={`absolute top-1/4 left-10 w-96 h-96 rounded-full blur-[140px] -z-0 ${isDark ? "bg-blue-600/20" : "bg-blue-300/40"}`} />
+        <div className={`absolute bottom-10 right-10 w-96 h-96 rounded-full blur-[140px] -z-0 ${isDark ? "bg-indigo-600/15" : "bg-indigo-200/40"}`} />
+
+        <div className="container mx-auto px-4 sm:px-6 relative z-10">
+          
+          <div className="grid lg:grid-cols-12 gap-8 items-start">
+            
+            {/* Left Side: Contact Information Module (5 cols) */}
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }} 
+              transition={{ duration: 0.5 }}
+              className="lg:col-span-5 space-y-6"
+            >
+              <div>
+                <span className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border backdrop-blur-md shadow-sm mb-3 ${
+                  isDark ? "bg-blue-950/80 text-blue-300 border-blue-800/60" : "bg-blue-50 text-blue-800 border-blue-200"
+                }`}>
+                  <Sparkles size={14} className="text-amber-400" /> Get in Touch & Visit Us
+                </span>
+
+                <h2 className={`text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  Let’s Start <br />
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 via-indigo-500 to-cyan-400 italic">
+                    A Conversation.
+                  </span>
+                </h2>
+
+                <p className={`mt-3 text-xs sm:text-sm leading-relaxed ${isDark ? "text-slate-300" : "text-slate-600"}`}>
+                  Have questions regarding Admissions 2026–27, campus visits, academics, or transport? Our administration team is here to guide you.
+                </p>
               </div>
-              <h2 className={`text-4xl md:text-6xl font-black leading-tight italic ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>
-                Let’s Start <br /> <span className="text-blue-600">A Conversation.</span>
-              </h2>
-            </div>
-            <div className="space-y-6">
-              {[
-                { icon: <Clock />, title: "School Hours", detail: "8:45 AM – 1:50 PM", color: "text-amber-500" },
-                { icon: <Phone />, title: "Call Us", detail: "0755-4378074 / 9981105858", color: "text-blue-500" },
-                { icon: <Mail />, title: "Email", detail: "Vasantvalleyschool20@gmail.com", color: "text-indigo-500" },
-                { icon: <MapPin />, title: "Visit Campus", detail: "Shree Dham Colony, Malikhedi, Bhopal", color: "text-emerald-500" }
-              ].map((item, i) => (
-                <div key={i} className="flex items-center gap-5 group">
-                  <div className={`w-14 h-14 ${isDark ? "bg-slate-800" : "bg-slate-100"} ${item.color} rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform`}>{item.icon}</div>
+
+              {/* Contact Information Cards */}
+              <div className="space-y-3.5 pt-2">
+                {[
+                  { 
+                    icon: <Phone size={20} />, 
+                    title: "Helpline Phone Numbers", 
+                    detail: "0755-4378074  /  +91 9981105858", 
+                    sub: "Office Hours Support",
+                    gradient: "from-blue-600 to-cyan-500" 
+                  },
+                  { 
+                    icon: <Mail size={20} />, 
+                    title: "Email Address", 
+                    detail: "Vasantvalleyschool20@gmail.com", 
+                    sub: "Direct Admissions Enquiry",
+                    gradient: "from-indigo-600 to-purple-500" 
+                  },
+                  { 
+                    icon: <MapPin size={20} />, 
+                    title: "Campus Location", 
+                    detail: "Shree Dham Colony, Malikhedi, Bhopal (M.P.)", 
+                    sub: "Affiliated M.P. Board Code: 231",
+                    gradient: "from-emerald-600 to-teal-500" 
+                  }
+                ].map((item, i) => (
+                  <div 
+                    key={i} 
+                    className={`p-4 rounded-2xl border backdrop-blur-xl transition-all duration-300 flex items-start gap-4 group ${
+                      isDark ? "bg-slate-900/80 border-slate-800 hover:border-blue-500/40" : "bg-white/90 border-slate-200 hover:border-blue-300 hover:shadow-lg"
+                    }`}
+                  >
+                    <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${item.gradient} text-white flex items-center justify-center shadow-md shrink-0 group-hover:scale-105 transition-transform`}>
+                      {item.icon}
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-blue-500 mb-0.5">{item.title}</p>
+                      <p className={`text-sm font-extrabold tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>{item.detail}</p>
+                      <p className={`text-[11px] font-medium mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Right Side: Modern Glass Inquiry Form (7 cols) */}
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }} 
+              transition={{ duration: 0.5 }}
+              className={`lg:col-span-7 p-6 sm:p-8 md:p-10 rounded-3xl border backdrop-blur-2xl shadow-xl ${
+                isDark ? "bg-slate-900/90 border-slate-800 shadow-slate-950/50" : "bg-white border-slate-200 shadow-xl"
+              }`}
+            >
+              <div className="mb-6">
+                <span className="text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-300 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800 inline-block mb-2">
+                  Online Admission & General Enquiry
+                </span>
+                <h3 className={`text-2xl sm:text-3xl font-black tracking-tight ${isDark ? "text-white" : "text-slate-900"}`}>
+                  Send Us a Direct Message
+                </h3>
+                <p className={`text-xs mt-1 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                  Fill in the form below. Our admissions counselor will respond within 24 hours.
+                </p>
+              </div>
+
+              <form ref={form} onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">{item.title}</p>
-                    <p className={`text-lg font-bold ${isDark ? "text-slate-200" : "text-[var(--text-main)]"}`}>{item.detail}</p>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      Full Name *
+                    </label>
+                    <input 
+                      type="text" 
+                      name="full_name" 
+                      placeholder="e.g. Rahul Sharma" 
+                      className={`w-full px-4 py-3 text-xs rounded-xl border outline-none transition-all duration-300 focus:ring-2 focus:ring-blue-500 font-medium ${
+                        isDark ? "bg-slate-950/70 border-slate-800 text-white placeholder:text-slate-500" : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400"
+                      }`} 
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className={`block text-xs font-bold mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                      Email Address *
+                    </label>
+                    <input 
+                      type="email" 
+                      name="email" 
+                      placeholder="e.g. rahul@gmail.com" 
+                      className={`w-full px-4 py-3 text-xs rounded-xl border outline-none transition-all duration-300 focus:ring-2 focus:ring-blue-500 font-medium ${
+                        isDark ? "bg-slate-950/70 border-slate-800 text-white placeholder:text-slate-500" : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400"
+                      }`} 
+                      required
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          </motion.div>
 
-          {/* Right Side: modern contact form */}
-          <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className={`p-8 md:p-12 rounded-[40px] shadow-2xl border ${isDark ? "bg-slate-900 shadow-slate-950/30 border-slate-800" : "bg-[var(--card-bg)] text-[var(--text-main)] shadow-slate-200/50 border-[var(--border-color)]"}`}>
-            <h3 className={`text-2xl font-black mb-8 italic ${isDark ? "text-white" : "text-[var(--text-main)]"}`}>Send a Message</h3>
-            <form ref={form} onSubmit={handleSubmit} className="space-y-6">
-              <input type="text" name="full_name" placeholder="Full Name" className={`w-full p-4 border rounded-2xl outline-none focus:ring-2 ring-blue-500 font-medium ${isDark ? "bg-[#0a192f] border-slate-800 text-white" : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"}`} required/>
-              <input type="email" name="email" placeholder="Email Address" className={`w-full p-4 border rounded-2xl outline-none focus:ring-2 ring-blue-500 font-medium ${isDark ? "bg-[#0a192f] border-slate-800 text-white" : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"}`} required/>
-              <textarea name="message" placeholder="Your Message" className={`w-full p-4 border rounded-2xl outline-none focus:ring-2 ring-blue-500 font-medium h-32 resize-none ${isDark ? "bg-[#0a192f] border-slate-800 text-white" : "bg-[var(--input-bg)] border-[var(--border-color)] text-[var(--text-main)]"}`} required></textarea>
-              <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all">
-               {loading ? "Sending..." : "Submit Inquiry"} <Send size={20} />
-              </button>
-            </form>
-          </motion.div>
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                    Inquiry Subject / Topic
+                  </label>
+                  <select 
+                    name="subject"
+                    className={`w-full px-4 py-3 text-xs rounded-xl border outline-none transition-all duration-300 focus:ring-2 focus:ring-blue-500 font-medium ${
+                      isDark ? "bg-slate-950 border-slate-800 text-white" : "bg-slate-50 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <option value="Admission Enquiry 2026-27">🚀 New Admission Enquiry (Session 2026–27)</option>
+                    <option value="General Information">📚 General Academic Information</option>
+                    <option value="Fees & Transport Query">🚌 Fees Structure & Transport Query</option>
+                    <option value="Other Query">💬 Other Query / Feedback</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className={`block text-xs font-bold mb-1.5 ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+                    Your Message / Details *
+                  </label>
+                  <textarea 
+                    name="message" 
+                    placeholder="Write your query or details here..." 
+                    className={`w-full px-4 py-3 text-xs rounded-xl border outline-none transition-all duration-300 focus:ring-2 focus:ring-blue-500 font-medium h-28 resize-none ${
+                      isDark ? "bg-slate-950/70 border-slate-800 text-white placeholder:text-slate-500" : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400"
+                    }`} 
+                    required
+                  ></textarea>
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={loading} 
+                  className="w-full bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white py-3.5 rounded-xl font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 hover:scale-[1.01] active:scale-95 transition-all duration-300"
+                >
+                  {loading ? "Submitting Inquiry..." : "Submit Inquiry Now"} <Send size={15} />
+                </button>
+              </form>
+            </motion.div>
+
+          </div>
         </div>
       </section>
 
       {/* --- FOOTER --- */}
-      <footer className={`pt-20 pb-10 ${isDark ? "bg-slate-950 text-slate-400" : "bg-slate-900 text-slate-400"}`}>
-        <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 border-b border-slate-800 pb-16">
-          {/* Brand Column */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 text-white font-bold text-2xl italic">
-              <GraduationCap size={32} className="text-blue-500" />
-              <span>Vasant Valley School</span>
+      <footer className={`pt-14 pb-8 transition-colors duration-500 border-t ${isDark ? "bg-[#050c16] border-slate-800/80 text-slate-400" : "bg-slate-950 border-slate-800 text-slate-400"}`}>
+        <div className="container mx-auto px-4 sm:px-6">
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pb-12 border-b border-slate-800/80">
+            
+            {/* Brand Column */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2.5 text-white font-black text-xl italic tracking-tight">
+                <div className="p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/30">
+                  <GraduationCap size={24} className="text-white" />
+                </div>
+                <span>Vasant Valley School</span>
+              </div>
+
+              <p className="text-xs leading-relaxed text-slate-400">
+                Empowering tomorrow's leaders with holistic education, STEM excellence, and ethical values since <strong>2001</strong>.
+              </p>
+
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-[11px] font-black uppercase tracking-wider bg-blue-950/90 text-blue-400 px-3 py-1 rounded-full border border-blue-800/60">
+                  M.P. Board Code: 231
+                </span>
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                {socialLinks.map(({ Icon, href }, i) => (
+                  <a 
+                    key={i} 
+                    href={href} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="w-9 h-9 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center text-slate-300 hover:bg-blue-600 hover:border-blue-500 hover:text-white transition-all shadow-sm"
+                  >
+                    <Icon size={18}/>
+                  </a>
+                ))}
+              </div>
             </div>
-            <p className="text-sm leading-relaxed">Shaping tomorrow's leaders today with modern innovation since 2001.</p>
-            <div className="flex gap-4">
-              {socialLinks.map(({ Icon, href }, i) => (
-              <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-800 rounded-lg hover:bg-blue-600 hover:text-white transition">
-                <Icon size={20}/>
-              </a>
-             ))}
+
+            {/* Quick Navigation Links */}
+            <div>
+              <h4 className="text-white font-black mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500"></span> Quick Navigation
+              </h4>
+              <ul className="space-y-2.5 text-xs font-semibold">
+                {[
+                  { name: "Home", href: "#home" },
+                  { name: "About Our Legacy", href: "#about" },
+                  { name: "Campus Facilities", href: "#facilities" },
+                  { name: "Academic Wings", href: "#programs" },
+                  { name: "Co-Curricular Activities", href: "#activities" },
+                  { name: "Expert Faculties", href: "#faculties" },
+                ].map(link => (
+                  <li key={link.name}>
+                    <a href={link.href} className="hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                      <span className="text-blue-500">›</span> {link.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Useful Links & ERP */}
+            <div>
+              <h4 className="text-white font-black mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-500"></span> Useful Info & ERP
+              </h4>
+              <ul className="space-y-2.5 text-xs font-semibold">
+                <li>
+                  <a href="#contact" className="hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                    <span className="text-indigo-500">›</span> Admissions Open 2026–27
+                  </a>
+                </li>
+                <li>
+                  <button onClick={() => navigate('/login')} className="hover:text-blue-400 transition-colors text-left flex items-center gap-1.5">
+                    <span className="text-indigo-500">›</span> Secure ERP Login Portal
+                  </button>
+                </li>
+                <li>
+                  <a href="#toppers" className="hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                    <span className="text-indigo-500">›</span> Board Toppers & Wall of Fame
+                  </a>
+                </li>
+                <li>
+                  <a href="#contact" className="hover:text-blue-400 transition-colors flex items-center gap-1.5">
+                    <span className="text-indigo-500">›</span> Contact & Enquiry Form
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact Details */}
+            <div>
+              <h4 className="text-white font-black mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Get in Touch
+              </h4>
+              <ul className="space-y-3 text-xs font-medium">
+                <li className="flex gap-2.5 items-start">
+                  <MapPin size={16} className="text-blue-500 shrink-0 mt-0.5" />
+                  <span>Shree Dham Colony, Malikhedi, Bhopal (M.P.)</span>
+                </li>
+                <li className="flex gap-2.5 items-center">
+                  <Phone size={16} className="text-emerald-500 shrink-0" />
+                  <span>0755-4378074 / 9981105858</span>
+                </li>
+                <li className="flex gap-2.5 items-center">
+                  <Mail size={16} className="text-indigo-500 shrink-0" />
+                  <span>Vasantvalleyschool20@gmail.com</span>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+
+          {/* Copyright Clean Footer Bottom (Vision Slogan Removed) */}
+          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 font-medium">
+            <p>© 2026 Vasant Valley School. All rights reserved.</p>
+            <div className="flex items-center gap-4 text-[11px]">
+              <span>M.P. Board Affiliated School (Code: 231)</span>
             </div>
           </div>
-          {/* Link Columns */}
-          <div>
-            <h4 className="text-white font-bold mb-6 text-lg">Quick Links</h4>
-            <ul className="space-y-4 text-sm">
-                {["Home", "About Us", "Facilities", "Faculty"].map(link => <li key={link}><a href="#" className="hover:text-blue-500 transition">{link}</a></li>)}
-            </ul>
-          </div>
-          {/* useful info */}
-          <div>
-            <h4 className="text-white font-bold mb-6 text-lg">Useful Info</h4>
-            <ul className="space-y-4 text-sm">
-                {["Admissions 2026", "School Calendar", "Exam Results", "Privacy Policy"].map(link => <li key={link}><a href="#" className="hover:text-blue-500 transition">{link}</a></li>)}
-            </ul>
-          </div>
-          {/* contact details */}
-          <div>
-            <h4 className="text-white font-bold mb-6 text-lg">Get in Touch</h4>
-            <ul className="space-y-4 text-sm">
-              <li className="flex gap-3"><MapPin size={20} className="text-blue-500shrink-0" /> Shree Dham Colony, Malikhedi, Bhopal</li>
-              <li className="flex gap-3"><Phone size={20} className="text-blue-500shrink-0" /> 0755-4378074</li>
-              <li className="flex gap-3"><Phone size={20} className="text-blue-500shrink-0" /> 9981105858</li>
-              <li className="flex gap-3"><Mail size={20} className="text-blue-500shrink-0" /> Vasantvalleyschool20@gmail.com</li>
-            </ul>
-          </div>
-        </div>
-        {/* Copyright Module */}
-        <div className="container mx-auto px-6 mt-10 text-center text-xs text-[var(--text-muted)]">
-          <p className="font-black tracking-[0.15em] text-blue-500 mb-1 uppercase">LEARN • GROW • LEAD • SERVE</p>
-          <p className="italic mb-2" style={{ fontSize: '11px' }}>सीखें • बढ़ें • नेतृत्व करें • सेवा करें</p>
-          <p>© 2026 Vasant Valley School ERP. All rights reserved.</p>
+
         </div>
       </footer>
     </div>

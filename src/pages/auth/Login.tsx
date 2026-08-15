@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../api/axios";
-import { FiEyeOff, FiEye} from 'react-icons/fi';
+import { FiEyeOff, FiEye, FiArrowLeft, FiHome } from 'react-icons/fi';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -79,6 +79,39 @@ const Login = () => {
   return (
     <div className="login-container">
       <div className="login-card">
+        {/* Return to Website Button */}
+        <div style={{ textAlign: "left", marginBottom: "16px" }}>
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(255, 255, 255, 0.12)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              color: "#f8fafc",
+              padding: "6px 14px",
+              borderRadius: "20px",
+              fontSize: "12px",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.25)";
+              e.currentTarget.style.transform = "translateX(-2px)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+              e.currentTarget.style.transform = "translateX(0px)";
+            }}
+          >
+            <FiArrowLeft size={14} /> ← Back to Website / मुख्य वेबसाइट
+          </button>
+        </div>
+
         <div className="login-logo">Vasant Valley School ERP</div>
         <div style={{ textAlign: 'center', marginBottom: '6px' }}>
           <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.18em', color: 'var(--primary)', textTransform: 'uppercase' }}>
@@ -147,6 +180,29 @@ const Login = () => {
             {loading ? "Verifying..." : "Secure Login"}
           </button>
         </form>
+
+        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#94a3b8',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'color 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.color = '#38bdf8'}
+            onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}
+          >
+            <FiHome size={14} /> Return to Home Page
+          </button>
+        </div>
       </div>
     </div>
   );
