@@ -343,12 +343,12 @@ const LandingPage = () => {
               <div className={`absolute inset-0 bg-gradient-to-t ${isDark ? "from-[#081526]/95 via-[#081526]/30" : "from-slate-950/85 via-slate-900/20"} to-transparent`} />
 
               {/* Badge Header inside Image */}
-              <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-20">
-                <div className="bg-slate-950/80 backdrop-blur-md text-white border border-white/20 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black flex items-center gap-1 shadow-lg">
-                  <Award size={13} className="text-amber-400" />
+              <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-1.5 z-20 max-w-full overflow-hidden">
+                <div className="bg-slate-950/80 backdrop-blur-md text-white border border-white/20 px-2.5 py-1 rounded-full text-[9px] sm:text-[11px] font-black flex items-center gap-1 shadow-lg shrink-0">
+                  <Award size={12} className="text-amber-400 shrink-0" />
                   <span>25+ Yrs Legacy</span>
                 </div>
-                <div className="bg-emerald-600/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-[9px] sm:text-[10px] font-black shadow-lg uppercase tracking-wider">
+                <div className="bg-emerald-600/90 backdrop-blur-md text-white px-2 py-1 rounded-full text-[8.5px] sm:text-[10px] font-black shadow-lg uppercase tracking-wider truncate max-w-[55%]">
                   {currentHeroVisual.badge}
                 </div>
               </div>
