@@ -695,7 +695,7 @@ const ClassTeacherDashboard = () => {
       <main className="main-content">
         <Navbar />
 
-        <div className="dashboard-container" style={{ padding: '24px' }}>
+        <div className="dashboard-container p-3 sm:p-6 max-w-full overflow-x-hidden">
           
           {/* Toast Notification */}
           {statusMsg && (
@@ -705,60 +705,48 @@ const ClassTeacherDashboard = () => {
           )}
 
           {/* Header Hero Banner — LIGHT GREEN / EMERALD THEME */}
-          <div 
-            style={{
-              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 45%, #bbf7d0 100%)',
-              color: '#064e3b',
-              padding: '30px 36px',
-              borderRadius: '24px',
-              marginBottom: '24px',
-              border: '2px solid #86efac',
-              boxShadow: '0 12px 32px rgba(34, 197, 94, 0.15)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
+          <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-800 rounded-3xl p-4 sm:p-8 text-white mb-5 shadow-xl relative overflow-hidden border border-emerald-400/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full">
             <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '240px', height: '240px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(34, 197, 94, 0.25) 0%, transparent 70%)', pointerEvents: 'none' }} />
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '18px', position: 'relative', zIndex: 2 }}>
-              <div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', backgroundColor: '#ffffff', border: '1px solid #86efac', color: '#15803d', padding: '6px 16px', borderRadius: '20px', fontSize: '12px', fontWeight: '800', marginBottom: '12px', letterSpacing: '0.03em', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.12)' }}>
-                  <FiStar size={14} color="#16a34a" /> ⭐ CLASS TEACHER &amp; SUBJECT FACULTY MASTER PORTAL
-                </div>
-                <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '900', letterSpacing: '-0.02em', color: '#064e3b' }}>
-                  CLASS TEACHER PORTAL — {classInfo ? `Class ${classInfo.className} (${classInfo.section})` : 'Class Teacher Portal'}
-                </h1>
-                <p style={{ margin: '8px 0 0', opacity: 0.95, fontSize: '14px', color: '#166534', fontWeight: '600' }}>
-                  In-Charge: <strong style={{ color: '#064e3b' }}>{teacherName}</strong> • {classInfo?.room ? `Room ${classInfo.room}` : ''} • Assigned Subjects: <strong>{assignedSubjects.length > 0 ? assignedSubjects.map((s: any) => s.name || s).join(', ') : (classInfo ? 'No subjects assigned yet' : 'Loading...')}</strong>
-                </p>
+            <div className="z-10 flex flex-col items-start gap-2 max-w-full">
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-emerald-300/40 color-emerald-100 text-emerald-200 px-3 py-1 rounded-full text-[10px] sm:text-xs font-extrabold tracking-wide">
+                <FiStar size={14} className="text-emerald-400" /> ⭐ CLASS TEACHER &amp; SUBJECT FACULTY MASTER PORTAL
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button 
-                  onClick={() => setShowAssignModal(true)}
-                  style={{ padding: '11px 20px', backgroundColor: '#15803d', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(21, 128, 61, 0.35)' }}
-                >
-                  <FiSliders size={16} /> 📚 Assign Subjects &amp; Classes
-                </button>
-                <button 
-                  onClick={() => { setActiveZone('classInCharge'); setActiveSubTab('attendance'); }}
-                  style={{ padding: '11px 20px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)' }}
-                >
-                  <FiCheckSquare size={16} /> Roll Call Register
-                </button>
-                <button 
-                  onClick={exportRosterCSV}
-                  style={{ padding: '11px 20px', backgroundColor: '#ffffff', color: '#15803d', border: '1px solid #86efac', borderRadius: '12px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}
-                >
-                  📥 Export CSV
-                </button>
-                <button 
-                  onClick={() => setShowAnnounceModal(true)}
-                  style={{ padding: '11px 20px', backgroundColor: '#ffffff', color: '#15803d', border: '1px solid #86efac', borderRadius: '12px', fontWeight: '800', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}
-                >
-                  <FiPlus size={16} /> Post Class Notice
-                </button>
-              </div>
+              <h1 className="m-0 text-lg sm:text-2xl font-black tracking-tight text-white leading-snug">
+                CLASS TEACHER PORTAL — {classInfo ? `Class ${classInfo.className} (${classInfo.section})` : 'Class Teacher Portal'}
+              </h1>
+
+              <p className="m-0 mt-1 opacity-90 text-xs sm:text-sm text-emerald-200 font-semibold leading-relaxed">
+                In-Charge: <strong className="text-white">{teacherName}</strong> • {classInfo?.room ? `Room ${classInfo.room}` : ''} • Assigned Subjects: <strong>{assignedSubjects.length > 0 ? assignedSubjects.map((s: any) => s.name || s).join(', ') : (classInfo ? 'No subjects assigned yet' : 'Loading...')}</strong>
+              </p>
+            </div>
+
+            <div className="z-10 flex flex-wrap items-center gap-2 w-full md:w-auto">
+              <button 
+                onClick={() => setShowAssignModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm cursor-pointer flex items-center gap-1.5 shadow-md shrink-0"
+              >
+                <FiSliders size={15} /> 📚 Assign Subjects &amp; Classes
+              </button>
+              <button 
+                onClick={() => { setActiveZone('classInCharge'); setActiveSubTab('attendance'); }}
+                className="px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs sm:text-sm cursor-pointer flex items-center gap-1.5 shadow-md shrink-0"
+              >
+                <FiCheckSquare size={15} /> Roll Call Register
+              </button>
+              <button 
+                onClick={exportRosterCSV}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-extrabold text-xs sm:text-sm cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                📥 Export CSV
+              </button>
+              <button 
+                onClick={() => setShowAnnounceModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-extrabold text-xs sm:text-sm cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <FiPlus size={15} /> Post Class Notice
+              </button>
             </div>
           </div>
 
@@ -785,23 +773,14 @@ const ClassTeacherDashboard = () => {
           </div>
 
           {/* Master Zone Selector Tabs */}
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', borderBottom: '2px solid var(--border-color)', paddingBottom: '12px', flexWrap: 'wrap' }}>
+          <div className="flex items-center gap-2 mb-5 border-b-2 border-[var(--border-color)] pb-3 overflow-x-auto max-w-full scrollbar-none">
             <button
               onClick={() => { setActiveZone('classInCharge'); setActiveSubTab('roster'); }}
-              style={{
-                padding: '12px 22px',
-                borderRadius: '12px',
-                border: activeZone === 'classInCharge' ? '2px solid #16a34a' : '1px solid var(--border-color)',
-                fontSize: '14px',
-                fontWeight: '800',
-                cursor: 'pointer',
-                backgroundColor: activeZone === 'classInCharge' ? '#16a34a' : 'var(--card-bg)',
-                color: activeZone === 'classInCharge' ? 'white' : 'var(--text-main)',
-                boxShadow: activeZone === 'classInCharge' ? '0 4px 14px rgba(22, 163, 74, 0.35)' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className={`px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shrink-0 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                activeZone === 'classInCharge'
+                  ? 'bg-emerald-600 text-white shadow-md border-2 border-emerald-500'
+                  : 'bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)]'
+              }`}
             >
               <FiStar size={16} />
               <span>🎓 Class Teacher Zone (Class In-Charge)</span>
@@ -809,20 +788,11 @@ const ClassTeacherDashboard = () => {
 
             <button
               onClick={() => { setActiveZone('subjectTeacher'); setActiveSubTab('mySubjectClasses'); }}
-              style={{
-                padding: '12px 22px',
-                borderRadius: '12px',
-                border: activeZone === 'subjectTeacher' ? '2px solid #15803d' : '1px solid var(--border-color)',
-                fontSize: '14px',
-                fontWeight: '800',
-                cursor: 'pointer',
-                backgroundColor: activeZone === 'subjectTeacher' ? '#15803d' : 'var(--card-bg)',
-                color: activeZone === 'subjectTeacher' ? 'white' : 'var(--text-main)',
-                boxShadow: activeZone === 'subjectTeacher' ? '0 4px 14px rgba(21, 128, 61, 0.35)' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className={`px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shrink-0 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                activeZone === 'subjectTeacher'
+                  ? 'bg-emerald-700 text-white shadow-md border-2 border-emerald-600'
+                  : 'bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)]'
+              }`}
             >
               <FiBookOpen size={16} />
               <span>📖 Subject Teacher Zone (Teaching Duties)</span>
@@ -830,20 +800,11 @@ const ClassTeacherDashboard = () => {
 
             <button
               onClick={() => { setActiveZone('allocation'); }}
-              style={{
-                padding: '12px 22px',
-                borderRadius: '12px',
-                border: activeZone === 'allocation' ? '2px solid #047857' : '1px solid var(--border-color)',
-                fontSize: '14px',
-                fontWeight: '800',
-                cursor: 'pointer',
-                backgroundColor: activeZone === 'allocation' ? '#047857' : 'var(--card-bg)',
-                color: activeZone === 'allocation' ? 'white' : 'var(--text-main)',
-                boxShadow: activeZone === 'allocation' ? '0 4px 14px rgba(4, 120, 87, 0.35)' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className={`px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold shrink-0 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                activeZone === 'allocation'
+                  ? 'bg-emerald-800 text-white shadow-md border-2 border-emerald-700'
+                  : 'bg-[var(--card-bg)] text-[var(--text-main)] border border-[var(--border-color)]'
+              }`}
             >
               <FiSliders size={16} />
               <span>⚙️ Subject Allocation / Assign Subjects</span>
@@ -856,7 +817,7 @@ const ClassTeacherDashboard = () => {
           {activeZone === 'classInCharge' && (
             <div>
               {/* Sub-Tab Nav for Class In-Charge */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              <div className="flex items-center gap-2 mb-5 overflow-x-auto max-w-full scrollbar-none">
                 {[
                   { id: 'roster', label: '👥 Student Directory', count: students.length },
                   { id: 'attendance', label: '📋 Daily Roll Call Register', count: null },
@@ -868,24 +829,17 @@ const ClassTeacherDashboard = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveSubTab(tab.id as any)}
-                    style={{
-                      padding: '9px 16px',
-                      borderRadius: '10px',
-                      border: activeSubTab === tab.id ? '1px solid #16a34a' : '1px solid var(--border-color)',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      backgroundColor: activeSubTab === tab.id ? '#16a34a' : 'var(--card-bg)',
-                      color: activeSubTab === tab.id ? 'white' : 'var(--text-muted)',
-                      boxShadow: activeSubTab === tab.id ? '0 4px 12px rgba(22, 163, 74, 0.3)' : 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold shrink-0 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                      activeSubTab === tab.id
+                        ? 'bg-emerald-600 text-white shadow-md border border-emerald-500'
+                        : 'bg-[var(--card-bg)] text-[var(--text-muted)] border border-[var(--border-color)] hover:text-[var(--text-main)]'
+                    }`}
                   >
                     <span>{tab.label}</span>
                     {tab.count !== null && (
-                      <span style={{ backgroundColor: activeSubTab === tab.id ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)', padding: '2px 8px', borderRadius: '12px', fontSize: '11px' }}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        activeSubTab === tab.id ? 'bg-white/20 text-white' : 'bg-[var(--input-bg)] text-[var(--text-muted)]'
+                      }`}>
                         {tab.count}
                       </span>
                     )}
@@ -1523,7 +1477,7 @@ const ClassTeacherDashboard = () => {
           {activeZone === 'subjectTeacher' && (
             <div>
               {/* Sub-Tab Nav for Subject Teacher */}
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              <div className="flex items-center gap-2 mb-5 overflow-x-auto max-w-full scrollbar-none">
                 {[
                   { id: 'mySubjectClasses', label: '📖 My Assigned Subjects & Classes', count: assignedSubjects.length },
                   { id: 'subjectAttendance', label: '📋 Subject Period Attendance', count: null },
@@ -1534,24 +1488,17 @@ const ClassTeacherDashboard = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveSubTab(tab.id as any)}
-                    style={{
-                      padding: '9px 16px',
-                      borderRadius: '10px',
-                      border: activeSubTab === tab.id ? '1px solid #15803d' : '1px solid var(--border-color)',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      backgroundColor: activeSubTab === tab.id ? '#15803d' : 'var(--card-bg)',
-                      color: activeSubTab === tab.id ? 'white' : 'var(--text-muted)',
-                      boxShadow: activeSubTab === tab.id ? '0 4px 12px rgba(21, 128, 61, 0.3)' : 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-extrabold shrink-0 transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap ${
+                      activeSubTab === tab.id
+                        ? 'bg-emerald-700 text-white shadow-md border border-emerald-600'
+                        : 'bg-[var(--card-bg)] text-[var(--text-muted)] border border-[var(--border-color)] hover:text-[var(--text-main)]'
+                    }`}
                   >
                     <span>{tab.label}</span>
                     {tab.count !== null && (
-                      <span style={{ backgroundColor: activeSubTab === tab.id ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)', padding: '2px 8px', borderRadius: '12px', fontSize: '11px' }}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                        activeSubTab === tab.id ? 'bg-white/20 text-white' : 'bg-[var(--input-bg)] text-[var(--text-muted)]'
+                      }`}>
                         {tab.count}
                       </span>
                     )}
