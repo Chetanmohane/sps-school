@@ -381,165 +381,73 @@ const TeacherDashboard = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container" style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="dashboard-container p-3 sm:p-6 max-w-[1400px] mx-auto overflow-x-hidden w-full">
 
           {/* ── HERO BANNER WITH DISTINCT SUBJECT TEACHER BRANDING ── */}
-          <div style={{
-            background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 40%, #4338ca 100%)',
-            borderRadius: '22px',
-            padding: '30px 36px',
-            color: 'white',
-            marginBottom: '20px',
-            boxShadow: '0 14px 40px rgba(49, 46, 129, 0.35)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            border: '1px solid rgba(129, 140, 248, 0.35)'
-          }}>
-            <div style={{ position: 'absolute', top: '-50px', right: '180px', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(129,140,248,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />
-            <div style={{ position: 'absolute', bottom: '-50px', right: '30px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />
+          <div className="bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-800 rounded-3xl p-4 sm:p-8 text-white mb-5 shadow-xl relative overflow-hidden border border-indigo-400/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full">
+            <div style={{ position: 'absolute', top: '-50px', right: '180px', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(129,140,248,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', bottom: '-50px', right: '30px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
 
-            <div style={{ zIndex: 2, display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <div style={{
-                width: '64px', height: '64px', borderRadius: '18px',
-                background: 'linear-gradient(135deg, #6366f1, #4338ca)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: '800', fontSize: '24px', color: '#fff',
-                boxShadow: '0 8px 20px rgba(99,102,241,0.4)',
-                border: '2px solid rgba(255,255,255,0.2)'
-              }}>
+            <div className="z-10 flex flex-col sm:flex-row items-start sm:items-center gap-3.5 max-w-full">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-indigo-600 flex items-center justify-center font-extrabold text-lg sm:text-2xl text-white shadow-lg border border-white/20 shrink-0">
                 {initials(teacherName)}
               </div>
 
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '800', letterSpacing: '0.06em', textTransform: 'uppercase', color: '#a5b4fc', backgroundColor: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+              <div className="max-w-full">
+                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                  <span className="text-[10px] font-extrabold tracking-wider uppercase text-indigo-200 bg-white/10 px-2 py-0.5 rounded-md">
                     FACULTY INSTRUCTOR PORTAL
                   </span>
-                  <span style={{
-                    backgroundColor: 'rgba(99,102,241,0.3)',
-                    border: '1px solid rgba(165,180,252,0.5)',
-                    color: '#e0e7ff',
-                    padding: '4px 12px',
-                    borderRadius: '20px',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
+                  <span className="bg-indigo-500/30 border border-indigo-300/50 text-indigo-100 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold inline-flex items-center gap-1.5">
                     <FiBookOpen size={13} /> 📖 SUBJECT TEACHER CONTROL CENTER
                   </span>
                 </div>
 
-                <h1 style={{ margin: 0, fontSize: '28px', fontWeight: '900', letterSpacing: '-0.02em', color: '#ffffff' }}>
+                <h1 className="m-0 text-lg sm:text-2xl font-black tracking-tight text-white leading-snug">
                   SUBJECT TEACHER PORTAL — {teacherName}
                 </h1>
-                <p style={{ margin: '6px 0 0', opacity: 0.95, fontSize: '14px', color: '#c7d2fe' }}>
+                <p className="m-0 mt-1 opacity-90 text-xs sm:text-sm text-indigo-200 leading-relaxed">
                   Manage assigned subject periods, record subject attendance, upload exam marks &amp; grade assignments.
                 </p>
               </div>
             </div>
 
-            <div style={{ textAlign: 'right', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-              <div style={{ fontSize: '32px', fontWeight: '800', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', color: '#f8fafc' }}>{timeStr}</div>
-              <div style={{ fontSize: '12px', opacity: 0.85, color: '#c7d2fe' }}>{dateStr}</div>
+            <div className="z-10 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center w-full md:w-auto pt-2 md:pt-0 border-t border-white/10 md:border-t-0 shrink-0">
+              <div className="text-xl sm:text-3xl font-extrabold font-mono tracking-tight text-slate-50">{timeStr}</div>
+              <div className="text-xs opacity-80 text-indigo-200">{dateStr}</div>
             </div>
           </div>
 
           {/* ── PORTAL NAVIGATION QUICK TABS ── */}
-          <div style={{
-            display: 'flex',
-            gap: '10px',
-            marginBottom: '24px',
-            borderBottom: '1px solid var(--border-color)',
-            paddingBottom: '12px',
-            flexWrap: 'wrap'
-          }}>
+          <div className="flex items-center gap-2 mb-6 border-b border-[var(--border-color)] pb-3 overflow-x-auto max-w-full scrollbar-none">
             <button
               onClick={() => setActiveTab('overview')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '12px',
-                border: 'none',
-                fontWeight: '800',
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: activeTab === 'overview' ? '#4338ca' : 'var(--card-bg)',
-                color: activeTab === 'overview' ? '#fff' : 'var(--text-muted)',
-                boxShadow: activeTab === 'overview' ? '0 4px 14px rgba(67,56,202,0.35)' : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === 'overview' ? 'bg-indigo-700 text-white shadow-md' : 'bg-[var(--card-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
+              }`}
             >
               <FiActivity size={15} /> 📖 Subject Teacher Overview
             </button>
 
             <button
               onClick={() => navigate('/teacher/results')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '12px',
-                border: '1px solid rgba(139, 92, 246, 0.4)',
-                fontWeight: '800',
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: '#7c3aed',
-                color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer flex items-center gap-2 bg-purple-700 text-white shadow-md hover:bg-purple-800"
             >
               🏆 Upload Subject Results
             </button>
 
             <button
               onClick={() => navigate('/teacher/attendanceMark')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '12px',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
-                fontWeight: '800',
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: '#059669',
-                color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer flex items-center gap-2 bg-emerald-600 text-white shadow-md hover:bg-emerald-700"
             >
               ✅ Period Roll Call
             </button>
 
-
             <button
               onClick={() => navigate('/teacher/myclasses')}
-              style={{
-                padding: '10px 20px',
-                borderRadius: '12px',
-                border: '1px solid var(--border-color)',
-                fontWeight: '700',
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                backgroundColor: 'var(--card-bg)',
-                color: 'var(--text-muted)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
+              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer flex items-center gap-2 bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-main)] hover:bg-white/5"
             >
-              <FiCalendar size={15} /> My Timetable &amp; Classes
+              📅 Timetable &amp; Classes
             </button>
           </div>
 
