@@ -270,17 +270,17 @@ const AcademicResultsManagement = () => {
         <Navbar />
         
         {/* Main Wrapper */}
-        <div className="dashboard-container" style={{ padding: '12px 28px 28px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="p-3.5 sm:p-6 md:p-8 max-w-[1400px] mx-auto w-full max-w-full overflow-hidden">
           <AcademicTabs />
           
           {/* Custom Vibrant Header */}
-          <div className="relative overflow-hidden rounded-3xl p-8 mb-6 border" style={{ 
+          <div className="relative overflow-hidden rounded-3xl p-4 sm:p-8 mb-6 border" style={{ 
             background: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
             border: 'none',
             color: '#ffffff',
             boxShadow: '0 10px 30px rgba(59, 130, 246, 0.15)'
           }}>
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
               <div>
                 <span style={{ 
                   backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -291,203 +291,89 @@ const AcademicResultsManagement = () => {
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em'
                 }}>Academic Portal</span>
-                <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '8px 0 4px', letterSpacing: '-0.02em', color: '#fff' }}>
+                <h1 className="text-xl sm:text-3xl font-black mt-2 mb-1 text-white tracking-tight">
                   Student Exam Results Management
                 </h1>
-                <p style={{ color: 'rgba(255, 255, 255, 0.85)', margin: 0, fontSize: '14px', fontWeight: '500' }}>
+                <p className="text-xs sm:text-sm text-white/85 m-0 font-medium">
                   Easily view, input, and modify Mid-Term & Final Examination marks for all registered students.
                 </p>
               </div>
-              <div style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                padding: '20px',
-                borderRadius: '20px',
-                backdropFilter: 'blur(10px)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '15px'
-              }}>
-                <FiAward size={40} style={{ color: '#fbbf24' }} />
+              <div className="bg-white/10 p-4 rounded-2xl backdrop-blur-md flex items-center gap-3.5 w-fit">
+                <FiAward size={36} className="text-amber-400 shrink-0" />
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800' }}>Academic Year</h4>
-                  <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255, 255, 255, 0.75)' }}>2025 - 2026</p>
+                  <h4 className="m-0 text-sm sm:text-base font-extrabold">Academic Year</h4>
+                  <p className="m-0 text-xs text-white/75">2025 - 2026</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Quick Metrics row */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
-            gap: '20px', 
-            marginBottom: '28px' 
-          }}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-6 sm:mb-8">
             
-            <div className="stat-card" style={{ 
-              backgroundColor: 'var(--card-bg)', 
-              borderRadius: '20px', 
-              padding: '24px', 
-              border: '1px solid var(--border-color)',
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '20px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.02)'
-            }}>
-              <div style={{ 
-                width: '56px', 
-                height: '56px', 
-                borderRadius: '16px', 
-                backgroundColor: 'rgba(79, 70, 229, 0.1)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                color: '#4f46e5'
-              }}>
-                <FiUsers size={24} />
+            <div className="stat-card bg-[var(--card-bg)] rounded-2xl p-4 sm:p-5 border border-[var(--border-color)] flex items-center gap-4 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0">
+                <FiUsers size={22} />
               </div>
               <div>
-                <h4 style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>Graded Students</h4>
-                <p style={{ margin: '4px 0 0', fontSize: '24px', fontWeight: '900', color: 'var(--text-main)' }}>{totalGradedCount}</p>
+                <h4 className="m-0 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Graded Students</h4>
+                <p className="text-xl sm:text-2xl font-black text-[var(--text-main)] mt-1 mb-0">{totalGradedCount}</p>
               </div>
             </div>
 
-            <div className="stat-card" style={{ 
-              backgroundColor: 'var(--card-bg)', 
-              borderRadius: '20px', 
-              padding: '24px', 
-              border: '1px solid var(--border-color)',
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '20px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.02)'
-            }}>
-              <div style={{ 
-                width: '56px', 
-                height: '56px', 
-                borderRadius: '16px', 
-                backgroundColor: 'rgba(16, 185, 129, 0.1)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                color: '#10b981'
-              }}>
-                <FiTrendingUp size={24} />
+            <div className="stat-card bg-[var(--card-bg)] rounded-2xl p-4 sm:p-5 border border-[var(--border-color)] flex items-center gap-4 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                <FiTrendingUp size={22} />
               </div>
               <div>
-                <h4 style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>Average Term GPA</h4>
-                <p style={{ margin: '4px 0 0', fontSize: '24px', fontWeight: '900', color: 'var(--text-main)' }}>{averageGPA} / 10</p>
+                <h4 className="m-0 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Average Term GPA</h4>
+                <p className="text-xl sm:text-2xl font-black text-[var(--text-main)] mt-1 mb-0">{averageGPA} / 10</p>
               </div>
             </div>
 
-            <div className="stat-card" style={{ 
-              backgroundColor: 'var(--card-bg)', 
-              borderRadius: '20px', 
-              padding: '24px', 
-              border: '1px solid var(--border-color)',
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '20px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.02)'
-            }}>
-              <div style={{ 
-                width: '56px', 
-                height: '56px', 
-                borderRadius: '16px', 
-                backgroundColor: 'rgba(245, 158, 11, 0.1)', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                color: '#f59e0b'
-              }}>
-                <FiActivity size={24} />
+            <div className="stat-card bg-[var(--card-bg)] rounded-2xl p-4 sm:p-5 border border-[var(--border-color)] flex items-center gap-4 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                <FiActivity size={22} />
               </div>
               <div>
-                <h4 style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>Passing Rate</h4>
-                <p style={{ margin: '4px 0 0', fontSize: '24px', fontWeight: '900', color: 'var(--text-main)' }}>100%</p>
+                <h4 className="m-0 text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">Passing Rate</h4>
+                <p className="text-xl sm:text-2xl font-black text-[var(--text-main)] mt-1 mb-0">100%</p>
               </div>
             </div>
 
           </div>
 
           {/* Search, filters, and records table */}
-          <div style={{ 
-            backgroundColor: 'var(--card-bg)', 
-            borderRadius: '24px', 
-            border: '1px solid var(--border-color)',
-            padding: '24px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.02)'
-          }}>
+          <div className="bg-[var(--card-bg)] rounded-3xl border border-[var(--border-color)] p-4 sm:p-6 shadow-sm mb-8 max-w-full overflow-hidden">
             
             {/* Filter controls & Term Selector */}
-            <div style={{ 
-              display: 'flex', 
-              flexWrap: 'wrap', 
-              gap: '15px', 
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '24px',
-              paddingBottom: '20px',
-              borderBottom: '1px solid var(--border-color)'
-            }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', alignItems: 'center', flex: 1 }}>
-                <div style={{ position: 'relative', minWidth: '240px', flex: 1 }}>
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-5 border-b border-[var(--border-color)]">
+              <div className="flex flex-wrap items-center gap-3 flex-1 w-full lg:w-auto">
+                <div className="relative w-full sm:w-[260px] shrink-0">
                   <FiSearch style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-muted)' }} />
                   <input 
                     type="text" 
-                    placeholder="Search by student name, roll number..." 
+                    placeholder="Search student or roll..." 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px 12px 42px',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-main)',
-                      fontSize: '14px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
+                    className="w-full pl-10 pr-3 py-2.5 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm outline-none"
                   />
                 </div>
 
-                <div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <select 
                     value={classFilter} 
                     onChange={(e) => setClassFilter(e.target.value)}
-                    style={{
-                      padding: '12px 18px',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-main)',
-                      fontSize: '14px',
-                      outline: 'none',
-                      cursor: 'pointer',
-                      fontWeight: '700'
-                    }}
+                    className="flex-1 sm:flex-none px-3 py-2.5 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm font-bold outline-none cursor-pointer"
                   >
                     <option value="all">All Classes</option>
                     {classesList.map(c => <option key={c} value={c}>Class {c}</option>)}
                   </select>
-                </div>
 
-                <div>
                   <select 
                     value={sectionFilter} 
                     onChange={(e) => setSectionFilter(e.target.value)}
-                    style={{
-                      padding: '12px 18px',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '12px',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-main)',
-                      fontSize: '14px',
-                      outline: 'none',
-                      cursor: 'pointer',
-                      fontWeight: '700'
-                    }}
+                    className="flex-1 sm:flex-none px-3 py-2.5 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] text-[var(--text-main)] text-xs sm:text-sm font-bold outline-none cursor-pointer"
                   >
                     <option value="all">All Sections</option>
                     <option value="A">Section A</option>
@@ -498,55 +384,31 @@ const AcademicResultsManagement = () => {
               </div>
 
               {/* Term Selector Toggle */}
-              <div style={{ display: 'flex', gap: '8px', backgroundColor: 'var(--input-bg)', padding: '4px', borderRadius: '14px', border: '1px solid var(--border-color)' }}>
+              <div className="flex p-1 rounded-2xl bg-[var(--input-bg)] border border-[var(--border-color)] gap-1 w-full lg:w-auto overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setSelectedTerm('Term-1')}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontWeight: '800',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    backgroundColor: selectedTerm === 'Term-1' ? '#4f46e5' : 'transparent',
-                    color: selectedTerm === 'Term-1' ? '#ffffff' : 'var(--text-muted)',
-                    transition: 'all 0.2s'
-                  }}
+                  className={`flex-1 lg:flex-none px-3 py-2 rounded-xl font-extrabold text-xs transition-all whitespace-nowrap ${
+                    selectedTerm === 'Term-1' ? 'bg-indigo-600 text-white shadow-md' : 'text-[var(--text-muted)]'
+                  }`}
                 >
                   📝 First Term
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedTerm('Term-2')}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontWeight: '800',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    backgroundColor: selectedTerm === 'Term-2' ? '#4f46e5' : 'transparent',
-                    color: selectedTerm === 'Term-2' ? '#ffffff' : 'var(--text-muted)',
-                    transition: 'all 0.2s'
-                  }}
+                  className={`flex-1 lg:flex-none px-3 py-2 rounded-xl font-extrabold text-xs transition-all whitespace-nowrap ${
+                    selectedTerm === 'Term-2' ? 'bg-indigo-600 text-white shadow-md' : 'text-[var(--text-muted)]'
+                  }`}
                 >
                   📘 Second Term
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedTerm('Final')}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontWeight: '800',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    backgroundColor: selectedTerm === 'Final' ? '#4f46e5' : 'transparent',
-                    color: selectedTerm === 'Final' ? '#ffffff' : 'var(--text-muted)',
-                    transition: 'all 0.2s'
-                  }}
+                  className={`flex-1 lg:flex-none px-3 py-2 rounded-xl font-extrabold text-xs transition-all whitespace-nowrap ${
+                    selectedTerm === 'Final' ? 'bg-indigo-600 text-white shadow-md' : 'text-[var(--text-muted)]'
+                  }`}
                 >
                   🏅 Final Term
                 </button>
@@ -560,22 +422,22 @@ const AcademicResultsManagement = () => {
                 <p style={{ marginTop: '15px', color: 'var(--text-muted)', fontSize: '15px', fontWeight: '500' }}>Fetching database student records...</p>
               </div>
             ) : filteredStudents.length > 0 ? (
-              <div style={{ overflowX: 'auto' }}>
-                <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div className="overflow-x-auto w-full max-w-full">
+                <table className="data-table w-full min-w-[720px]">
                   <thead>
                     <tr style={{ textAlign: 'left', borderBottom: '2px solid var(--border-color)' }}>
-                      <th style={{ padding: '14px' }}>Roll No</th>
-                      <th style={{ padding: '14px' }}>Student Name</th>
-                      <th style={{ padding: '14px' }}>Class</th>
-                      <th style={{ padding: '14px' }}>Math</th>
-                      <th style={{ padding: '14px' }}>Science</th>
-                      <th style={{ padding: '14px' }}>English</th>
-                      <th style={{ padding: '14px' }}>SST</th>
-                      <th style={{ padding: '14px' }}>CS</th>
-                      <th style={{ padding: '14px' }}>Total Marks</th>
-                      <th style={{ padding: '14px' }}>GPA / Grade</th>
-                      <th style={{ padding: '14px' }}>Status</th>
-                      <th style={{ padding: '14px', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '12px' }}>Roll No</th>
+                      <th style={{ padding: '12px' }}>Student Name</th>
+                      <th style={{ padding: '12px' }}>Class</th>
+                      <th style={{ padding: '12px' }}>Math</th>
+                      <th style={{ padding: '12px' }}>Science</th>
+                      <th style={{ padding: '12px' }}>English</th>
+                      <th style={{ padding: '12px' }}>SST</th>
+                      <th style={{ padding: '12px' }}>CS</th>
+                      <th style={{ padding: '12px' }}>Total</th>
+                      <th style={{ padding: '12px' }}>GPA/Grade</th>
+                      <th style={{ padding: '12px' }}>Status</th>
+                      <th style={{ padding: '12px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -600,53 +462,54 @@ const AcademicResultsManagement = () => {
                       const statusVal = termData.status || 'PASSED';
 
                       return (
-                        <tr key={student.id} style={{ 
-                          borderBottom: '1px solid var(--border-color)',
-                          backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(243, 244, 246, 0.15)' 
-                        }}>
-                          <td style={{ padding: '14px' }}>
+                        <tr key={student.id || idx} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <td style={{ padding: '12px', fontWeight: '800', color: 'var(--primary)' }}>{student.roll}</td>
+                          <td style={{ padding: '12px', fontWeight: '700', color: 'var(--text-main)' }}>{student.name}</td>
+                          <td style={{ padding: '12px' }}>
+                            <span style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '11px', backgroundColor: 'var(--input-bg)', border: '1px solid var(--border-color)', fontWeight: '700' }}>
+                              Class {student.class}-{student.section}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px', fontWeight: '600' }}>{mathM}</td>
+                          <td style={{ padding: '12px', fontWeight: '600' }}>{sciM}</td>
+                          <td style={{ padding: '12px', fontWeight: '600' }}>{engM}</td>
+                          <td style={{ padding: '12px', fontWeight: '600' }}>{sstM}</td>
+                          <td style={{ padding: '12px', fontWeight: '600' }}>{csM}</td>
+                          <td style={{ padding: '12px', fontWeight: '800', color: '#4f46e5' }}>{totalStr}</td>
+                          <td style={{ padding: '12px', fontWeight: '800', color: '#10b981' }}>{gpaStr}</td>
+                          <td style={{ padding: '12px' }}>
                             <span style={{ 
-                              backgroundColor: 'rgba(79, 70, 229, 0.08)',
-                              color: '#4f46e5',
-                              padding: '4px 8px',
-                              borderRadius: '6px',
-                              fontWeight: 'bold',
-                              fontSize: '13px'
-                            }}>{student.roll || 'N/A'}</span>
-                          </td>
-                          <td style={{ padding: '14px', fontWeight: '700', color: 'var(--text-main)' }}>{student.name}</td>
-                          <td style={{ padding: '14px', color: 'var(--text-muted)', fontWeight: '600' }}>Class {student.class}-{student.section}</td>
-                          <td style={{ padding: '14px' }}><strong style={{ color: '#3b82f6' }}>{mathM}</strong></td>
-                          <td style={{ padding: '14px' }}><strong style={{ color: '#10b981' }}>{sciM}</strong></td>
-                          <td style={{ padding: '14px' }}><strong style={{ color: '#8b5cf6' }}>{engM}</strong></td>
-                          <td style={{ padding: '14px' }}><strong style={{ color: '#f59e0b' }}>{sstM}</strong></td>
-                          <td style={{ padding: '14px' }}><strong style={{ color: '#06b6d4' }}>{csM}</strong></td>
-                          <td style={{ padding: '14px' }}><strong>{totalStr}</strong></td>
-                          <td style={{ padding: '14px' }}>
-                            <span className="badge approved" style={{ fontWeight: '800' }}>{gpaStr}</span>
-                          </td>
-                          <td style={{ padding: '14px' }}>
-                            <span 
-                              className={`badge ${statusVal === 'PASSED' ? 'approved' : 'danger'}`}
-                              style={{
-                                backgroundColor: statusVal === 'PASSED' ? '#10b981' : '#ef4444',
-                                color: '#ffffff',
-                                fontWeight: '800',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                display: 'inline-block'
-                              }}
-                            >
+                              padding: '3px 10px', 
+                              borderRadius: '20px', 
+                              fontSize: '10px', 
+                              fontWeight: '900', 
+                              textTransform: 'uppercase',
+                              backgroundColor: statusVal === 'PASSED' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                              color: statusVal === 'PASSED' ? '#10b981' : '#ef4444'
+                            }}>
                               {statusVal}
                             </span>
                           </td>
-                          <td style={{ padding: '14px', textAlign: 'right' }}>
-                            <button 
+                          <td style={{ padding: '12px', textAlign: 'right' }}>
+                            <button
+                              type="button"
                               onClick={() => handleEditGradesClick(student)}
-                              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all ml-auto active:scale-95 whitespace-nowrap"
+                              style={{
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                backgroundColor: '#4f46e5',
+                                color: '#ffffff',
+                                border: 'none',
+                                fontWeight: '700',
+                                fontSize: '12px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                boxShadow: '0 2px 8px rgba(79, 70, 229, 0.25)'
+                              }}
                             >
-                              <FiEdit2 size={12} /> Edit Marks
+                              <FiEdit2 size={12} /> Input Grades
                             </button>
                           </td>
                         </tr>
@@ -669,14 +532,8 @@ const AcademicResultsManagement = () => {
 
         {/* Beautiful Modal for Grading */}
         {showModal && selectedStudent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-            <div className="rounded-2xl w-full max-w-lg p-8 shadow-2xl animate-in fade-in zoom-in duration-200" style={{ 
-              backgroundColor: 'var(--card-bg)', 
-              color: 'var(--text-main)', 
-              maxHeight: '90vh', 
-              overflowY: 'auto',
-              border: '1px solid var(--border-color)'
-            }}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4" onClick={() => setShowModal(false)}>
+            <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl p-4 sm:p-8 shadow-2xl border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-main)]" onClick={(e) => e.stopPropagation()}>
               
               <div className="flex justify-between items-center mb-6 pb-4 border-b border-[var(--border-color)]">
                 <div>
