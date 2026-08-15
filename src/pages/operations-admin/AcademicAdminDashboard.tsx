@@ -632,14 +632,14 @@ const AcademicAdminDashboard = () => {
           </div>
 
           {/* Main Grid: Interactive Class Explorer & Details Panel */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-full overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full max-w-full">
             
             {/* Interactive Classes Table */}
-            <div className="lg:col-span-7 p-4 sm:p-6 rounded-2xl bg-[var(--card-bg)] border border-[var(--border-color)] shadow-sm max-w-full overflow-hidden">
+            <div className="lg:col-span-7 p-3.5 sm:p-6 rounded-2xl bg-[var(--card-bg)] border border-[var(--border-color)] shadow-sm max-w-full overflow-x-auto">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
                 <div>
-                  <h3 className="text-base sm:text-lg font-black text-[var(--text-main)] m-0">📚 Master Class & Teacher Schedule Explorer</h3>
-                  <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1 mb-0">Real-time overview of class sections, timings, room locations, class teachers, and assigned subjects.</p>
+                  <h3 className="text-sm sm:text-lg font-black text-[var(--text-main)] m-0">📚 Master Class & Teacher Schedule Explorer</h3>
+                  <p className="text-xs text-[var(--text-muted)] mt-1 mb-0">Real-time overview of class sections, timings, room locations, class teachers, and assigned subjects.</p>
                 </div>
                 
                 {/* Micro Search Input */}
@@ -650,30 +650,21 @@ const AcademicAdminDashboard = () => {
                     placeholder="Search class or teacher..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px 8px 32px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      backgroundColor: 'var(--input-bg)',
-                      color: 'var(--text-main)',
-                      fontSize: '13px',
-                      outline: 'none'
-                    }}
+                    className="w-full pl-8 pr-3 py-2 border border-[var(--border-color)] rounded-xl bg-[var(--input-bg)] text-[var(--text-main)] text-xs outline-none"
                   />
                 </div>
               </div>
 
               <div className="overflow-x-auto w-full max-w-full">
-                <table className="data-table w-full min-w-[580px]">
+                <table className="data-table w-full min-w-[620px]">
                   <thead>
                     <tr>
-                      <th style={{ padding: '12px' }}>Class</th>
-                      <th style={{ padding: '12px' }}>Section</th>
-                      <th style={{ padding: '12px' }}>Room</th>
-                      <th style={{ padding: '12px' }}>Class Teacher</th>
-                      <th style={{ padding: '12px' }}>Timing</th>
-                      <th style={{ padding: '12px' }}>Subjects</th>
+                      <th style={{ padding: '10px' }}>Class</th>
+                      <th style={{ padding: '10px' }}>Section</th>
+                      <th style={{ padding: '10px' }}>Room</th>
+                      <th style={{ padding: '10px' }}>Class Teacher</th>
+                      <th style={{ padding: '10px' }}>Timing</th>
+                      <th style={{ padding: '10px' }}>Subjects</th>
                     </tr>
                   </thead>
                   <tbody>
