@@ -7,8 +7,9 @@ import {
   Clock, Sparkles, Facebook, Twitter, Linkedin, GraduationCap, Instagram, 
   Youtube, Beaker, Microchip, FlaskConical, Menu, X, LogIn, Sun, Moon, 
   Monitor, Book, Bus, ShieldCheck, Award, Laptop, ArrowUpRight, BookOpen, Quote,
-  Trophy, Palette, Music, Feather
+  Trophy, Palette, Music, Feather, Smartphone, Download
 } from "lucide-react";
+import AppDownloadButton from "../components/AppDownloadButton";
 
 const socialLinks = [
   { Icon: Instagram, href: "https://www.instagram.com/spssaketnagar/" },
@@ -1516,6 +1517,9 @@ const LandingPage = () => {
                   <a href="#contact" className="hover:text-blue-400 transition-colors flex items-center gap-1.5">
                     <span className="text-indigo-500">›</span> Contact & Enquiry Form
                   </a>
+                </li>
+                <li className="pt-2">
+                  <AppDownloadButton buttonText="Download Mobile App 📱" />
                 </li>
               </ul>
             </div>

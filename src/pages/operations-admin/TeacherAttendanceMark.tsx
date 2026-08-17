@@ -427,27 +427,27 @@ const TeacherAttendanceMark = () => {
           {attendanceSubTab === 'view' && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Filters */}
-              <div className="bg-[var(--card-bg)] p-5 rounded-2xl shadow-sm border border-[var(--border-color)] mb-6 flex flex-wrap gap-4 items-end">
-                <div className="flex-1 min-w-[200px]">
-                  <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Search</label>
-                  <div className="relative">
-                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end', width: '100%', marginBottom: '24px', backgroundColor: 'var(--card-bg)', padding: '18px', borderRadius: '18px', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}>
+                <div style={{ flex: '1 1 180px', boxSizing: 'border-box' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Search</label>
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} size={16} />
                     <input 
                       type="text"
                       placeholder="Student name or roll..." 
                       value={searchAttendance} 
                       onChange={e => setSearchAttendance(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" 
+                      style={{ width: '100%', padding: '9px 12px 9px 36px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
                 
-                <div className="w-[140px]">
-                  <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Class</label>
+                <div style={{ flex: '1 1 120px', boxSizing: 'border-box' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Class</label>
                   <select 
                     value={classFilter} 
                     onChange={e => setClassFilter(e.target.value)} 
-                    className="w-full px-3 py-2 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', fontWeight: '700', outline: 'none', boxSizing: 'border-box' }}
                   >
                     <option value="all">All Classes</option>
                     {uniqueClasses.map(cls => (
@@ -458,12 +458,12 @@ const TeacherAttendanceMark = () => {
                   </select>
                 </div>
 
-                <div className="w-[140px]">
-                  <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Section</label>
+                <div style={{ flex: '1 1 120px', boxSizing: 'border-box' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Section</label>
                   <select 
                     value={sectionFilter} 
                     onChange={e => setSectionFilter(e.target.value)} 
-                    className="w-full px-3 py-2 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', fontWeight: '700', outline: 'none', boxSizing: 'border-box' }}
                   >
                     <option value="all">All Sections</option>
                     {uniqueSections.map(sec => (
@@ -472,12 +472,12 @@ const TeacherAttendanceMark = () => {
                   </select>
                 </div>
 
-                <div className="w-[140px]">
-                  <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Status</label>
+                <div style={{ flex: '1 1 120px', boxSizing: 'border-box' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Status</label>
                   <select 
                     value={statusFilter} 
                     onChange={e => setStatusFilter(e.target.value)} 
-                    className="w-full px-3 py-2 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', fontWeight: '700', outline: 'none', boxSizing: 'border-box' }}
                   >
                     <option value="all">All Status</option>
                     <option value="Present">Present</option>
@@ -485,25 +485,25 @@ const TeacherAttendanceMark = () => {
                   </select>
                 </div>
 
-                <div className="w-[140px]">
-                  <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Start Date</label>
+                <div style={{ flex: '1 1 130px', boxSizing: 'border-box' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Start Date</label>
                   <input 
                     type="date" 
                     value={startDateFilter} 
                     onChange={e => setStartDateFilter(e.target.value)} 
                     onClick={(e) => (e.target as any).showPicker && (e.target as any).showPicker()}
-                    className="w-full px-3 py-2 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" 
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
 
-                <div className="w-[140px]">
-                  <label className="block text-xs font-semibold text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">End Date</label>
+                <div style={{ flex: '1 1 130px', boxSizing: 'border-box' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>End Date</label>
                   <input 
                     type="date" 
                     value={endDateFilter} 
                     onChange={e => setEndDateFilter(e.target.value)} 
                     onClick={(e) => (e.target as any).showPicker && (e.target as any).showPicker()}
-                    className="w-full px-3 py-2 bg-[var(--input-bg)] text-[var(--text-main)] border border-[var(--border-color)] rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" 
+                    style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '1px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
 
@@ -517,7 +517,7 @@ const TeacherAttendanceMark = () => {
                       setEndDateFilter('');
                       setSearchAttendance('');
                     }}
-                    className="px-4 py-2 text-rose-500 hover:bg-rose-50 text-sm font-semibold rounded-xl border border-rose-200 transition-colors"
+                    style={{ flex: '1 1 110px', padding: '9px 16px', backgroundColor: 'rgba(244,63,94,0.1)', color: '#F43F5E', border: '1px solid rgba(244,63,94,0.3)', borderRadius: '12px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', boxSizing: 'border-box' }}
                   >
                     Clear Filters
                   </button>

@@ -130,7 +130,7 @@ const TeacherAssignments = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="p-8">
+        <div className="p-3 sm:p-6 md:p-8 max-w-full">
           {(() => {
             const userRole = localStorage.getItem('role') || '';
             const isAdminUser = ['super-admin', 'manager-admin', 'academic-admin', 'teacher-admin', 'student-admin'].includes(userRole) || userRole.includes('admin') || userRole.includes('manager');
@@ -138,29 +138,29 @@ const TeacherAssignments = () => {
           })()}
 
           {/* Header */}
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-[var(--text-main)]">Assignments</h1>
-              <p className="text-[var(--text-muted)] text-sm font-medium">Create assignments and grade student submissions.</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-[var(--text-main)]">Assignments</h1>
+              <p className="text-[var(--text-muted)] text-xs sm:text-sm font-medium">Create assignments and grade student submissions.</p>
             </div>
             <button onClick={() => setOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 sm:px-6 py-3 rounded-xl sm:rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/20 active:scale-95 text-sm"
             >
               <FiPlus /> Create Assignment
             </button>
           </div>
 
           {/* Assignments Table */}
-          <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-[32px] shadow-sm border border-[var(--border-color)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+          <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-2xl sm:rounded-[32px] shadow-sm border border-[var(--border-color)] overflow-hidden">
+            <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+              <table className="w-full text-left border-collapse" style={{ minWidth: '700px' }}>
                 <thead>
                   <tr className="bg-[var(--input-bg)]/50 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest">
-                    <th className="px-8 py-5">Assignment Details</th>
-                    <th className="px-8 py-5">Class & Section</th>
-                    <th className="px-8 py-5">Due Date</th>
-                    <th className="px-8 py-5 text-center">Status</th>
-                    <th className="px-8 py-5 text-center">Submissions</th>
+                    <th className="px-4 sm:px-8 py-4 sm:py-5">Assignment Details</th>
+                    <th className="px-4 sm:px-8 py-4 sm:py-5">Class &amp; Section</th>
+                    <th className="px-4 sm:px-8 py-4 sm:py-5">Due Date</th>
+                    <th className="px-4 sm:px-8 py-4 sm:py-5 text-center">Status</th>
+                    <th className="px-4 sm:px-8 py-4 sm:py-5 text-center">Submissions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-color)]">
@@ -176,40 +176,40 @@ const TeacherAssignments = () => {
                     </td></tr>
                   ) : assignments.map((asg: any) => (
                     <tr key={asg._id} className="hover:bg-[var(--input-bg)]/30 transition-colors">
-                      <td className="px-8 py-5">
-                        <p className="font-bold text-[var(--text-main)]">{asg.title}</p>
+                      <td className="px-4 sm:px-8 py-4 sm:py-5">
+                        <p className="font-bold text-[var(--text-main)] text-sm sm:text-base">{asg.title}</p>
                         <p className="text-xs text-slate-400 line-clamp-1 mt-0.5">{asg.instructions}</p>
                       </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-2">
-                          <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-lg text-xs font-bold">
+                      <td className="px-4 sm:px-8 py-4 sm:py-5">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-xs font-bold whitespace-nowrap">
                             Class {asg.className}
                           </span>
-                          <span className="bg-violet-50 text-violet-700 border border-violet-100 px-2.5 py-1 rounded-lg text-xs font-bold">
+                          <span className="bg-violet-50 text-violet-700 border border-violet-100 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-xs font-bold whitespace-nowrap">
                             Sec {asg.section}
                           </span>
                         </div>
                       </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm">
-                          <FiCalendar className="text-blue-500" />
+                      <td className="px-4 sm:px-8 py-4 sm:py-5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-[var(--text-muted)] text-xs sm:text-sm font-semibold">
+                          <FiCalendar className="text-blue-500 shrink-0" />
                           {new Date(asg.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </div>
                       </td>
-                      <td className="px-8 py-5 text-center">
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase border border-green-100">
+                      <td className="px-4 sm:px-8 py-4 sm:py-5 text-center whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase border border-green-100">
                           <FiCheckCircle size={11} /> Active
                         </span>
                       </td>
-                      <td className="px-8 py-5 text-center">
-                        <div className="flex items-center justify-center gap-3">
+                      <td className="px-4 sm:px-8 py-4 sm:py-5 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-2 sm:gap-3">
                           <button onClick={() => handleViewSubmissions(asg)}
-                            className="inline-flex items-center gap-1 text-blue-600 font-bold hover:underline text-sm"
+                            className="inline-flex items-center gap-1 text-blue-600 font-bold hover:underline text-xs sm:text-sm"
                           >
                             <FiEye size={14} /> View
                           </button>
                           <button onClick={() => handleDeleteAssignment(asg._id, asg.title)}
-                            className="inline-flex items-center gap-1.5 text-rose-600 font-bold hover:text-rose-800 hover:underline text-sm"
+                            className="inline-flex items-center gap-1 text-rose-600 font-bold hover:text-rose-800 hover:underline text-xs sm:text-sm"
                             title="Delete Assignment"
                           >
                             <FiTrash2 size={14} /> Delete
@@ -225,35 +225,35 @@ const TeacherAssignments = () => {
 
           {/* ── CREATE MODAL ── */}
           {open && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-              <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-md rounded-[40px] shadow-2xl p-10">
-                <div className="flex items-center justify-between mb-8">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm">
+              <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-md rounded-2xl sm:rounded-[40px] shadow-2xl p-5 sm:p-8 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                      <FiBookOpen size={24} />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shrink-0">
+                      <FiBookOpen size={22} />
                     </div>
-                    <h3 className="text-xl font-black">New Assignment</h3>
+                    <h3 className="text-lg sm:text-xl font-black">New Assignment</h3>
                   </div>
                   <button onClick={() => setOpen(false)} className="p-2 rounded-full hover:bg-[var(--input-bg)] text-[var(--text-muted)] transition-colors">
                     <FiX size={18} />
                   </button>
                 </div>
-                <form onSubmit={handleCreate} className="space-y-5">
+                <form onSubmit={handleCreate} className="space-y-4 sm:space-y-5">
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Title</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Title *</label>
                     <input name="title" required value={form.title} placeholder="Assignment Title" onChange={handleChange}
-                      className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
+                      className="w-full p-3.5 sm:p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl outline-none text-sm text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Class</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Class *</label>
                       <select
                         name="className"
                         required
                         value={form.className}
                         onChange={handleChange}
-                        className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+                        className="w-full p-3.5 sm:p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl outline-none text-sm text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer appearance-none"
                         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', paddingRight: '40px' }}
                       >
                         <option value="">Select Class</option>
@@ -263,13 +263,13 @@ const TeacherAssignments = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Section</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Section *</label>
                       <select
                         name="section"
                         required
                         value={form.section}
                         onChange={handleChange}
-                        className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer appearance-none"
+                        className="w-full p-3.5 sm:p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-sm text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all cursor-pointer appearance-none"
                         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 14px center', paddingRight: '40px' }}
                       >
                         <option value="">Select Section</option>
@@ -280,23 +280,23 @@ const TeacherAssignments = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Due Date</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Due Date *</label>
                     <input type="date" name="dueDate" required value={form.dueDate} onChange={handleChange}
-                      className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
+                      className="w-full p-3.5 sm:p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl outline-none text-sm text-[var(--text-main)] focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
                     />
                   </div>
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase ml-1 mb-1 block">Instructions</label>
                     <textarea name="instructions" value={form.instructions} rows={3} placeholder="Assignment details..." onChange={handleChange}
-                      className="w-full p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-2xl outline-none text-[var(--text-main)] resize-none focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
+                      className="w-full p-3.5 sm:p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl outline-none text-sm text-[var(--text-main)] resize-none focus:ring-4 ring-blue-500/10 focus:border-blue-500 transition-all"
                     />
                   </div>
-                  <div className="flex gap-4 pt-2">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
                     <button type="button" onClick={() => setOpen(false)}
-                      className="flex-1 py-4 bg-slate-100 text-[var(--text-muted)] rounded-2xl font-bold hover:bg-slate-200 transition-all"
+                      className="flex-1 py-3.5 bg-slate-100 text-[var(--text-muted)] rounded-xl sm:rounded-2xl font-bold hover:bg-slate-200 transition-all text-sm"
                     >Cancel</button>
                     <button type="submit" disabled={loading}
-                      className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg flex items-center justify-center gap-2"
+                      className="flex-1 py-3.5 bg-blue-600 text-white rounded-xl sm:rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-lg flex items-center justify-center gap-2 text-sm"
                     >
                       {loading ? <FiLoader className="animate-spin" /> : 'Create Assignment'}
                     </button>
@@ -308,15 +308,15 @@ const TeacherAssignments = () => {
 
           {/* ── SUBMISSIONS MODAL ── */}
           {viewSubModal && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
-              <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-4xl rounded-[40px] shadow-2xl flex flex-col max-h-[88vh]">
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-slate-900/60 backdrop-blur-md">
+              <div className="bg-[var(--card-bg)] text-[var(--text-main)] w-full max-w-4xl rounded-2xl sm:rounded-[40px] shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
 
                 {/* Modal header */}
-                <div className="flex justify-between items-start p-8 pb-4 flex-shrink-0 border-b border-[var(--border-color)]">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 pb-3 sm:pb-4 flex-shrink-0 border-b border-[var(--border-color)] gap-3">
                   <div>
-                    <h3 className="text-2xl font-black text-[var(--text-main)]">Student Submissions</h3>
+                    <h3 className="text-xl sm:text-2xl font-black text-[var(--text-main)]">Student Submissions</h3>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <p className="text-sm text-[var(--text-muted)] font-medium">{currentAsg?.title}</p>
+                      <p className="text-xs sm:text-sm text-[var(--text-muted)] font-medium">{currentAsg?.title}</p>
                       {currentAsg && (
                         <>
                           <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
@@ -329,7 +329,7 @@ const TeacherAssignments = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 ml-4 flex-shrink-0">
+                  <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 flex-shrink-0">
                     <span className="bg-[var(--input-bg)] border border-[var(--border-color)] px-3 py-1.5 rounded-xl text-xs font-bold text-[var(--text-muted)]">
                       <FiLayers className="inline mr-1" size={11} />{currentSubmissions.length} submission{currentSubmissions.length !== 1 ? 's' : ''}
                     </span>
@@ -342,7 +342,7 @@ const TeacherAssignments = () => {
                 </div>
 
                 {/* Submissions list */}
-                <div className="overflow-y-auto flex-1 p-8 pt-5 space-y-4">
+                <div className="overflow-y-auto flex-1 p-3 sm:p-6 space-y-4">
                   {currentSubmissions.length === 0 ? (
                     <div className="text-center py-14 text-slate-400">
                       <FiFileText className="mx-auto mb-3 text-slate-300" size={40} />
@@ -357,18 +357,18 @@ const TeacherAssignments = () => {
                     const sec = sub.student?.section;
 
                     return (
-                      <div key={sub._id} className="p-6 bg-[var(--input-bg)] rounded-3xl border border-[var(--border-color)]">
+                      <div key={sub._id} className="p-4 sm:p-6 bg-[var(--input-bg)] rounded-2xl sm:rounded-3xl border border-[var(--border-color)]">
 
                         {/* ── Student Info ── */}
-                        <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                           <div className="flex items-center gap-3">
                             {/* Avatar */}
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-black text-lg flex-shrink-0">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white font-black text-base sm:text-lg flex-shrink-0">
                               {studentName.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <h4 className="font-bold text-[var(--text-main)] text-base flex items-center gap-1.5">
-                                <FiUser size={13} className="text-blue-500" />
+                              <h4 className="font-bold text-[var(--text-main)] text-sm sm:text-base flex items-center gap-1.5">
+                                <FiUser size={13} className="text-blue-500 shrink-0" />
                                 {studentName}
                               </h4>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -392,7 +392,7 @@ const TeacherAssignments = () => {
                             </div>
                           </div>
                           {/* Status badge */}
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase flex-shrink-0 ${
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase self-start sm:self-center flex-shrink-0 ${
                             isGraded
                               ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
                               : 'bg-indigo-100 text-indigo-700 border border-indigo-200'
@@ -402,22 +402,22 @@ const TeacherAssignments = () => {
                         </div>
 
                         {/* Answer */}
-                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl text-sm text-[var(--text-muted)] italic mb-4 leading-relaxed">
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-3 sm:p-4 rounded-xl sm:rounded-2xl text-xs sm:text-sm text-[var(--text-muted)] italic mb-4 leading-relaxed">
                           "{sub.answer}"
                         </div>
 
                         {/* File / PDF */}
-                        <div className="mb-5">
+                        <div className="mb-4">
                           {isPdf ? (
                             <a href={sub.fileUrl}
                               download={`${studentName.replace(/\s+/g,'_')}_assignment.pdf`}
-                              className="inline-flex items-center gap-2 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+                              className="inline-flex items-center gap-2 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors"
                             >
                               <FiFileText size={13} /> Download Student PDF
                             </a>
                           ) : (
                             <a href={sub.fileUrl} target="_blank" rel="noreferrer"
-                              className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-xl text-xs font-bold transition-colors"
+                              className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors"
                             >
                               <FiLink size={13} /> View Submission Link
                             </a>
@@ -425,25 +425,28 @@ const TeacherAssignments = () => {
                         </div>
 
                         {/* ── Marks & Remarks Section ── */}
-                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-4 rounded-2xl">
+                        <div className="bg-[var(--card-bg)] border border-[var(--border-color)] p-3.5 sm:p-4 rounded-xl sm:rounded-2xl">
                           <p className="text-[10px] font-black uppercase text-[var(--text-muted)] mb-3 flex items-center gap-1">
-                            <FiAward className="text-amber-500" size={12} /> Enter Marks &amp; Teacher Remarks — Student will see this
+                            <FiAward className="text-amber-500 shrink-0" size={12} /> Enter Marks &amp; Teacher Remarks — Student will see this
                           </p>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={marksMap[sub._id] ?? ''}
-                              onChange={e => setMarksMap(prev => ({ ...prev, [sub._id]: e.target.value }))}
-                              className="w-24 p-3 bg-[var(--input-bg)] border-2 border-[var(--border-color)] rounded-xl text-center font-black text-[var(--text-main)] text-lg outline-none focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                              placeholder="0"
-                            />
-                            <span className="text-[var(--text-muted)] font-bold text-lg">/ 100</span>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={marksMap[sub._id] ?? ''}
+                                onChange={e => setMarksMap(prev => ({ ...prev, [sub._id]: e.target.value }))}
+                                className="w-20 sm:w-24 p-2.5 sm:p-3 bg-[var(--input-bg)] border-2 border-[var(--border-color)] rounded-xl text-center font-black text-[var(--text-main)] text-base sm:text-lg outline-none focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                placeholder="0"
+                              />
+                              <span className="text-[var(--text-muted)] font-bold text-base sm:text-lg">/ 100</span>
+                            </div>
+
                             <button
                               onClick={() => handleSaveMarks(sub._id)}
                               disabled={savingId === sub._id}
-                              className="ml-auto flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
+                              className="w-full sm:w-auto sm:ml-auto flex items-center justify-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-60 shadow-sm"
                             >
                               {savingId === sub._id
                                 ? <><FiLoader className="animate-spin" size={14} /> Saving...</>
@@ -458,7 +461,7 @@ const TeacherAssignments = () => {
                               type="text"
                               value={remarksMap[sub._id] ?? ''}
                               onChange={e => setRemarksMap(prev => ({ ...prev, [sub._id]: e.target.value }))}
-                              className="w-full p-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl font-medium text-sm text-[var(--text-main)] outline-none focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                              className="w-full p-2.5 sm:p-3 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl font-medium text-xs sm:text-sm text-[var(--text-main)] outline-none focus:ring-2 ring-indigo-500/20 focus:border-indigo-500 transition-all"
                               placeholder="e.g. Excellent work! / Good effort, clean explanation."
                             />
                           </div>

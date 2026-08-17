@@ -384,70 +384,266 @@ const TeacherDashboard = () => {
         <div className="dashboard-container p-3 sm:p-6 max-w-[1400px] mx-auto overflow-x-hidden w-full">
 
           {/* ── HERO BANNER WITH DISTINCT SUBJECT TEACHER BRANDING ── */}
-          <div className="bg-gradient-to-r from-indigo-950 via-indigo-900 to-indigo-800 rounded-3xl p-4 sm:p-8 text-white mb-5 shadow-xl relative overflow-hidden border border-indigo-400/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 w-full">
-            <div style={{ position: 'absolute', top: '-50px', right: '180px', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(129,140,248,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: '-50px', right: '30px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-
-            <div className="z-10 flex flex-col sm:flex-row items-start sm:items-center gap-3.5 max-w-full">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-indigo-600 flex items-center justify-center font-extrabold text-lg sm:text-2xl text-white shadow-lg border border-white/20 shrink-0">
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%)',
+              borderRadius: '20px',
+              padding: '20px 24px',
+              color: '#FFFFFF',
+              marginBottom: '24px',
+              boxShadow: '0 12px 32px -8px rgba(49, 46, 129, 0.4)',
+              position: 'relative',
+              border: '1px solid rgba(165, 180, 252, 0.3)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            {/* Top row: Avatar + Badges + Title */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', width: '100%', flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '16px',
+                  backgroundColor: '#6366F1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: '800',
+                  fontSize: '20px',
+                  color: '#FFFFFF',
+                  boxShadow: '0 6px 16px rgba(99, 102, 241, 0.4)',
+                  border: '1.5px solid rgba(255, 255, 255, 0.3)',
+                  flexShrink: 0,
+                }}
+              >
                 {initials(teacherName)}
               </div>
 
-              <div className="max-w-full">
-                <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                  <span className="text-[10px] font-extrabold tracking-wider uppercase text-indigo-200 bg-white/10 px-2 py-0.5 rounded-md">
+              <div style={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: '800',
+                      letterSpacing: '0.8px',
+                      textTransform: 'uppercase',
+                      color: '#E0E7FF',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                    }}
+                  >
                     FACULTY INSTRUCTOR PORTAL
                   </span>
-                  <span className="bg-indigo-500/30 border border-indigo-300/50 text-indigo-100 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-bold inline-flex items-center gap-1.5">
-                    <FiBookOpen size={13} /> 📖 SUBJECT TEACHER CONTROL CENTER
+                  <span
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: '700',
+                      color: '#C7D2FE',
+                      backgroundColor: 'rgba(99, 102, 241, 0.3)',
+                      border: '1px solid rgba(199, 210, 254, 0.4)',
+                      padding: '3px 10px',
+                      borderRadius: '20px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                    }}
+                  >
+                    <FiBookOpen size={12} /> 📖 SUBJECT TEACHER CONTROL CENTER
                   </span>
                 </div>
 
-                <h1 className="m-0 text-lg sm:text-2xl font-black tracking-tight text-white leading-snug">
+                <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.3px', lineHeight: '1.3' }}>
                   SUBJECT TEACHER PORTAL — {teacherName}
                 </h1>
-                <p className="m-0 mt-1 opacity-90 text-xs sm:text-sm text-indigo-200 leading-relaxed">
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#C7D2FE', lineHeight: '1.4', opacity: 0.95 }}>
                   Manage assigned subject periods, record subject attendance, upload exam marks &amp; grade assignments.
                 </p>
               </div>
-            </div>
 
-            <div className="z-10 flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center w-full md:w-auto pt-2 md:pt-0 border-t border-white/10 md:border-t-0 shrink-0">
-              <div className="text-xl sm:text-3xl font-extrabold font-mono tracking-tight text-slate-50">{timeStr}</div>
-              <div className="text-xs opacity-80 text-indigo-200">{dateStr}</div>
+              {/* Time & Date Box */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                  padding: '8px 16px',
+                  borderRadius: '14px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  alignSelf: 'flex-start',
+                }}
+              >
+                <div style={{ fontSize: '20px', fontWeight: '800', fontFamily: 'monospace', color: '#F8FAFC', letterSpacing: '-0.5px' }}>
+                  {timeStr}
+                </div>
+                <div style={{ fontSize: '11px', color: '#A5B4FC', fontWeight: '600' }}>
+                  {dateStr}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* ── PORTAL NAVIGATION QUICK TABS ── */}
-          <div className="flex items-center gap-2 mb-6 border-b border-[var(--border-color)] pb-3 overflow-x-auto max-w-full scrollbar-none">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px',
+              marginBottom: '24px',
+              borderBottom: '1px solid var(--border-color)',
+              paddingBottom: '16px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
             <button
               onClick={() => setActiveTab('overview')}
-              className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer flex items-center gap-2 ${
-                activeTab === 'overview' ? 'bg-indigo-700 text-white shadow-md' : 'bg-[var(--card-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)]'
-              }`}
+              style={{
+                flex: '1 1 180px',
+                padding: '12px 16px',
+                borderRadius: '14px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                border: 'none',
+                backgroundColor: activeTab === 'overview' ? '#4F46E5' : 'var(--card-bg)',
+                color: activeTab === 'overview' ? '#FFFFFF' : 'var(--text-muted)',
+                boxShadow: activeTab === 'overview' ? '0 4px 14px rgba(79, 70, 229, 0.35)' : 'none',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
             >
-              <FiActivity size={15} /> 📖 Subject Teacher Overview
+              <FiActivity size={16} /> 📖 Subject Teacher Overview
             </button>
 
             <button
               onClick={() => navigate('/teacher/results')}
-              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer flex items-center gap-2 bg-purple-700 text-white shadow-md hover:bg-purple-800"
+              style={{
+                flex: '1 1 180px',
+                padding: '12px 16px',
+                borderRadius: '14px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                border: 'none',
+                backgroundColor: '#7C3AED',
+                color: '#FFFFFF',
+                boxShadow: '0 4px 14px rgba(124, 58, 237, 0.3)',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
             >
               🏆 Upload Subject Results
             </button>
 
             <button
               onClick={() => navigate('/teacher/attendanceMark')}
-              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer flex items-center gap-2 bg-emerald-600 text-white shadow-md hover:bg-emerald-700"
+              style={{
+                flex: '1 1 180px',
+                padding: '12px 16px',
+                borderRadius: '14px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                border: 'none',
+                backgroundColor: '#10B981',
+                color: '#FFFFFF',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
             >
               ✅ Period Roll Call
             </button>
 
             <button
               onClick={() => navigate('/teacher/myclasses')}
-              className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shrink-0 transition-all cursor-pointer flex items-center gap-2 bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-main)] hover:bg-white/5"
+              style={{
+                flex: '1 1 180px',
+                padding: '12px 16px',
+                borderRadius: '14px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--card-bg)',
+                color: 'var(--text-main)',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
             >
               📅 Timetable &amp; Classes
+            </button>
+
+            <button
+              onClick={() => navigate('/teacher/assignments')}
+              style={{
+                flex: '1 1 180px',
+                padding: '12px 16px',
+                borderRadius: '14px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--card-bg)',
+                color: 'var(--text-main)',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
+            >
+              📚 Subject Assignments
+            </button>
+
+            <button
+              onClick={() => navigate('/teacher/application')}
+              style={{
+                flex: '1 1 180px',
+                padding: '12px 16px',
+                borderRadius: '14px',
+                fontSize: '13px',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--card-bg)',
+                color: 'var(--text-main)',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
+            >
+              📩 Student Applications
             </button>
           </div>
 

@@ -92,13 +92,31 @@ const TeacherResultsManagement = () => {
     .filter(Boolean)
   ));
 
-  const availableSubjects = Array.from(new Set(assignedClasses
+  const rawSubjects = assignedClasses
     .filter(c => normalizeClass(c.className) === normalizeClass(selectedClass) && c.section === selectedSection)
     .flatMap(c => c.subjects || [])
-    .map((s: any) => ({ name: s.name, code: s.code }))
-  ));
-  
-  const uniqueSubjects = Array.from(new Map(availableSubjects.map((s: any) => [s.name, s])).values());
+    .map((s: any) => ({ name: s.name || s, code: s.code || `SUB-${selectedClass}${selectedSection}` }));
+
+  const defaultFallbackSubjects = [
+    { name: 'Mathematics', code: `MATH-${selectedClass || '01'}` },
+    { name: 'Science & Tech', code: `SCI-${selectedClass || '01'}` },
+    { name: 'English Literature', code: `ENG-${selectedClass || '01'}` },
+    { name: 'Social Science', code: `SST-${selectedClass || '01'}` },
+    { name: 'Computer Applications', code: `CS-${selectedClass || '01'}` }
+  ];
+
+  const uniqueSubjectsList = Array.from(new Map(rawSubjects.map((s: any) => [s.name, s])).values());
+  const uniqueSubjects = uniqueSubjectsList.length > 0 ? uniqueSubjectsList : defaultFallbackSubjects;
+
+  useEffect(() => {
+    if (uniqueSubjects.length > 0) {
+      const match = uniqueSubjects.find((s: any) => s.name === subjectName);
+      if (!match) {
+        setSubjectName(uniqueSubjects[0].name);
+        setSubjectCode(uniqueSubjects[0].code || `SUB-${selectedClass}${selectedSection}`);
+      }
+    }
+  }, [selectedClass, selectedSection, uniqueSubjects, subjectName]);
 
   // Shared state for Teacher Admin Exam Result Orders
   const [examOrders, setExamOrders] = useSharedState<any[]>('erp_exam_result_orders', [
@@ -426,48 +444,64 @@ const TeacherResultsManagement = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container" style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div className="dashboard-container" style={{ padding: '12px 14px', maxWidth: '1400px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
           
           {/* Header Banner - Ultra Crisp in Light & Dark Mode */}
-          <div style={{
-            background: 'linear-gradient(135deg, #4338ca 0%, #3b82f6 100%)',
-            borderRadius: '20px',
-            padding: '28px 32px',
-            color: '#ffffff',
-            marginBottom: '24px',
-            boxShadow: '0 12px 32px rgba(67, 56, 202, 0.25)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '16px'
-          }}>
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-3 py-1 bg-white/20 border border-white/30 rounded-full text-xs font-black tracking-wider uppercase text-white shadow-xs">
+          <div
+            style={{
+              background: 'linear-gradient(135deg, #4338ca 0%, #3b82f6 100%)',
+              borderRadius: '20px',
+              padding: '18px 20px',
+              color: '#ffffff',
+              marginBottom: '20px',
+              boxShadow: '0 12px 32px rgba(67, 56, 202, 0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '14px',
+              width: '100%',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '10px', fontWeight: '800', backgroundColor: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', padding: '3px 10px', borderRadius: '20px', color: '#ffffff', textTransform: 'uppercase' }}>
                   📐 Specialized Subject Marks Entry
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-                <FiAward className="text-amber-300" /> Subject Exam Results Upload
+              <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <FiAward style={{ color: '#FCD34D' }} /> Subject Exam Results Upload
               </h1>
-              <p className="text-indigo-100 text-sm mt-1 font-medium">
-                Enter and update exam marks strictly for your specialized subject (<strong>{subjectName}</strong>) across assigned timetable classes.
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#E0E7FF', opacity: 0.95, lineHeight: '1.4' }}>
+                Enter and update exam marks strictly for your specialized subject (<strong>{subjectName || 'Assigned Subject'}</strong>) across assigned timetable classes.
               </p>
             </div>
             
             <button
               onClick={handleExportCSV}
-              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm rounded-xl shadow-lg transition-all active:scale-95 flex items-center gap-2 border border-emerald-400"
+              style={{
+                alignSelf: 'flex-start',
+                padding: '9px 16px',
+                backgroundColor: '#10B981',
+                color: '#ffffff',
+                fontWeight: '800',
+                fontSize: '12.5px',
+                borderRadius: '12px',
+                border: '1px solid #34D399',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 14px rgba(16,185,129,0.3)'
+              }}
             >
-              <FiDownload size={16} /> Export Results (CSV)
+              <FiDownload size={15} /> Export Results (CSV)
             </button>
           </div>
 
           {/* Controls Bar - Light Mode & Dark Mode Compliant */}
-          <div className="bg-[var(--card-bg)] p-5 rounded-2xl shadow-sm border border-[var(--border-color)] mb-6 flex flex-wrap gap-4 items-end">
-            <div className="w-[160px]">
-              <label className="block text-xs font-black text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Assigned Class *</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end', width: '100%', marginBottom: '20px', backgroundColor: 'var(--card-bg)', padding: '16px', borderRadius: '18px', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}>
+            <div style={{ flex: '1 1 130px', boxSizing: 'border-box' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Assigned Class *</label>
               <select
                 value={selectedClass}
                 onChange={e => {
@@ -476,7 +510,7 @@ const TeacherResultsManagement = () => {
                   setSubjectName('');
                   setSubjectCode('');
                 }}
-                className="w-full px-3.5 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none"
+                style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '2px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', fontWeight: '800', outline: 'none', boxSizing: 'border-box' }}
               >
                 <option value="">Select Class...</option>
                 {uniqueClasses.map(cls => (
@@ -487,8 +521,8 @@ const TeacherResultsManagement = () => {
               </select>
             </div>
 
-            <div className="w-[140px]">
-              <label className="block text-xs font-black text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Section *</label>
+            <div style={{ flex: '1 1 120px', boxSizing: 'border-box' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Section *</label>
               <select
                 value={selectedSection}
                 onChange={e => {
@@ -496,7 +530,7 @@ const TeacherResultsManagement = () => {
                   setSubjectName('');
                   setSubjectCode('');
                 }}
-                className="w-full px-3.5 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none"
+                style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '2px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', fontWeight: '800', outline: 'none', boxSizing: 'border-box' }}
                 disabled={!selectedClass}
               >
                 <option value="">Select Section...</option>
@@ -506,8 +540,8 @@ const TeacherResultsManagement = () => {
               </select>
             </div>
 
-            <div className="w-[220px]">
-              <label className="block text-xs font-black text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Select Subject *</label>
+            <div style={{ flex: '1 1 160px', boxSizing: 'border-box' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Select Subject *</label>
               <select
                 value={subjectName}
                 onChange={e => {
@@ -520,7 +554,7 @@ const TeacherResultsManagement = () => {
                     setSubjectCode(`SUB-${selectedClass}${selectedSection}`);
                   }
                 }}
-                className="w-full px-3.5 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none"
+                style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '2px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', fontWeight: '800', outline: 'none', boxSizing: 'border-box' }}
                 disabled={!selectedSection}
               >
                 <option value="">Select Subject...</option>
@@ -530,12 +564,12 @@ const TeacherResultsManagement = () => {
               </select>
             </div>
 
-            <div className="flex-1 min-w-[220px]">
-              <label className="block text-xs font-black text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Exam Type *</label>
+            <div style={{ flex: '1 1 180px', boxSizing: 'border-box' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Exam Type *</label>
               <select
                 value={examType}
                 onChange={e => setExamType(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-black focus:ring-2 focus:ring-indigo-500 outline-none"
+                style={{ width: '100%', padding: '9px 12px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '2px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', fontWeight: '800', outline: 'none', boxSizing: 'border-box' }}
               >
                 <option value="Mid-Term Examination 2026">Mid-Term Examination 2026</option>
                 <option value="Unit Test 1 (Quarterly)">Unit Test 1 (Quarterly)</option>
@@ -544,16 +578,16 @@ const TeacherResultsManagement = () => {
               </select>
             </div>
 
-            <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs font-black text-[var(--text-muted)] mb-1.5 uppercase tracking-wider">Search Student</label>
-              <div className="relative">
-                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-500" size={16} />
+            <div style={{ flex: '1 1 180px', boxSizing: 'border-box' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Search Student</label>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#6366F1' }} size={16} />
                 <input
                   type="text"
                   placeholder="Student name or roll no..."
                   value={studentSearch}
                   onChange={e => setStudentSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-[var(--input-bg)] text-[var(--text-main)] border-2 border-[var(--border-color)] rounded-xl text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+                  style={{ width: '100%', padding: '9px 12px 9px 36px', backgroundColor: 'var(--input-bg)', color: 'var(--text-main)', border: '2px solid var(--border-color)', borderRadius: '12px', fontSize: '13px', fontWeight: '700', outline: 'none', boxSizing: 'border-box' }}
                 />
               </div>
             </div>
@@ -567,10 +601,10 @@ const TeacherResultsManagement = () => {
                    (o.examTerm === examType || o.subjectName?.toLowerCase().includes('math'))
             );
             return activeOrder ? (
-              <div className="bg-indigo-50 dark:bg-indigo-950/40 border-2 border-indigo-300 dark:border-indigo-800 p-5 rounded-2xl mb-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="bg-indigo-50 dark:bg-indigo-950/40 border-2 border-indigo-300 dark:border-indigo-800 p-4 rounded-2xl mb-6 shadow-sm w-full box-border">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 w-full">
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider shadow-xs ${
                         activeOrder.status === 'SUBMITTED' 
                           ? 'bg-emerald-600 text-white' 
@@ -585,30 +619,30 @@ const TeacherResultsManagement = () => {
                     <h3 className="text-base font-black text-indigo-950 dark:text-indigo-100 mt-2">
                       Result Entry Request: {activeOrder.examTerm} &bull; Class {activeOrder.className}-{activeOrder.section}
                     </h3>
-                    <p className="text-xs text-indigo-900 dark:text-indigo-300 mt-1 font-bold">
+                    <p className="text-xs text-indigo-900 dark:text-indigo-300 mt-1 font-bold leading-relaxed">
                       📋 Instructions: {activeOrder.instructions} | Published by <strong>{activeOrder.createdBy}</strong>
                     </p>
                   </div>
-                  <div className="text-right whitespace-nowrap bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                  <div className="whitespace-nowrap bg-white dark:bg-slate-900 p-3 rounded-xl border border-indigo-200 dark:border-indigo-800 shrink-0">
                     <div className="text-xs font-black text-slate-500 uppercase tracking-wider">Submission Deadline</div>
                     <div className="text-sm font-black text-rose-600 dark:text-rose-400">⏰ {activeOrder.dueDate}</div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-800 p-4 px-6 rounded-2xl mb-6 flex items-center justify-between">
+              <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-300 dark:border-amber-800 p-4 rounded-2xl mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full box-border">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">⏳</span>
+                  <span className="text-2xl shrink-0">⏳</span>
                   <div>
                     <div className="font-black text-amber-900 dark:text-amber-300 text-sm">
                       Awaiting Teacher Admin Authorization
                     </div>
-                    <div className="text-xs text-amber-800 dark:text-amber-400 font-bold">
+                    <div className="text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
                       Teacher Admin has not yet published an active Result Entry Order for {examType} (Class {selectedClass}-{selectedSection}). You can enter draft marks below.
                     </div>
                   </div>
                 </div>
-                <span className="px-3 py-1 bg-amber-600 text-white text-xs font-black rounded-full uppercase tracking-wider shadow-xs">
+                <span className="px-3 py-1 bg-amber-600 text-white text-xs font-black rounded-full uppercase tracking-wider shadow-xs shrink-0">
                   Pending Order
                 </span>
               </div>
@@ -616,16 +650,16 @@ const TeacherResultsManagement = () => {
           })()}
 
           {/* Results Table - 100% High Contrast for Light & Dark Modes */}
-          <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-2xl shadow-sm border border-[var(--border-color)] overflow-hidden">
-            <div className="p-5 border-b border-[var(--border-color)] flex flex-wrap justify-between items-center gap-4 bg-slate-100/80 dark:bg-slate-900/80">
-              <div className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <FiBookOpen className="text-indigo-600" size={18} />
+          <div className="bg-[var(--card-bg)] text-[var(--text-main)] rounded-2xl shadow-sm border border-[var(--border-color)] w-full box-border">
+            <div className="p-4 border-b border-[var(--border-color)] flex flex-wrap justify-between items-center gap-3 bg-slate-100/80 dark:bg-slate-900/80 w-full box-border">
+              <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex flex-wrap items-center gap-2">
+                <FiBookOpen className="text-indigo-600 shrink-0" size={18} />
                 <span>Class {selectedClass}-{selectedSection}</span> &bull; <span>{subjectName}</span> &bull; <span className="text-indigo-600 dark:text-indigo-400 font-black">{examType}</span>
               </div>
               <button
                 onClick={handleSaveResults}
                 disabled={saving || filteredStudents.length === 0}
-                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 border border-indigo-500"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 border border-indigo-500 shrink-0"
               >
                 {saving ? <FiLoader className="animate-spin" size={16} /> : <FiSave size={16} />}
                 {saving ? 'Publishing Marks...' : 'Save & Publish Exam Results'}
@@ -638,8 +672,8 @@ const TeacherResultsManagement = () => {
                 <p className="font-bold text-base">Loading student class list for marks entry...</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+              <div className="overflow-x-auto w-full" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table className="w-full text-left border-collapse" style={{ minWidth: '950px' }}>
                   <thead>
                     <tr className="bg-slate-200/90 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs font-black uppercase tracking-wider border-b-2 border-indigo-200 dark:border-indigo-900">
                       <th className="px-6 py-4 font-black w-24">Roll No</th>
@@ -649,7 +683,7 @@ const TeacherResultsManagement = () => {
                       <th className="px-6 py-4 font-black w-36">Marks Obtained</th>
                       <th className="px-6 py-4 font-black w-32">Subject Grade</th>
                       <th className="px-6 py-4 font-black">Overall Performance</th>
-                      <th className="px-6 py-4 font-black text-center">Full Report Card</th>
+                      <th className="px-6 py-4 font-black text-center w-40">Full Report Card</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-color)] text-sm">
