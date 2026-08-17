@@ -532,8 +532,8 @@ const TeacherAttendanceMark = () => {
                     <p>Loading attendance records...</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                  <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                    <table className="w-full text-left border-collapse" style={{ minWidth: '750px' }}>
                       <thead>
                         <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                           <th className="px-6 py-4 font-semibold border-b border-slate-100">Date</th>
@@ -779,8 +779,8 @@ const TeacherAttendanceMark = () => {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                  <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                    <table className="w-full text-left border-collapse" style={{ minWidth: '600px' }}>
                       <thead>
                         <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                           <th className="px-6 py-4 font-semibold border-b border-slate-100 w-32">Roll No</th>

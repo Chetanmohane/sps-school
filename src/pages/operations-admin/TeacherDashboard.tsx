@@ -889,7 +889,8 @@ const TeacherDashboard = () => {
                         {loadingMyData ? (
                           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>⏳ Loading students...</div>
                         ) : (
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                          <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                            <table style={{ minWidth: '650px', width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                             <thead>
                               <tr style={{ backgroundColor: 'var(--primary-bg)', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                 <th style={{ padding: '12px 16px', textAlign: 'left' }}>Roll No</th>
@@ -921,7 +922,8 @@ const TeacherDashboard = () => {
                                   </tr>
                                 ))}
                             </tbody>
-                          </table>
+                            </table>
+                          </div>
                         )}
                       </div>
                     )}
@@ -1205,13 +1207,13 @@ const TeacherDashboard = () => {
               </div>
 
               {/* Roster Table */}
-              <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '18px', overflow: 'hidden' }}>
+              <div style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: '18px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y', width: '100%' }}>
                 {loadingStudents ? (
                   <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
                     Loading class roster...
                   </div>
                 ) : (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                  <table style={{ minWidth: '750px', width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--text-muted)', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         <th style={{ padding: '14px 20px' }}>Roll No</th>
