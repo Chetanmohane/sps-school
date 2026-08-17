@@ -69,8 +69,8 @@ html {
   zoom: var(--app-zoom, 1);
   max-width: 100vw;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
   box-sizing: border-box;
 }
 
@@ -80,8 +80,8 @@ body {
   font-size: var(--app-font-size, 16px);
   max-width: 100vw;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
   position: relative;
   box-sizing: border-box;
 }
@@ -89,19 +89,18 @@ body {
 #root {
   max-width: 100vw;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
   box-sizing: border-box;
 }
 
 /* --- Layout --- */
 .app-layout {
   display: flex;
-  height: 100vh;
+  min-height: 100vh;
   width: 100vw;
   max-width: 100vw;
-  overflow: hidden;
   box-sizing: border-box;
+  position: relative;
 }
 
 .main-content {
@@ -110,13 +109,11 @@ body {
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  height: 100vh;
-  min-height: 0;
+  min-height: 100vh;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
 }
 
 .dashboard-container {
@@ -1526,14 +1523,6 @@ html.dark-mode .theme-toggle-btn:hover {
   
   /* Any element containing a table must be able to scroll horizontally */
   .table-container {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-    width: 100% !important;
-  }
-  
-  [style*="overflowY: auto"], 
-  [style*="overflow-y: auto"] {
-    overflow-y: auto !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
     width: 100% !important;
