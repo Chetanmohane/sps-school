@@ -1495,7 +1495,7 @@ html.dark-mode .theme-toggle-btn:hover {
   
   /* Exclude grids that use auto-fit (which are already responsive) */
   [style*="auto-fit"] {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
   }
   
   /* Form elements should take full width inside flexible containers */

@@ -1079,8 +1079,8 @@ const ClassTeacherDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                    <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
                       <thead>
                         <tr>
                           <th>Roll No</th>
@@ -1584,8 +1584,8 @@ const ClassTeacherDashboard = () => {
                       ⏳ Loading timetable...
                     </div>
                   ) : timetableSchedule.length > 0 ? (
-                    <div className="table-container" style={{ marginBottom: '28px' }}>
-                      <table className="data-table">
+                    <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y', marginBottom: '28px' }}>
+                      <table className="data-table" style={{ minWidth: '700px', width: '100%' }}>
                         <thead>
                           <tr>
                             <th>Period #</th>
@@ -1875,8 +1875,8 @@ const ClassTeacherDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                    <table className="data-table" style={{ minWidth: '700px', width: '100%' }}>
                       <thead>
                         <tr>
                           <th>Roll No</th>
@@ -2469,8 +2469,8 @@ const ClassTeacherDashboard = () => {
 
                 <h4 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: '800' }}>📚 Subject-wise Marks &amp; Grades Breakdown</h4>
                 {subjects.length > 0 ? (
-                  <div className="table-container" style={{ marginBottom: '24px' }}>
-                    <table className="data-table">
+                  <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y', marginBottom: '24px' }}>
+                    <table className="data-table" style={{ minWidth: '550px', width: '100%' }}>
                       <thead>
                         <tr>
                           <th>Subject</th>
