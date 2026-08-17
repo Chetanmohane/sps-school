@@ -17,26 +17,42 @@ export const AppDownloadButton: React.FC<AppDownloadButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [downloadStarted, setDownloadStarted] = useState(false);
   const [activeTab, setActiveTab] = useState<'android' | 'ios' | 'qr'>('android');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [installed, setInstalled] = useState(false);
 
-  const handleDownloadAndroid = () => {
+  React.useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleDownloadAndroid = async () => {
     setDownloadStarted(true);
-    
-    // Create an APK download trigger
-    const element = document.createElement("a");
-    const file = new Blob([
-      "SPS School ERP Mobile Application Package (APK Demo)\nVersion: 1.0.4\nPlatform: Android\nStatus: Verified & Secure"
-    ], { type: 'application/vnd.android.package-archive' });
-    element.href = URL.createObjectURL(file);
-    element.download = "SPS_School_ERP_v1.0.apk";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
 
-    if (window.showToast) {
-      window.showToast('🚀 SPS School ERP App download started!', 'success');
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+      if (choiceResult.outcome === 'accepted') {
+        setInstalled(true);
+        if (window.showToast) {
+          window.showToast('🎉 SPS School ERP App installed on your device!', 'success');
+        }
+      }
+      setDeferredPrompt(null);
+    } else {
+      if (window.showToast) {
+        window.showToast('📱 Chrome Menu (⋮) -> Tap "Add to Home Screen" to install app', 'info');
+      }
     }
 
-    setTimeout(() => setDownloadStarted(false), 3000);
+    setTimeout(() => setDownloadStarted(false), 2500);
   };
 
   const getPositionStyles = (): React.CSSProperties => {
@@ -258,11 +274,14 @@ export const AppDownloadButton: React.FC<AppDownloadButtonProps> = ({
                   >
                     <div style={{ fontSize: '36px', marginBottom: '8px' }}>🤖</div>
                     <h4 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: '700', color: '#F1F5F9' }}>
-                      Download for Android (.apk)
+                      Install App for Android
                     </h4>
-                    <p style={{ margin: 0, fontSize: '13px', color: '#94A3B8' }}>
-                      Compatible with Android 7.0 and above. Direct installable package.
+                    <p style={{ margin: '0 0 8px', fontSize: '13px', color: '#94A3B8' }}>
+                      Official Web Application Package for Android. Fast, secure & zero storage space required.
                     </p>
+                    <div style={{ fontSize: '12px', color: '#A78BFA', backgroundColor: 'rgba(139, 92, 246, 0.15)', padding: '8px 12px', borderRadius: '10px', display: 'inline-block' }}>
+                      💡 Tip: Open in Mobile Chrome, tap <strong>(⋮) Menu</strong> &rarr; Select <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong>
+                    </div>
                   </div>
 
                   <button
@@ -272,7 +291,7 @@ export const AppDownloadButton: React.FC<AppDownloadButtonProps> = ({
                       width: '100%',
                       padding: '14px 20px',
                       borderRadius: '14px',
-                      background: downloadStarted
+                      background: downloadStarted || installed
                         ? '#10B981'
                         : 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
                       color: '#FFFFFF',
@@ -288,15 +307,20 @@ export const AppDownloadButton: React.FC<AppDownloadButtonProps> = ({
                       transition: 'all 0.2s',
                     }}
                   >
-                    {downloadStarted ? (
+                    {installed ? (
                       <>
                         <CheckCircle2 size={20} />
-                        <span>Downloading APK...</span>
+                        <span>App Installed Successfully!</span>
+                      </>
+                    ) : downloadStarted ? (
+                      <>
+                        <CheckCircle2 size={20} />
+                        <span>Launching App Installer...</span>
                       </>
                     ) : (
                       <>
-                        <Download size={20} />
-                        <span>Download APK (Direct Download)</span>
+                        <Smartphone size={20} />
+                        <span>📲 Install App on Android Device</span>
                       </>
                     )}
                   </button>
