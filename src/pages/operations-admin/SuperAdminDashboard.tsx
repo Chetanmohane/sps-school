@@ -208,8 +208,8 @@ const ExamTimetableTab: React.FC = () => {
         ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '14px' }}>📭 No exam timetables scheduled yet. Add one above!</div>
         ) : (
-          <div className="table-container">
-            <table className="data-table" style={{ width: '100%' }}>
+          <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+            <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
               <thead>
                 <tr>
                   <th>#</th>
@@ -1655,8 +1655,8 @@ const SuperAdminDashboard = () => {
               )}
             </div>
 
-            <div className="table-container">
-              <table className="data-table">
+            <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+              <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
                 <thead>
                   <tr>
                     <th>Roll No</th>
@@ -1909,8 +1909,8 @@ const SuperAdminDashboard = () => {
                     )}
                   </div>
 
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                    <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
                       <thead>
                         <tr>
                           <th>Teacher Name</th>
@@ -2090,8 +2090,8 @@ const SuperAdminDashboard = () => {
 
                   {/* Class Teacher Table View */}
                   <h4 style={{ fontSize: '15px', fontWeight: '700', margin: '0 0 12px', color: 'var(--text-main)' }}>📋 Class Teacher In-Charges List Details</h4>
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                    <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
                       <thead>
                         <tr>
                           <th>Class & Section</th>
@@ -2182,8 +2182,8 @@ const SuperAdminDashboard = () => {
                   </div>
 
                   {/* Subject Teacher Table */}
-                  <div className="table-container">
-                    <table className="data-table">
+                  <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                    <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
                       <thead>
                         <tr>
                           <th>Subject Teacher Name</th>
@@ -2243,8 +2243,8 @@ const SuperAdminDashboard = () => {
                 </button>
               </div>
 
-              <div className="table-container">
-                <table className="data-table">
+              <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
                   <thead>
                     <tr>
                       <th>Student Name</th>
@@ -2297,8 +2297,8 @@ const SuperAdminDashboard = () => {
                 </button>
               </div>
 
-              <div className="table-container">
-                <table className="data-table">
+              <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
                   <thead>
                     <tr>
                       <th>Admin Name</th>
@@ -2992,8 +2992,8 @@ const SuperAdminDashboard = () => {
               )}
 
               {/* Fee Table */}
-              <div className="table-container">
-                <table className="data-table">
+              <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                <table className="data-table" style={{ minWidth: '850px', width: '100%' }}>
                   <thead><tr><th>Student</th><th>Class</th><th>Tuition</th><th>Total</th><th>Paid</th><th>Due</th><th>Audit Context</th><th>Remarks</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
                     {filteredFees.map(f => (
@@ -3136,13 +3136,13 @@ const SuperAdminDashboard = () => {
                   </div>
 
                   {/* Attendance table */}
-                  <div className="table-container">
+                  <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
                     {loadingAttendance ? (
                       <div style={{ padding:'40px', textAlign:'center', color:'var(--text-muted)' }}>
                         Loading attendance records...
                       </div>
                     ) : (
-                      <table className="data-table">
+                      <table className="data-table" style={{ minWidth: '750px', width: '100%' }}>
                         <thead>
                           <tr>
                             <th>Roll No</th>
@@ -3287,8 +3287,8 @@ const SuperAdminDashboard = () => {
                         </div>
                       </div>
 
-                      <div className="table-container">
-                        <table className="data-table">
+                      <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                        <table className="data-table" style={{ minWidth: '500px', width: '100%' }}>
                           <thead>
                             <tr>
                               <th>Roll No</th>
@@ -3633,8 +3633,8 @@ const SuperAdminDashboard = () => {
                 )}
               </div>
 
-              <div className="table-container">
-                <table className="data-table">
+              <div className="table-container" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                <table className="data-table" style={{ minWidth: '800px', width: '100%' }}>
                   <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Created</th><th>Audit Context</th><th>Remarks</th><th>Status</th><th>Action</th></tr></thead>
                   <tbody>
                     {filteredSubAdmins.length > 0 ? filteredSubAdmins.map(a => (
@@ -3997,7 +3997,7 @@ const SuperAdminDashboard = () => {
               {/* TAB 2: ATTENDANCE RECORD */}
               {viewTab === 'attendance' && (
                 <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "12px", marginBottom: "20px" }}>
                     <div style={{ backgroundColor: "var(--input-bg)", padding: "12px", borderRadius: "10px", textAlign: "center" }}>
                       <div style={{ fontSize: "10px", fontWeight: "700", color: "var(--text-muted)" }}>ATTENDANCE RATE</div>
                       <div style={{ fontSize: "20px", fontWeight: "800", color: viewStudentAttendance.percentage >= 75 ? "#10b981" : "#f59e0b" }}>
@@ -4016,8 +4016,8 @@ const SuperAdminDashboard = () => {
                     </div>
                   </div>
 
-                  <div style={{ maxHeight: "300px", overflowY: "auto", border: "1px solid var(--border-color)", borderRadius: "12px" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                  <div style={{ maxHeight: "300px", overflowY: "auto", overflowX: "auto", border: "1px solid var(--border-color)", borderRadius: "12px", WebkitOverflowScrolling: "touch" }}>
+                    <table style={{ width: "100%", minWidth: "400px", borderCollapse: "collapse", textAlign: "left" }}>
                       <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
                         <tr>
                           <th style={{ padding: "10px 14px" }}>Date</th>
@@ -4090,7 +4090,8 @@ const SuperAdminDashboard = () => {
                             </span>
                           </div>
 
-                          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", border: "1px solid var(--border-color)", borderRadius: "12px", overflow: "hidden" }}>
+                          <div style={{ overflowX: 'auto', width: '100%', WebkitOverflowScrolling: 'touch' }}>
+                            <table style={{ width: "100%", minWidth: "600px", borderCollapse: "collapse", textAlign: "left", border: "1px solid var(--border-color)", borderRadius: "12px", overflow: "hidden" }}>
                             <thead style={{ backgroundColor: "var(--input-bg)", fontSize: "11px", fontWeight: "700", color: "var(--text-muted)" }}>
                               <tr>
                                 <th style={{ padding: "10px 14px" }}>Subject</th>
@@ -4123,7 +4124,8 @@ const SuperAdminDashboard = () => {
                             </tbody>
                           </table>
                         </div>
-                      );
+                      </div>
+                    );
                     })
                   ) : (
                     <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", backgroundColor: "var(--input-bg)", borderRadius: "12px", border: "1px dashed var(--border-color)" }}>
