@@ -243,7 +243,7 @@ const Exams = () => {
       <Sidebar />
       <main className="main-content">
         <Navbar />
-        <div className="dashboard-container" style={{ margin: '20px' }}>
+        <div className="dashboard-container" style={{ width: '100%', boxSizing: 'border-box' }}>
 
           {/* Page Header */}
           <div style={{ marginBottom: '24px' }}>
@@ -264,10 +264,10 @@ const Exams = () => {
               <h3 style={{ margin: 0, fontWeight: 900, fontSize: '15px' }}>Schedule New Exam</h3>
             </div>
 
-            <div style={{ padding: '20px 24px' }}>
+            <div style={{ padding: '16px', width: '100%', boxSizing: 'border-box' }}>
 
               {/* Row 1: Exam Type + Class */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '20px', width: '100%', boxSizing: 'border-box' }}>
                 <div>
                   <label style={labelStyle}>Exam Type / Title *</label>
                   <select value={examTitle} onChange={e => setExamTitle(e.target.value)} required style={inputStyle}>
@@ -287,7 +287,7 @@ const Exams = () => {
               {/* Row 2: Section multi-select pills */}
               <div style={{ marginBottom: '24px' }}>
                 <label style={labelStyle}>Sections * (select one or more)</label>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '6px' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px', width: '100%', boxSizing: 'border-box' }}>
                   {SECTION_LIST.map(sec => {
                     const isSelected = selectedSections.includes(sec);
                     return (
@@ -296,7 +296,7 @@ const Exams = () => {
                         type="button"
                         onClick={() => toggleSection(sec)}
                         style={{
-                          padding: '8px 20px',
+                          padding: '6px 12px',
                           borderRadius: '10px',
                           border: `2px solid ${isSelected ? '#6366f1' : 'var(--border-color)'}`,
                           backgroundColor: isSelected ? '#eef2ff' : 'var(--input-bg)',

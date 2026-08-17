@@ -1627,9 +1627,9 @@ html.dark-mode .theme-toggle-btn:hover {
   flex-wrap: wrap;
 }
 
-@media (max-width: 992px) {
+@media (max-width: 768px) {
   .subject-row-grid {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr !important;
   }
 }
 
