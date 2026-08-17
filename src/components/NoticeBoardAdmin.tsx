@@ -76,9 +76,9 @@ const NoticeBoardAdmin: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px', marginBottom: '28px' }}>
+    <div className="flex flex-col lg:flex-row gap-6 mb-7 w-full max-w-full overflow-hidden box-sizing-border-box">
       {/* Left Column: Publish Notice Form */}
-      <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+      <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', flex: '1 1 320px', minWidth: 0, boxSizing: 'border-box' }}>
         <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
           📢 {editingNotice ? 'Edit Announcement' : 'Publish Global Notice'}
         </h3>
@@ -166,7 +166,7 @@ const NoticeBoardAdmin: React.FC = () => {
       </div>
 
       {/* Right Column: Published Notices Directory */}
-      <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ backgroundColor: 'var(--panel-bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px', flex: '1 1 320px', minWidth: 0, boxSizing: 'border-box' }}>
         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-main)' }}>
           📖 Active Announcements ({announcements.length})
         </h3>

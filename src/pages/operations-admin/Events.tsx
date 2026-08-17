@@ -247,10 +247,10 @@ const Events = () => {
       </div>
 
       {/* Grid: Form & List */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+      <div className="flex flex-col lg:flex-row gap-6 mb-6 w-full max-w-full overflow-hidden box-sizing-border-box">
         
         {/* Create / Edit Form Card */}
-        <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border-color)' }}>
+        <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border-color)', flex: '1 1 320px', minWidth: 0, boxSizing: 'border-box' }}>
           <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {editingId ? <FiEdit2 size={18} style={{ color: '#3b82f6' }} /> : <FiPlus size={18} style={{ color: '#10b981' }} />}
             {editingId ? "Update Holiday / Event" : "Add New Holiday or Event"}
@@ -370,7 +370,7 @@ const Events = () => {
         </div>
 
         {/* Directory & Filters */}
-        <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ backgroundColor: 'var(--card-bg)', borderRadius: '16px', padding: '24px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', flex: '1 1 320px', minWidth: 0, boxSizing: 'border-box' }}>
           
           {/* Header & Filter Controls */}
           <div style={{ marginBottom: '16px' }}>

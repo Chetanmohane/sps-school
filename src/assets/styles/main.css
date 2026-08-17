@@ -1484,15 +1484,12 @@ html.dark-mode .theme-toggle-btn:hover {
    ========================================================= */
 
 @media (max-width: 768px) {
-  /* Fix hardcoded inline grids to be single column */
-  /* Target elements that have display: grid and hardcoded columns */
-  [style*="display: grid"], [style*="display:grid"] {
+  /* On mobile screens, all card grids and auto-fit containers stack into 1 full-width column */
+  [style*="display: grid"], 
+  [style*="display:grid"], 
+  [style*="auto-fit"],
+  .grid {
     grid-template-columns: 1fr !important;
-  }
-  
-  /* Exclude grids that use auto-fit (which are already responsive) */
-  [style*="auto-fit"] {
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
   }
   
   /* Form elements should take full width inside flexible containers */
